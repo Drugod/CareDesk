@@ -1,0 +1,14 @@
+SimulaTele - Llamada real (prueba de central a 3)
+=================================================
+Contenido: index.html + peerjs.min.js (deben ir SIEMPRE juntos, en la misma carpeta).
+
+PARA PROBARLO:
+1) Publica esta carpeta en un hosting con HTTPS (p. ej. GitHub Pages).
+2) Los 3 participantes abren la MISMA URL, escriben el MISMO codigo de sala
+   y el MISMO caso, y cada uno elige su rol (Teleoperador / Persona dependiente / Oyente).
+3) Pulsad "Entrar y activar micro" y aceptad el permiso de microfono.
+
+Notas:
+- El microfono solo funciona en HTTPS (o en http://localhost).
+- Usad auriculares para evitar eco.
+- Si en alguna red muy cerrada no se oye, usad la prueba rapida con Jitsi.
