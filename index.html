@@ -212,33 +212,48 @@ function iniciarPeer(){
   const miId=idDe(miRol);
   peer=new Peer(miId,opcionesPeer());
   let abierto=false;
-  peer.on('open',()=>{ abierto=true; intentarConectar(); setInterval(intentarConectar,3500); });
-  peer.on('call',call=>{ call.answer(localStream); wireCall(call, call.peer); });
+  peer.on('open',()=>{ abierto=true; intentarConectar(); setInterval(intentarConectar,2000); });
+  peer.on('call',call=>{
+    const pid=call.peer;
+    if(conns[pid] && conns[pid].stream){ try{call.close();}catch(e){} return; } // ya conectado: descarta duplicado
+    call.answer(localStream); wireCall(call, pid);
+  });
   peer.on('disconnected',()=>{ try{peer.reconnect();}catch(e){} });
   peer.on('error',err=>{
     if(err.type==='unavailable-id'){ toast('Ese rol ya está ocupado en la sala. Elige otro rol o cambia el código.',6000); volverEntrada(); }
-    else if(err.type==='peer-unavailable'){ /* el otro aún no está: se reintenta solo */ }
-    else if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'){ toast('No hay conexión con el servicio de llamadas. Si persiste, usad la prueba con Jitsi.',6000); }
-    else { toast('Aviso de conexión: '+err.type,4000); }
+    else if(err.type==='peer-unavailable'){ liberarFallidos(); }  // el otro aún no estaba: se reintenta en el siguiente ciclo (≤2 s)
+    else if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'){ toast('Reconectando con el servidor de la sala…',4000); }
+    else { /* el resto se reintenta solo */ }
   });
   setTimeout(()=>{ if(!abierto) toast('Conectando con el servidor de la sala… si tarda mucho, revisad la conexión o usad Jitsi.',6000); }, 9000);
 }
 
-/* Regla de malla: solo llamo a los IDs mayores que el mío (así cada pareja conecta una vez) */
+/* Malla robusta: en cada pareja, el de ID menor INICIA y REINTENTA cada 2 s
+   hasta que haya audio, aunque el compañero entre mucho más tarde. */
+function conectado(pid){ return !!(conns[pid] && conns[pid].stream); }
 function intentarConectar(){
   if(!peer||!peer.open) return;
+  const now=Date.now();
   targets().forEach(tid=>{
-    if(idDe(miRol) < tid && !conns[tid]){
-      const call=peer.call(tid,localStream);
-      if(call) wireCall(call,tid);
+    if(conectado(tid)) return;                 // ya hay audio con este: nada que hacer
+    if(idDe(miRol) < tid){                      // a los de ID mayor los llamo yo
+      const c=conns[tid];
+      if(c && c.ts && (now-c.ts) < 6000) return; // hay un intento reciente en curso: dale tiempo
+      try{ const call=peer.call(tid,localStream); if(call) wireCall(call,tid); }catch(e){}
     }
   });
+  pintarPeers();
+}
+function liberarFallidos(){                      // descarta intentos muertos para que se reintenten
+  for(const pid in conns){
+    if(!conns[pid].stream){ if(conns[pid].call){try{conns[pid].call.close();}catch(e){}} delete conns[pid]; }
+  }
+  pintarPeers();
 }
 function wireCall(call, pid){
-  if(conns[pid] && conns[pid].call){ try{call.close();}catch(e){} return; }
-  conns[pid]=conns[pid]||{};
-  conns[pid].call=call;
-  call.on('stream',rs=>{ conns[pid].stream=rs; ponerAudio(pid,rs); pintarPeers(); medir(pid,rs); });
+  if(conns[pid] && conns[pid].stream){ try{call.close();}catch(e){} return; } // ya conectado: descarta duplicado
+  conns[pid]={ call, ts:Date.now(), audioEl:(conns[pid]&&conns[pid].audioEl)||null };
+  call.on('stream',rs=>{ conns[pid].stream=rs; conns[pid].ts=0; ponerAudio(pid,rs); pintarPeers(); medir(pid,rs); });
   call.on('close',()=>{ quitar(pid); });
   call.on('error',()=>{ quitar(pid); });
   pintarPeers();
