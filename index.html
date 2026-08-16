@@ -57,6 +57,10 @@
   .chip{display:inline-flex;gap:6px;align-items:center;background:var(--chip);border:1px solid var(--line);padding:3px 10px;border-radius:999px;font-size:12px;color:var(--muted)}
   .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
   .timer{font-variant-numeric:tabular-nums;font-weight:800;font-size:20px}
+  .unlock{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:60;border:none;
+    background:linear-gradient(135deg,var(--warn),#c98a1f);color:#20160a;font-weight:800;font-size:16px;
+    padding:15px 24px;border-radius:14px;box-shadow:var(--shadow);animation:pl 1.4s infinite}
+  @keyframes pl{0%{box-shadow:0 0 0 0 rgba(224,168,59,.6)}70%{box-shadow:0 0 0 18px rgba(224,168,59,0)}100%{box-shadow:0 0 0 0 rgba(224,168,59,0)}}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);
     padding:11px 16px;border-radius:11px;box-shadow:var(--shadow);font-size:14px;opacity:0;transition:.25s;z-index:50;max-width:90%}
   .toast.show{opacity:1}
@@ -132,6 +136,7 @@
   <div id="audios"></div>
 </div>
 
+<button class="unlock hidden" id="unlock">🔊 Toca para activar el sonido</button>
 <div class="toast" id="toast"></div>
 
 <!-- PeerJS en local (misma carpeta). Fallback a CDN por si falta el archivo. -->
@@ -199,9 +204,11 @@ document.getElementById('join').onclick=async ()=>{
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
   }catch(e){toast('No se pudo acceder al micrófono: '+e.message,5000);return;}
   if(miRol==='OB'){ setMuted(true); } // el oyente entra en silencio
+  try{ ctx().resume(); }catch(e){}    // "primamos" el audio dentro del toque (clave en iPhone)
   mostrarLlamada();   // mostramos la sala ya, aunque el servidor tarde en responder
   iniciarPeer();
 };
+document.getElementById('unlock').onclick=desbloquearAudio;
 
 function opcionesPeer(){
   const q=new URLSearchParams(location.search); const o={debug:1};
@@ -212,33 +219,48 @@ function iniciarPeer(){
   const miId=idDe(miRol);
   peer=new Peer(miId,opcionesPeer());
   let abierto=false;
-  peer.on('open',()=>{ abierto=true; intentarConectar(); setInterval(intentarConectar,3500); });
-  peer.on('call',call=>{ call.answer(localStream); wireCall(call, call.peer); });
+  peer.on('open',()=>{ abierto=true; intentarConectar(); setInterval(intentarConectar,2000); });
+  peer.on('call',call=>{
+    const pid=call.peer;
+    if(conns[pid] && conns[pid].stream){ try{call.close();}catch(e){} return; } // ya conectado: descarta duplicado
+    call.answer(localStream); wireCall(call, pid);
+  });
   peer.on('disconnected',()=>{ try{peer.reconnect();}catch(e){} });
   peer.on('error',err=>{
     if(err.type==='unavailable-id'){ toast('Ese rol ya está ocupado en la sala. Elige otro rol o cambia el código.',6000); volverEntrada(); }
-    else if(err.type==='peer-unavailable'){ /* el otro aún no está: se reintenta solo */ }
-    else if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'){ toast('No hay conexión con el servicio de llamadas. Si persiste, usad la prueba con Jitsi.',6000); }
-    else { toast('Aviso de conexión: '+err.type,4000); }
+    else if(err.type==='peer-unavailable'){ liberarFallidos(); }  // el otro aún no estaba: se reintenta en el siguiente ciclo (≤2 s)
+    else if(err.type==='network'||err.type==='server-error'||err.type==='socket-error'){ toast('Reconectando con el servidor de la sala…',4000); }
+    else { /* el resto se reintenta solo */ }
   });
   setTimeout(()=>{ if(!abierto) toast('Conectando con el servidor de la sala… si tarda mucho, revisad la conexión o usad Jitsi.',6000); }, 9000);
 }
 
-/* Regla de malla: solo llamo a los IDs mayores que el mío (así cada pareja conecta una vez) */
+/* Malla robusta: en cada pareja, el de ID menor INICIA y REINTENTA cada 2 s
+   hasta que haya audio, aunque el compañero entre mucho más tarde. */
+function conectado(pid){ return !!(conns[pid] && conns[pid].stream); }
 function intentarConectar(){
   if(!peer||!peer.open) return;
+  const now=Date.now();
   targets().forEach(tid=>{
-    if(idDe(miRol) < tid && !conns[tid]){
-      const call=peer.call(tid,localStream);
-      if(call) wireCall(call,tid);
+    if(conectado(tid)) return;                 // ya hay audio con este: nada que hacer
+    if(idDe(miRol) < tid){                      // a los de ID mayor los llamo yo
+      const c=conns[tid];
+      if(c && c.ts && (now-c.ts) < 6000) return; // hay un intento reciente en curso: dale tiempo
+      try{ const call=peer.call(tid,localStream); if(call) wireCall(call,tid); }catch(e){}
     }
   });
+  pintarPeers();
+}
+function liberarFallidos(){                      // descarta intentos muertos para que se reintenten
+  for(const pid in conns){
+    if(!conns[pid].stream){ if(conns[pid].call){try{conns[pid].call.close();}catch(e){}} delete conns[pid]; }
+  }
+  pintarPeers();
 }
 function wireCall(call, pid){
-  if(conns[pid] && conns[pid].call){ try{call.close();}catch(e){} return; }
-  conns[pid]=conns[pid]||{};
-  conns[pid].call=call;
-  call.on('stream',rs=>{ conns[pid].stream=rs; ponerAudio(pid,rs); pintarPeers(); medir(pid,rs); });
+  if(conns[pid] && conns[pid].stream){ try{call.close();}catch(e){} return; } // ya conectado: descarta duplicado
+  conns[pid]={ call, ts:Date.now(), audioEl:(conns[pid]&&conns[pid].audioEl)||null };
+  call.on('stream',rs=>{ conns[pid].stream=rs; conns[pid].ts=0; ponerAudio(pid,rs); pintarPeers(); medir(pid,rs); });
   call.on('close',()=>{ quitar(pid); });
   call.on('error',()=>{ quitar(pid); });
   pintarPeers();
@@ -247,8 +269,17 @@ function quitar(pid){ if(conns[pid]){ if(conns[pid].audioEl)conns[pid].audioEl.r
 
 function ponerAudio(pid,stream){
   let a=conns[pid].audioEl;
-  if(!a){ a=document.createElement('audio'); a.autoplay=true; a.playsInline=true; document.getElementById('audios').appendChild(a); conns[pid].audioEl=a; }
-  a.srcObject=stream; a.play().catch(()=>{});
+  if(!a){ a=document.createElement('audio'); a.autoplay=true; a.playsInline=true; a.setAttribute('playsinline',''); document.getElementById('audios').appendChild(a); conns[pid].audioEl=a; }
+  a.srcObject=stream;
+  a.play().catch(()=>{ mostrarDesbloqueo(); }); // en móvil el navegador bloquea el autoplay: pedimos un toque
+}
+/* ---- Desbloqueo de sonido en móviles (autoplay bloqueado) ---- */
+function mostrarDesbloqueo(){ const u=document.getElementById('unlock'); if(u) u.classList.remove('hidden'); }
+function desbloquearAudio(){
+  try{ if(ac && ac.state==='suspended') ac.resume(); }catch(e){}
+  let pendiente=false;
+  document.querySelectorAll('#audios audio').forEach(a=>{ a.muted=false; const p=a.play(); if(p&&p.catch) p.catch(()=>{pendiente=true;}); });
+  if(!pendiente){ const u=document.getElementById('unlock'); if(u) u.classList.add('hidden'); }
 }
 
 /* ---------------- Vista llamada ---------------- */
@@ -260,6 +291,9 @@ function mostrarLlamada(){
   document.getElementById('briefing').innerHTML=briefing();
   pintarPeers();
   arrancarTimer();
+  // en móvil, cualquier toque en la pantalla intenta desbloquear el sonido entrante
+  ['click','touchend'].forEach(ev=>document.body.addEventListener(ev,desbloquearAudio,{passive:true}));
+  if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) toast('En el móvil, si no oyes al conectar, pulsa "Activar sonido".',5000);
 }
 function briefing(){
   const c=CASOS[casoIdx];

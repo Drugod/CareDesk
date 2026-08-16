@@ -1,14 +1,20 @@
 SimulaTele - Llamada real (prueba de central a 3)
 =================================================
-Contenido: index.html + peerjs.min.js (deben ir SIEMPRE juntos, en la misma carpeta).
+Contenido: index.html + peerjs.min.js (van SIEMPRE juntos, en la misma carpeta).
 
-PARA PROBARLO:
-1) Publica esta carpeta en un hosting con HTTPS (p. ej. GitHub Pages).
-2) Los 3 participantes abren la MISMA URL, escriben el MISMO codigo de sala
-   y el MISMO caso, y cada uno elige su rol (Teleoperador / Persona dependiente / Oyente).
-3) Pulsad "Entrar y activar micro" y aceptad el permiso de microfono.
+PUBLICAR (GitHub Pages):
+- Sube los dos archivos a la raiz del repositorio y activa Pages (Settings > Pages).
+- Comparte la URL https://TU-USUARIO.github.io/TU-REPO/
 
-Notas:
-- El microfono solo funciona en HTTPS (o en http://localhost).
-- Usad auriculares para evitar eco.
-- Si en alguna red muy cerrada no se oye, usad la prueba rapida con Jitsi.
+USAR:
+1) Los 3 abren la MISMA URL, mismo codigo de sala y mismo caso; cada uno un rol distinto.
+2) Pulsad "Entrar y activar micro" y aceptad el permiso de microfono.
+
+MOVILES (importante):
+- Los moviles bloquean el audio automatico. Si al conectar NO oyes nada,
+  pulsa el boton naranja "Toca para activar el sonido" (o toca la pantalla una vez).
+- Usa AURICULARES para evitar eco/acoples.
+
+Requisitos:
+- El microfono solo funciona en HTTPS (GitHub Pages ya lo da) o en http://localhost.
+- Si en una red muy cerrada un audio no llega, usad Jitsi como plan B.
