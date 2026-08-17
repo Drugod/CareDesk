@@ -176,8 +176,8 @@ const RUBRICA=[
 const ROLES={OP:'Teleoperador/a', PD:'Persona dependiente', OB:'Oyente / Profesor'};
 
 /* ---------------- Estado ---------------- */
-let miRol=null, sala='', casoIdx=0, peer=null, localStream=null, muted=false;
-const conns={};            // peerId -> {call, dot, stream, audioEl}
+let miRol=null, sala='', casoIdx=0, peer=null, localStream=null, muted=false, estadoMic='pendiente';
+const conns={};            // peerId -> {call, stream, audioEl, ice}
 const targets=()=>['OP','PD','OB'].filter(r=>r!==miRol).map(r=>idDe(r));
 function idDe(rol){return (sala+'-'+rol);}
 function rolDeId(id){return id.split('-').pop();}
@@ -202,7 +202,8 @@ document.getElementById('join').onclick=async ()=>{
   if(typeof Peer==='undefined'){toast('No se cargó la librería de llamadas (peerjs.min.js). Comprueba que está junto a index.html.',6000);return;}
   try{
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-  }catch(e){toast('No se pudo acceder al micrófono: '+e.message,5000);return;}
+    estadoMic='OK';
+  }catch(e){ estadoMic='ERROR'; toast('No se pudo acceder al micrófono: '+(e.name||e.message)+'. Revisa el permiso de micrófono del navegador.',7000);return;}
   if(miRol==='OB'){ setMuted(true); } // el oyente entra en silencio
   try{ ctx().resume(); }catch(e){}    // "primamos" el audio dentro del toque (clave en iPhone)
   mostrarLlamada();   // mostramos la sala ya, aunque el servidor tarde en responder
@@ -211,7 +212,15 @@ document.getElementById('join').onclick=async ()=>{
 document.getElementById('unlock').onclick=desbloquearAudio;
 
 function opcionesPeer(){
-  const q=new URLSearchParams(location.search); const o={debug:1};
+  const q=new URLSearchParams(location.search);
+  // STUN (descubrir IP) + TURN gratuito (relay para redes cerradas / móviles con NAT estricto)
+  const o={ debug:1, config:{ iceServers:[
+    { urls:'stun:stun.l.google.com:19302' },
+    { urls:'stun:stun.cloudflare.com:3478' },
+    { urls:'turn:openrelay.metered.ca:80',              username:'openrelayproject', credential:'openrelayproject' },
+    { urls:'turn:openrelay.metered.ca:443',             username:'openrelayproject', credential:'openrelayproject' },
+    { urls:'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject' },
+  ] } };
   if(q.get('host')){ o.host=q.get('host'); o.port=parseInt(q.get('port')||'443',10); o.path=q.get('path')||'/'; o.secure=q.get('secure')!=='0'; }
   return o;
 }
@@ -259,10 +268,16 @@ function liberarFallidos(){                      // descarta intentos muertos pa
 }
 function wireCall(call, pid){
   if(conns[pid] && conns[pid].stream){ try{call.close();}catch(e){} return; } // ya conectado: descarta duplicado
-  conns[pid]={ call, ts:Date.now(), audioEl:(conns[pid]&&conns[pid].audioEl)||null };
+  conns[pid]={ call, ts:Date.now(), ice:'iniciando', audioEl:(conns[pid]&&conns[pid].audioEl)||null };
   call.on('stream',rs=>{ conns[pid].stream=rs; conns[pid].ts=0; ponerAudio(pid,rs); pintarPeers(); medir(pid,rs); });
   call.on('close',()=>{ quitar(pid); });
   call.on('error',()=>{ quitar(pid); });
+  // Diagnóstico de la conexión de red (ICE): nos dice si el audio logra atravesar la red
+  const engancharICE=()=>{ const pc=call.peerConnection; if(!pc)return false;
+    const upd=()=>{ if(conns[pid]) conns[pid].ice=pc.iceConnectionState; pintarPeers();
+      if(pc.iceConnectionState==='failed'){ quitar(pid); } };  // falló: se recreará en el siguiente ciclo
+    pc.oniceconnectionstatechange=upd; upd(); return true; };
+  if(!engancharICE()) setTimeout(engancharICE,300);
   pintarPeers();
 }
 function quitar(pid){ if(conns[pid]){ if(conns[pid].audioEl)conns[pid].audioEl.remove(); delete conns[pid]; pintarPeers(); } }
@@ -322,16 +337,22 @@ function briefing(){
 }
 function pintarPeers(){
   const cont=document.getElementById('peers');
+  const srv=(peer&&peer.open)?'✅ conectado':'⏳ conectando…';
+  const mic= estadoMic==='OK'?'✅ activo':(estadoMic==='ERROR'?'❌ sin permiso':'⏳ …');
+  const head=`<div class="rubi" style="border:none;margin:0 0 8px;font-size:12.5px">Servidor de sala: <b>${srv}</b> · Micrófono: <b>${mic}</b></div>`;
   const rows=['OP','PD','OB'].map(r=>{
     if(r===miRol){
       return `<div class="peer"><span class="dot on"></span><div class="meta"><b>${ROLES[r]} · Tú</b><small>${muted?'micro silenciado':'micro activo'}</small><div class="lvl"><i id="lvl-yo"></i></div></div></div>`;
     }
     const pid=idDe(r); const c=conns[pid];
     const estado=c&&c.stream?'on':(c?'wait':'');
-    const txt=c&&c.stream?'conectado':(c?'conectando…':'esperando a que entre');
+    let txt;
+    if(c&&c.stream) txt='conectado · audio OK';
+    else if(c) txt='conectando… (red: '+(c.ice||'—')+')';
+    else txt='esperando a que entre';
     return `<div class="peer"><span class="dot ${estado}"></span><div class="meta"><b>${ROLES[r]}</b><small>${txt}</small><div class="lvl"><i id="lvl-${pid}"></i></div></div></div>`;
   }).join('');
-  cont.innerHTML=rows;
+  cont.innerHTML=head+rows;
   if(localStream) medirLocal();
 }
 
