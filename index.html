@@ -211,24 +211,55 @@ document.getElementById('join').onclick=async ()=>{
 };
 document.getElementById('unlock').onclick=desbloquearAudio;
 
+/* ================== CONFIG · TURN (relay) con Metered ==================
+   El TURN es imprescindible para llamar entre REDES DISTINTAS (dos ciudades,
+   dos operadores 4G, etc.). La app pide las credenciales a Metered sola.
+   >>> SOLO TIENES QUE PONER TU API KEY AQUÍ ABAJO <<<
+   La encuentras en https://dashboard.metered.ca  ->  tu app "simulatele"
+   ->  apartado "API Key" (o "Secret Key").                                 */
+const METERED_APP = 'simulatele';   // el nombre de tu app (subdominio .metered.live)
+const METERED_KEY = 'PwHRrgHcCbJf0nZvcGbcUr3DvrLL86g2Ey3ClTt5PMe-1dRZ'; // API Key de Metered
+
+// Fallback si no pones API Key o si Metered no responde (poco fiable entre redes):
+const TURN_SERVERS = [
+  { urls:'stun:stun.l.google.com:19302' },
+  { urls:'stun:stun.cloudflare.com:3478' },
+  { urls:'turn:openrelay.metered.ca:80',                username:'openrelayproject', credential:'openrelayproject' },
+  { urls:'turn:openrelay.metered.ca:443',               username:'openrelayproject', credential:'openrelayproject' },
+  { urls:'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject' },
+];
+let TURN_ORIGEN='público';
+async function obtenerIceServers(){
+  if(METERED_APP && METERED_KEY){
+    const bases=[
+      `https://${METERED_APP}.metered.live/api/v1/turn/credentials?apiKey=${encodeURIComponent(METERED_KEY)}`,
+      `https://${METERED_APP}.metered.live/api/v1/turn/credential?apiKey=${encodeURIComponent(METERED_KEY)}`,
+    ];
+    for(const url of bases){
+      try{
+        const r=await fetch(url);
+        if(!r.ok) continue;
+        const arr=await r.json();
+        if(Array.isArray(arr) && arr.length){ TURN_ORIGEN='Metered'; return arr; }
+      }catch(e){ /* prueba la siguiente / cae al público */ }
+    }
+    console.warn('TURN Metered no respondió; uso el público.');
+  }
+  return TURN_SERVERS;
+}
 function opcionesPeer(){
   const q=new URLSearchParams(location.search);
-  // STUN (descubrir IP) + TURN gratuito (relay para redes cerradas / móviles con NAT estricto)
-  const o={ debug:1, config:{ iceServers:[
-    { urls:'stun:stun.l.google.com:19302' },
-    { urls:'stun:stun.cloudflare.com:3478' },
-    { urls:'turn:openrelay.metered.ca:80',              username:'openrelayproject', credential:'openrelayproject' },
-    { urls:'turn:openrelay.metered.ca:443',             username:'openrelayproject', credential:'openrelayproject' },
-    { urls:'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject' },
-  ] } };
+  const o={ debug:1 };
   if(q.get('host')){ o.host=q.get('host'); o.port=parseInt(q.get('port')||'443',10); o.path=q.get('path')||'/'; o.secure=q.get('secure')!=='0'; }
   return o;
 }
-function iniciarPeer(){
+async function iniciarPeer(){
   const miId=idDe(miRol);
-  peer=new Peer(miId,opcionesPeer());
+  const o=opcionesPeer();
+  o.config={ iceServers: await obtenerIceServers() };   // credenciales TURN (Metered si hay API Key)
+  peer=new Peer(miId,o);
   let abierto=false;
-  peer.on('open',()=>{ abierto=true; intentarConectar(); setInterval(intentarConectar,2000); });
+  peer.on('open',()=>{ abierto=true; intentarConectar(); setInterval(intentarConectar,2000); if(!window._sp){window._sp=setInterval(pollStats,2000);} });
   peer.on('call',call=>{
     const pid=call.peer;
     if(conns[pid] && conns[pid].stream){ try{call.close();}catch(e){} return; } // ya conectado: descarta duplicado
@@ -281,6 +312,24 @@ function wireCall(call, pid){
   pintarPeers();
 }
 function quitar(pid){ if(conns[pid]){ if(conns[pid].audioEl)conns[pid].audioEl.remove(); delete conns[pid]; pintarPeers(); } }
+
+/* Mide el audio REAL que llega (paquetes) y la RUTA usada (directa o relay/TURN) */
+function pollStats(){
+  Object.keys(conns).forEach(pid=>{
+    const c=conns[pid]; const pc=c&&c.call&&c.call.peerConnection; if(!pc||!c.stream) return;
+    pc.getStats().then(st=>{
+      let bytes=0, sel=null;
+      st.forEach(r=>{ if(r.type==='inbound-rtp' && (r.kind==='audio'||r.mediaType==='audio')) bytes+=(r.bytesReceived||0); });
+      st.forEach(r=>{ if(r.type==='candidate-pair' && r.state==='succeeded' && (r.nominated||r.selected)) sel=r; });
+      if(sel){ const lc=st.get(sel.localCandidateId), rc=st.get(sel.remoteCandidateId);
+        const t=(lc&&lc.candidateType)||''; const tr=(rc&&rc.candidateType)||'';
+        c.via = (t==='relay'||tr==='relay') ? 'relay (TURN)' : (t==='srflx'||tr==='srflx') ? 'directa' : (t?'directa':''); }
+      c.recibiendo = (c.lastBytes!=null) ? (bytes>c.lastBytes) : false;
+      c.lastBytes=bytes; c.polls=(c.polls||0)+1;
+      pintarPeers();
+    }).catch(()=>{});
+  });
+}
 
 function ponerAudio(pid,stream){
   let a=conns[pid].audioEl;
@@ -339,17 +388,19 @@ function pintarPeers(){
   const cont=document.getElementById('peers');
   const srv=(peer&&peer.open)?'✅ conectado':'⏳ conectando…';
   const mic= estadoMic==='OK'?'✅ activo':(estadoMic==='ERROR'?'❌ sin permiso':'⏳ …');
-  const head=`<div class="rubi" style="border:none;margin:0 0 8px;font-size:12.5px">Servidor de sala: <b>${srv}</b> · Micrófono: <b>${mic}</b></div>`;
+  const head=`<div class="rubi" style="border:none;margin:0 0 8px;font-size:12.5px">Servidor de sala: <b>${srv}</b> · Micrófono: <b>${mic}</b> · TURN: <b>${TURN_ORIGEN}</b></div>`;
   const rows=['OP','PD','OB'].map(r=>{
     if(r===miRol){
       return `<div class="peer"><span class="dot on"></span><div class="meta"><b>${ROLES[r]} · Tú</b><small>${muted?'micro silenciado':'micro activo'}</small><div class="lvl"><i id="lvl-yo"></i></div></div></div>`;
     }
     const pid=idDe(r); const c=conns[pid];
-    const estado=c&&c.stream?'on':(c?'wait':'');
-    let txt;
-    if(c&&c.stream) txt='conectado · audio OK';
-    else if(c) txt='conectando… (red: '+(c.ice||'—')+')';
-    else txt='esperando a que entre';
+    let estado='', txt;
+    if(c&&c.stream){
+      if(c.recibiendo){ estado='on'; txt='conectado · se oye ✅'+(c.via?(' · vía '+c.via):''); }
+      else if((c.polls||0)>=3){ estado='wait'; txt='conectado pero SIN audio ⚠️'+(c.via?(' · vía '+c.via):' · sin ruta')+' → falta TURN'; }
+      else { estado='wait'; txt='estableciendo audio…'; }
+    } else if(c){ estado='wait'; txt='conectando… (red: '+(c.ice||'—')+')'; }
+    else { txt='esperando a que entre'; }
     return `<div class="peer"><span class="dot ${estado}"></span><div class="meta"><b>${ROLES[r]}</b><small>${txt}</small><div class="lvl"><i id="lvl-${pid}"></i></div></div></div>`;
   }).join('');
   cont.innerHTML=head+rows;

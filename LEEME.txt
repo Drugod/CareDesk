@@ -18,3 +18,17 @@ MOVILES (importante):
 Requisitos:
 - El microfono solo funciona en HTTPS (GitHub Pages ya lo da) o en http://localhost.
 - Si en una red muy cerrada un audio no llega, usad Jitsi como plan B.
+
+------------------------------------------------------------
+LLAMADAS ENTRE REDES DISTINTAS (dos ciudades / dos operadores)
+------------------------------------------------------------
+El panel "Participantes" ahora dice la verdad sobre el audio:
+- "conectado · se oye OK · via directa/relay"  -> funciona.
+- "conectado pero SIN audio -> falta TURN"      -> hace falta un TURN fiable.
+
+TURN fiable y GRATIS (recomendado para uso fuera de la misma red):
+1) Crea cuenta gratis en https://dashboard.metered.ca (50 GB/mes).
+2) Entra en "TURN Server" y copia tu USERNAME y tu CREDENTIAL (password).
+3) Abre index.html, busca el bloque "TUYO (Metered gratis)" y
+   DESCOMENTA esas 4 lineas poniendo tu usuario y tu clave.
+4) Sube el index.html a GitHub y prueba: debe poner "se oye OK · via relay (TURN)".
