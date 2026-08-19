@@ -211,42 +211,21 @@ document.getElementById('join').onclick=async ()=>{
 };
 document.getElementById('unlock').onclick=desbloquearAudio;
 
-/* ================== CONFIG · TURN (relay) con Metered ==================
-   El TURN es imprescindible para llamar entre REDES DISTINTAS (dos ciudades,
-   dos operadores 4G, etc.). La app pide las credenciales a Metered sola.
-   >>> SOLO TIENES QUE PONER TU API KEY AQUÍ ABAJO <<<
-   La encuentras en https://dashboard.metered.ca  ->  tu app "simulatele"
-   ->  apartado "API Key" (o "Secret Key").                                 */
-const METERED_APP = 'simulatele';   // el nombre de tu app (subdominio .metered.live)
-const METERED_KEY = 'PwHRrgHcCbJf0nZvcGbcUr3DvrLL86g2Ey3ClTt5PMe-1dRZ'; // API Key de Metered
-
-// Fallback si no pones API Key o si Metered no responde (poco fiable entre redes):
+/* ================== TURN (relay) de Metered ==================
+   Credenciales TURN generadas en tu panel de Metered (TURN Server -> Credentials).
+   Son credenciales de TURN, seguras para ir en el front-end (NO es la Secret Key).
+   El TURN es imprescindible para llamar entre REDES DISTINTAS (dos ciudades, dos
+   operadores 4G, etc.). Si algún día caducan, genera otra credencial y pega el
+   nuevo bloque aquí abajo.                                                       */
 const TURN_SERVERS = [
-  { urls:'stun:stun.l.google.com:19302' },
-  { urls:'stun:stun.cloudflare.com:3478' },
-  { urls:'turn:openrelay.metered.ca:80',                username:'openrelayproject', credential:'openrelayproject' },
-  { urls:'turn:openrelay.metered.ca:443',               username:'openrelayproject', credential:'openrelayproject' },
-  { urls:'turn:openrelay.metered.ca:443?transport=tcp', username:'openrelayproject', credential:'openrelayproject' },
+  { urls:'stun:stun.relay.metered.ca:80' },
+  { urls:'turn:global.relay.metered.ca:80',                 username:'1a2d9126cbbd3f33d15a5275', credential:'GJft05EjO87B+U4q' },
+  { urls:'turn:global.relay.metered.ca:80?transport=tcp',   username:'1a2d9126cbbd3f33d15a5275', credential:'GJft05EjO87B+U4q' },
+  { urls:'turn:global.relay.metered.ca:443',                username:'1a2d9126cbbd3f33d15a5275', credential:'GJft05EjO87B+U4q' },
+  { urls:'turns:global.relay.metered.ca:443?transport=tcp', username:'1a2d9126cbbd3f33d15a5275', credential:'GJft05EjO87B+U4q' },
 ];
-let TURN_ORIGEN='público';
-async function obtenerIceServers(){
-  if(METERED_APP && METERED_KEY){
-    const bases=[
-      `https://${METERED_APP}.metered.live/api/v1/turn/credentials?apiKey=${encodeURIComponent(METERED_KEY)}`,
-      `https://${METERED_APP}.metered.live/api/v1/turn/credential?apiKey=${encodeURIComponent(METERED_KEY)}`,
-    ];
-    for(const url of bases){
-      try{
-        const r=await fetch(url);
-        if(!r.ok) continue;
-        const arr=await r.json();
-        if(Array.isArray(arr) && arr.length){ TURN_ORIGEN='Metered'; return arr; }
-      }catch(e){ /* prueba la siguiente / cae al público */ }
-    }
-    console.warn('TURN Metered no respondió; uso el público.');
-  }
-  return TURN_SERVERS;
-}
+let TURN_ORIGEN='Metered';
+async function obtenerIceServers(){ return TURN_SERVERS; }
 function opcionesPeer(){
   const q=new URLSearchParams(location.search);
   const o={ debug:1 };
@@ -256,7 +235,7 @@ function opcionesPeer(){
 async function iniciarPeer(){
   const miId=idDe(miRol);
   const o=opcionesPeer();
-  o.config={ iceServers: await obtenerIceServers() };   // credenciales TURN (Metered si hay API Key)
+  o.config={ iceServers: await obtenerIceServers() };   // credenciales TURN (Metered si hay Secret Key)
   peer=new Peer(miId,o);
   let abierto=false;
   peer.on('open',()=>{ abierto=true; intentarConectar(); setInterval(intentarConectar,2000); if(!window._sp){window._sp=setInterval(pollStats,2000);} });
