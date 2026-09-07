@@ -40,6 +40,9 @@
     padding:6px 12px;border-radius:999px;font-size:13px;color:var(--muted)
   }
   .role-pill b{color:var(--ink)}
+  .langsw{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .langsw button{background:var(--panel2);border:none;color:var(--muted);padding:6px 10px;font-size:12px;font-weight:800;letter-spacing:.5px;cursor:pointer}
+  .langsw button.on{background:var(--accent);color:#04121d}
   .btn{
     border:1px solid var(--line);background:var(--panel2);color:var(--ink);
     padding:9px 14px;border-radius:10px;font-weight:600;font-size:14px;transition:.15s;
@@ -225,6 +228,9 @@
 
 <!-- ============ SPLASH / ROLE SELECT ============ -->
 <section id="splash" class="splash">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
+    <div class="langsw"><button data-lang="va" onclick="setLang('va')">VA</button><button data-lang="es" onclick="setLang('es')">ES</button></div>
+  </div>
   <div class="brand" style="justify-content:center;margin-bottom:14px">
     <div class="logo">CD</div>
     <div><span style="font-size:22px">CareDesk</span><small>Simulador de central de teleasistencia · TAPSD</small></div>
@@ -270,6 +276,7 @@
   <header class="top">
     <div class="brand"><div class="logo">CD</div><div>CareDesk<small id="topSub">Central de teleasistencia</small></div></div>
     <div class="spacer"></div>
+    <div class="langsw"><button data-lang="va" onclick="setLang('va')">VA</button><button data-lang="es" onclick="setLang('es')">ES</button></div>
     <button class="btn ghost sm" onclick="verNotificaciones()" title="Notificaciones">🔔</button>
     <div class="role-pill">Sesión: <b id="whoLabel">—</b></div>
     <button class="btn ghost sm" onclick="salir()">Cambiar rol</button>
@@ -488,6 +495,121 @@ function tipoTxt(v){const o=state.tipos.find(t=>t.v===v);return o?o.t:v}
 function recursoTxt(v){const o=state.recursos.find(t=>t.v===v);return o?o.t:v}
 function badgeClass(t){return 'b-'+t}
 function esc(s){return (s==null?'':(''+s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ================= i18n · Valencià (per defecte) / Castellà ================= */
+state.lang = state.lang || 'va';
+const I18N = {
+  // --- Cabecera / navegación ---
+  'Panel del profesor':'Panell del professor','Puesto de la central':'Lloc de la central',
+  'Central de teleasistencia':'Central de teleassistència','Sesión:':'Sessió:','Cambiar rol':'Canviar rol','Notificaciones':'Notificacions',
+  'Alumnos y profesores':'Alumnes i professors','Usuarios ficticios':'Usuaris ficticis','Escenarios':'Escenaris',
+  'Lanzar llamada':'Llançar telefonada','Estadísticas':'Estadístiques','Exámenes':'Exàmens','Encuestas':'Enquestes',
+  'Evaluación':'Avaluació','Alertas':'Alertes','Ayuda':'Ajuda','Inicio':'Inici','Agenda':'Agenda',
+  'Mis actuaciones':'Les meues actuacions','Central':'Central',
+  // --- Portada ---
+  'Simulador de central de teleasistencia · TAPSD':'Simulador de central de teleassistència · TAPSD',
+  'Practica como en una central real':'Practica com en una central real',
+  'Entorno de simulación para el módulo de Teleasistencia. Recibe alarmas, atiende al usuario siguiendo el protocolo, moviliza recursos y registra la actuación. El profesor lanza los casos y evalúa.':'Entorn de simulació per al mòdul de Teleassistència. Rep alarmes, atén l\'usuari seguint el protocol, mobilitza recursos i registra l\'actuació. El professor llança els casos i avalua.',
+  'Código del centro / sala':'Codi del centre / sala',
+  'El profesor crea el centro (define este código) y lo comparte. Los alumnos escriben aquí el código de su profesor para unirse. Debe coincidir para poder llamaros.':'El professor crea el centre (definix este codi) i el compartix. Els alumnes escriuen ací el codi del seu professor per a unir-se. Ha de coincidir per a poder telefonar-vos.',
+  'Entrar como Profesor':'Entrar com a Professor','Entrar como Alumno':'Entrar com a Alumne',
+  'Gestiona alumnos, lanza llamadas y emergencias a la central, revisa la agenda de seguimiento y evalúa con rúbrica.':'Gestiona alumnes, llança telefonades i emergències a la central, revisa l\'agenda de seguiment i avalua amb rúbrica.',
+  'Ponte a los mandos de la central: atiende las alarmas entrantes, aplica el protocolo y deja registrada tu actuación.':'Posa\'t als comandaments de la central: atén les alarmes entrants, aplica el protocol i deixa registrada la teua actuació.',
+  'Datos de ejemplo precargados · Funciona sin conexión · Uso educativo (recreación inspirada en simuladores de teleasistencia)':'Dades d\'exemple precarregades · Funciona sense connexió · Ús educatiu (recreació inspirada en simuladors de teleassistència)',
+  'PROCESO PEDAGÓGICO':'PROCÉS PEDAGÒGIC','¿Cómo funciona en el aula?':'Com funciona a l\'aula?',
+  'Del primer contacto con el usuario hasta la evaluación final del docente.':'Del primer contacte amb l\'usuari fins a l\'avaluació final del docent.',
+  'Recibe la llamada':'Rep la telefonada','Atiende la llamada':'Atén la telefonada','Aplica el protocolo':'Aplica el protocol',
+  'Gestiona la incidencia':'Gestiona la incidència','Registra la actuación':'Registra l\'actuació','Evaluación del docente':'Avaluació del docent','Informe final':'Informe final',
+  'Alarma simulada basada en casos reales':'Alarma simulada basada en casos reals','Escucha e identifica la situación':'Escolta i identifica la situació',
+  'Sigue los pasos establecidos':'Seguix els passos establits','Activa recursos y resuelve':'Activa recursos i resol',
+  'Documenta y programa seguimientos':'Documenta i programa seguiments','El profesor puntúa cada actuación':'El professor puntua cada actuació','Historial de progreso del alumnado':'Historial de progrés de l\'alumnat',
+  '¿Qué alumno eres?':'Quin alumne eres?','Elige tu nombre para acceder a tu puesto en la central.':'Tria el teu nom per a accedir al teu lloc en la central.',
+  // --- Botones y palabras comunes ---
+  'Guardar':'Guardar','Cancelar':'Cancel·lar','Editar':'Editar','Eliminar':'Eliminar','Añadir':'Afegir','Volver':'Tornar','Entendido':'Entés',
+  'Aceptar':'Acceptar','Rechazar':'Rebutjar','Colgar':'Penjar','Silenciar':'Silenciar','Activar':'Activar','Cerrar sesión':'Tancar sessió',
+  'Dar de alta':'Donar d\'alta','Nueva pregunta':'Nova pregunta','Nuevo evento':'Nou esdeveniment','Nuevo usuario':'Nou usuari','Nueva alerta':'Nova alerta',
+  'Buscar':'Cerca','Actualizar':'Actualitzar','Retirar':'Retirar','Finalizar':'Finalitzar','Iniciar':'Iniciar','Completar':'Completar',
+  'Lanzar caso':'Llançar cas','Llamar a compañero':'Telefonar a company','Llamar':'Telefonar','Lanzar una llamada':'Llançar una telefonada',
+  'Llamar a un alumno':'Telefonar a un alumne','Unirse a simulación':'Unir-se a simulació','Simulación en grupo':'Simulació en grup',
+  // --- Alumnos y profesores ---
+  'Alumnos':'Alumnes','Profesores':'Professors','en la clase':'a la classe','Nombre':'Nom','Actuaciones':'Actuacions','Media':'Mitjana','Rol':'Rol',
+  'Nombre del nuevo alumno':'Nom del nou alumne','Nombre del nuevo profesor':'Nom del nou professor','Nombre y apellidos':'Nom i cognoms',
+  'Editar profesor':'Editar professor','Editar alumno':'Editar alumne','Nombre completo':'Nom complet',
+  // --- Inicio profesor ---
+  'Escenarios disponibles':'Escenaris disponibles','Observaciones registradas':'Observacions registrades','Calificación media':'Qualificació mitjana',
+  'Acciones rápidas':'Accions ràpides','Evaluar actuaciones':'Avaluar actuacions','Dar de alta alumno':'Donar d\'alta alumne',
+  'Llamadas en cola':'Telefonades en cua','esperando ser atendidas':'esperant ser ateses','No hay llamadas en cola. Lánzalas desde “Lanzar llamada”.':'No hi ha telefonades en cua. Llança-les des de “Llançar telefonada”.',
+  'Toda la clase':'Tota la classe',
+  // --- Usuarios ficticios ---
+  'Las personas simuladas que atienden los alumnos. Cuanto más completa es la ficha, más realista es la práctica.':'Les persones simulades que atenen els alumnes. Com més completa és la fitxa, més realista és la pràctica.',
+  'En alta':'En alta','De baja':'De baixa','Desactivados':'Desactivats','Desactivado':'Desactivat','Dueño:':'Propietari:','Dueño':'Propietari','Ayudas:':'Ajudes:',
+  'Ver ficha':'Veure fitxa','Desactivar':'Desactivar','Nombre, expediente o dueño':'Nom, expedient o propietari','Todos los dueños':'Tots els propietaris',
+  'Todos':'Tots','Estado':'Estat','Dependencia':'Dependència','Ficha del usuario':'Fitxa de l\'usuari','Contactos de emergencia':'Contactes d\'emergència',
+  'Personal':'Personal','Contacto':'Contacte','Dirección':'Adreça','Social y emergencias':'Social i emergències','Notas clínicas y observaciones':'Notes clíniques i observacions',
+  'Nuevo usuario ficticio':'Nou usuari fictici','Editar usuario ficticio':'Editar usuari fictici','Apellidos':'Cognoms','Sexo':'Sexe','Nacionalidad':'Nacionalitat',
+  'Idiomas':'Idiomes','Teléfono fijo':'Telèfon fix','Teléfono móvil':'Telèfon mòbil','Dispositivo':'Dispositiu','Custodia de llaves':'Custòdia de claus','Ascensor':'Ascensor','Mascotas':'Mascotes',
+  'Situación familiar':'Situació familiar','Situación laboral':'Situació laboral','Profesión':'Professió','Cuidador':'Cuidador','Alergias':'Al·lèrgies','Ayudas técnicas':'Ajudes tècniques',
+  'Notas':'Notes','Añadir observación':'Afegir observació','Guardar observación':'Guardar observació','Observaciones':'Observacions',
+  // --- Escenarios / central ---
+  'Escenarios de simulación':'Escenaris de simulació','Prioridad':'Prioritat','Lanzar a un alumno':'Llançar a un alumne',
+  'ALARMA ENTRANTE':'ALARMA ENTRANT','Atender llamada':'Atendre telefonada','En espera de llamadas':'A l\'espera de telefonades',
+  'Protocolo de actuación':'Protocol d\'actuació','Tu actuación':'La teua actuació','Clasifica el tipo de incidencia':'Classifica el tipus d\'incidència',
+  'Recursos que movilizas':'Recursos que mobilitzes','Registro / observaciones':'Registre / observacions','Finalizar y registrar':'Finalitzar i registrar','Pista':'Pista',
+  'Llamada en curso':'Telefonada en curs','Llamada finalizada':'Telefonada finalitzada','Practicar caso':'Practicar cas',
+  // --- Agenda ---
+  'Buscar evento o alumno':'Cerca esdeveniment o alumne','Todos los alumnos':'Tots els alumnes','Todos los tipos':'Tots els tipus',
+  'Activos (sin cancelados)':'Actius (sense cancel·lats)','Con llamada:':'Amb telefonada:','Pares aleatorios':'Parells aleatoris',
+  'doble clic en un día para crear uno':'doble clic en un dia per a crear-ne un','Mes':'Mes','Semana':'Setmana','Día':'Dia','Hoy':'Hui',
+  'Tipo de evento':'Tipus d\'esdeveniment','Título':'Títol','Descripción':'Descripció','Alumno':'Alumne','Compañero asignado':'Company assignat',
+  'Usuario ficticio':'Usuari fictici','Evento con llamada':'Esdeveniment amb telefonada','Todo el día':'Tot el dia','Fecha':'Data','Hora inicio':'Hora inici','Hora fin':'Hora fi',
+  'Repetición':'Repetició','No se repite':'No es repetix','Todos los días':'Tots els dies','Días de la semana':'Dies de la setmana','Repetir hasta':'Repetir fins',
+  'Recordatorio':'Recordatori','Minutos antes':'Minuts abans','Alumno iniciador':'Alumne iniciador','Cancelar evento':'Cancel·lar esdeveniment',
+  // --- Evaluación / exámenes ---
+  'Evaluación práctica':'Avaluació pràctica','Pendientes de evaluar':'Pendents d\'avaluar','Evaluar':'Avaluar','Revisar':'Revisar','Puntuación total':'Puntuació total',
+  'Finalizar evaluación':'Finalitzar avaluació','Banco de preguntas':'Banc de preguntes','Rúbrica práctica':'Rúbrica pràctica','Resultados':'Resultats',
+  'Exámenes teóricos':'Exàmens teòrics','Crear examen':'Crear examen','Publicar':'Publicar','Publicado':'Publicat','Borrador':'Esborrany','Enunciado':'Enunciat',
+  'Respuesta correcta':'Resposta correcta','Nivel':'Nivell','Registrar práctico':'Registrar pràctic','Realizar examen':'Fer examen','Repetir':'Repetir','Resultado':'Resultat','Entregar':'Entregar',
+  'Añadir criterio':'Afegir criteri','Guardar rúbrica':'Guardar rúbrica',
+  // --- Alertas / estadísticas / encuestas ---
+  'Alertas y recordatorios':'Alertes i recordatoris','Todos los estados':'Tots els estats','Marcar seguim.':'Marcar seguim.','Destinatario':'Destinatari','Programada':'Programada',
+  'Actividad por alumno':'Activitat per alumne','Eventos de agenda':'Esdeveniments d\'agenda',
+  'Encuestas de fin de curso':'Enquestes de fi de curs','Activar encuesta de fin de curso':'Activar enquesta de fi de curs','Media por pregunta':'Mitjana per pregunta','Respuestas':'Respostes','Pendientes':'Pendents','Media global':'Mitjana global',
+  // --- Ayuda ---
+  'Manual del profesor':'Manual del professor','Guía de uso de la plataforma.':'Guia d\'ús de la plataforma.','Descargar PDF':'Descarregar PDF',
+  'Mi perfil':'El meu perfil','Cambiar contraseña':'Canviar contrasenya','Preguntas frecuentes':'Preguntes freqüents','Contraseña actual':'Contrasenya actual','Nueva contraseña':'Nova contrasenya','Repetir nueva':'Repetir nova',
+  // --- Llamadas ---
+  'Llamadas reales':'Telefonades reals','Sala':'Sala','Llamada real':'Telefonada real','Llamada entrante':'Telefonada entrant','Llamando…':'Telefonant…','Conectando…':'Connectant…','En llamada':'En telefonada',
+  'Persona dependiente':'Persona dependent','Teleoperador':'Teleoperador','Profesor / Oyente':'Professor / Oclient','Simulación en grupo · 3 roles':'Simulació en grup · 3 rols',
+  'Participantes':'Participants','micro activo':'micròfon actiu','micro silenciado':'micròfon silenciat','conectado':'connectat','conectando…':'connectant…','esperando a que entre':'esperant que entre',
+  'Salir':'Eixir','Profesor':'Professor',
+  // --- Genéricos ---
+  'Sin datos.':'Sense dades.','Sin alumnos':'Sense alumnes','Sin usuarios.':'Sense usuaris.','No hay usuarios.':'No hi ha usuaris.',
+  // --- Párrafos y fragmentos ---
+  'Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.':'Llança un cas a un alumne concret o a tota la classe. El veurà aparéixer com a alarma entrant en el seu lloc de la central.',
+  ' crea el centro (define este código) y lo comparte. Los ':' crea el centre (definix este codi) i el compartix. Els ',
+  ' escriben aquí el código de su profesor para unirse. Debe coincidir para poder llamaros.':' escriuen ací el codi del seu professor per a unir-se. Ha de coincidir per a poder telefonar-vos.',
+  'Cuando el profesor lance un caso, la alarma sonará aquí. Mientras tanto puedes practicar por tu cuenta.':'Quan el professor llance un cas, l\'alarma sonarà ací. Mentrestant pots practicar pel teu compte.',
+  'Las emergencias entran al profesor conectado a la sala (simulación · no se avisa a servicios reales).':'Les emergències entren al professor connectat a la sala (simulació · no s\'avisa a servicis reals).',
+  'Los tres habláis/escucháis a la vez en la sala':'Els tres parleu/escolteu alhora en la sala',
+  'El usuario dice:':'L\'usuari diu:','El usuario dirá algo como:':'L\'usuari dirà alguna cosa com:','Empieza diciendo:':'Comença dient:','Cómo actuar:':'Com actuar:',
+  // --- Palabras sueltas (cobertura en línea) ---
+  'profesor':'professor','alumnos':'alumnes','alumno':'alumne','usuarios':'usuaris','usuario':'usuari','llamadas':'telefonades','llamada':'telefonada',
+  'emergencia':'emergència','seguimiento':'seguiment','protocolo':'protocol','incidencia':'incidència','recursos':'recursos','actuación':'actuació',
+  'Emergencia':'Emergència','Seguimiento':'Seguiment',
+};
+let DICT=null;
+function buildDict(){ DICT=Object.entries(I18N).filter(([a,b])=>a&&b&&a!==b).sort((x,y)=>y[0].length-x[0].length); }
+function trad(t){ if(state.lang!=='va'||!t)return t; if(!DICT)buildDict(); let s=t; for(const [es,va] of DICT){ if(s.indexOf(es)>=0) s=s.split(es).join(va); } return s; }
+const ORIG=new WeakMap();
+function aplicarIdioma(root){
+  root=root||document.body; if(!root)return;
+  root.querySelectorAll('option:not([value])').forEach(o=>{ if(o.__v===undefined){o.__v=o.textContent;o.setAttribute('value',o.__v);} });
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null); const arr=[]; while(w.nextNode())arr.push(w.currentNode);
+  arr.forEach(n=>{ const t=n.nodeValue; if(!t||!t.trim())return; if(!ORIG.has(n))ORIG.set(n,t); const src=ORIG.get(n); const nv=state.lang==='va'?trad(src):src; if(n.nodeValue!==nv)n.nodeValue=nv; });
+  root.querySelectorAll('[placeholder]').forEach(e=>{ if(e.__po===undefined)e.__po=e.getAttribute('placeholder'); e.setAttribute('placeholder',state.lang==='va'?trad(e.__po):e.__po); });
+  root.querySelectorAll('[title]').forEach(e=>{ if(e.__to===undefined)e.__to=e.getAttribute('title'); e.setAttribute('title',state.lang==='va'?trad(e.__to):e.__to); });
+}
+function setLang(l){ state.lang=l; aplicarIdioma(document.body); document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-lang')===l)); }
 function prioridadDe(e){return ({critica:'Alta',alta:'Alta',media:'Media',baja:'Baja'})[e.gravedad]||'Media'}
 function categoriaDe(e){return ({caida:'Emergencias',sanitaria:'Emergencias',soledad:'Bienestar / Apoyo',tecnica:'Incidencias técnicas',falsa:'Incidencias técnicas'})[e.tipo]||'Seguimiento'}
 function prioColor(p){return p==='Alta'?'r':p==='Media'?'y':'g'}
@@ -505,6 +627,7 @@ function entrar(rol,alumnoId){
   document.getElementById('topSub').textContent =
     (rol==='profesor' ? 'Panel del profesor' : 'Puesto de la central')+' · Sala '+state.sala;
   renderTabs();
+  aplicarIdioma(document.querySelector('header.top'));
   iniciarRTC();
 }
 function salir(){
@@ -550,6 +673,7 @@ function renderTabs(){
     const badge = (t.k==='central' && pend) ? `<span class="pill-count">${pend}</span>` : '';
     return `<button class="${t.k===currentTab?'active':''}" onclick="go('${t.k}')">${t.t}${badge}</button>`;
   }).join('');
+  aplicarIdioma(document.getElementById('tabs'));
   render();
 }
 function go(k){currentTab=k;renderTabs();}
@@ -561,6 +685,7 @@ function render(){
     alertas:vAlertas,estadisticas:vEstadisticas,examenes:(state.rol==='profesor'?vExamenes:vExamenesAlumno),encuestas:vEncuestas,ayuda:vAyuda
   })[currentTab];
   v.innerHTML = fn?fn():'';
+  aplicarIdioma(v);
 }
 
 /* ---------- helpers cola/eval ---------- */
@@ -1364,8 +1489,8 @@ function vMis(){
 
 /* ---------- util UI ---------- */
 let toastT=null;
-function toast(msg,ms){const el=document.getElementById('toast');el.innerHTML=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),ms||2200);}
-function openModal(html,persistente){const cerrar=persistente?'':'onclick="if(event.target===this)closeModal()"';document.getElementById('modalRoot').innerHTML=`<div class="modal-bg" ${cerrar}><div class="modal">${html}</div></div>`;}
+function toast(msg,ms){const el=document.getElementById('toast');el.innerHTML=msg;aplicarIdioma(el);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),ms||2200);}
+function openModal(html,persistente){const cerrar=persistente?'':'onclick="if(event.target===this)closeModal()"';const mr=document.getElementById('modalRoot');mr.innerHTML=`<div class="modal-bg" ${cerrar}><div class="modal">${html}</div></div>`;aplicarIdioma(mr);}
 function closeModal(){document.getElementById('modalRoot').innerHTML='';}
 
 /* ===================== EXÁMENES ===================== */
@@ -1585,6 +1710,7 @@ function simPanel(){
   el.innerHTML=`<div class="simw"><div class="rtchead">🎧 Simulación en grupo · Sala ${esc(state.sala||'')}</div>${rows}
     <div class="rtcbtns" style="margin-top:10px"><button class="btn sm" onclick="simMute()">${sim.muted?'🔇 Activar':'🎙️ Silenciar'}</button><button class="btn danger sm" onclick="simSalir()">Salir</button></div>
     <p class="muted" style="font-size:11px;margin:8px 0 0">Consejo: usad auriculares para evitar eco.</p></div>`;
+  aplicarIdioma(el);
 }
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
@@ -1645,10 +1771,13 @@ function rtcWidget(){
   else if(rtc.state==='llamando'||rtc.state==='conectando') body=`<div class="rtct">${rtc.state==='llamando'?'Llamando…':'Conectando…'}</div><div class="rtcn">${esc(rtc.name)}</div><div class="rtcbtns"><button class="btn danger" onclick="rtcColgar()">Cancelar</button></div>`;
   else body=`<div class="rtct">🟢 En llamada · <span style="font-variant-numeric:tabular-nums">${rtcDur()}</span></div><div class="rtcn">${esc(rtc.name)}</div><div class="rtcbtns"><button class="btn" onclick="rtcMute()">${rtc.muted?'🔇 Activar':'🎙️ Silenciar'}</button><button class="btn danger" onclick="rtcColgar()">Colgar</button></div>`;
   el.innerHTML=`<div class="rtchead">Llamada real · Sala ${esc(state.sala||'')}</div>${body}`;
+  aplicarIdioma(el);
 }
 // desbloqueo de audio en móvil al primer toque
 document.addEventListener('click',()=>{ if(rtc.audio&&rtc.state==='en')rtc.audio.play().catch(()=>{}); },{passive:true});
 function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator();const g=a.createGain();o.connect(g);g.connect(a.destination);o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(.001,a.currentTime);g.gain.exponentialRampToValueAtTime(.2,a.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.35);o.start();o.stop(a.currentTime+.36);}catch(e){}}
+/* aplicar idioma por defecto (valencià) al cargar */
+buildDict(); setLang(state.lang||'va');
 </script>
 </body>
 </html>
