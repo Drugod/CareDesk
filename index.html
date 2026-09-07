@@ -584,6 +584,7 @@ const I18N = {
   'Salir':'Eixir','Profesor':'Professor',
   // --- Genéricos ---
   'Sin datos.':'Sense dades.','Sin alumnos':'Sense alumnes','Sin usuarios.':'Sense usuaris.','No hay usuarios.':'No hi ha usuaris.',
+  'Nueva alarma en la central':'Nova alarma a la central',
   // --- Párrafos y fragmentos ---
   'Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.':'Llança un cas a un alumne concret o a tota la classe. El veurà aparéixer com a alarma entrant en el seu lloc de la central.',
   ' crea el centro (define este código) y lo comparte. Los ':' crea el centre (definix este codi) i el compartix. Els ',
@@ -1046,12 +1047,14 @@ function lanzarDesdeForm(){lanzar(document.getElementById('selEsc').value,docume
 function lanzarEsc(eid){lanzar(eid,'*');go('lanzar');}
 function lanzarA(aid){lanzar(state.escenarios[0].id,aid);}
 function lanzar(escId,alId){
-  state.cola.push({id:uid('c'),escenarioId:escId,alumnoId:alId});
+  const casoId=uid('c');
+  state.cola.push({id:casoId,escenarioId:escId,alumnoId:alId});
+  rtcEnviarCaso(escId,alId,casoId);           // propaga el caso al/los alumno(s) en otros dispositivos
   const dest=alId==='*'?'toda la clase':alumno(alId).nombre;
   toast('📞 Llamada lanzada a '+dest);
   render();
 }
-function quitarCola(id){state.cola=state.cola.filter(c=>c.id!==id);toast('Retirada de la cola');render();}
+function quitarCola(id){state.cola=state.cola.filter(c=>c.id!==id);rtcRetirarCaso(id);toast('Retirada de la cola');render();}
 
 /* ===================== AGENDA AVANZADA ===================== */
 function hoyISO(){return fmtF(new Date());}
@@ -1733,8 +1736,49 @@ async function iniciarRTC(){
   try{rtc.local=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){rtc.local=null;}
   try{rtc.peer=new Peer(rtcMiId(),rtcOpts());}catch(e){return;}
   rtc.peer.on('call',c=>rtcEntrante(c));
+  rtc.peer.on('connection',c=>rtcData(c));
   rtc.peer.on('error',e=>{ if(e.type==='peer-unavailable'&&rtc.state==='llamando'){toast('El alumno no está conectado a esta sala');rtcColgar();} });
   rtc.peer.on('disconnected',()=>{try{rtc.peer.reconnect();}catch(e){}});
+}
+/* ---- Canal de datos: el profesor "empuja" el caso lanzado al navegador del alumno ---- */
+function rtcData(conn){ conn.on('data',msg=>rtcRecibir(msg,conn)); }
+function rtcRecibir(msg,conn){
+  if(!msg||typeof msg!=='object') return;
+  if(state.rol!=='alumno') return;               // sólo el alumno recibe casos
+  if(msg.t==='caso'){
+    // asegurar que la ficha del usuario y el escenario existen en este navegador (por si son personalizados)
+    if(msg.usuario && !usuario(msg.usuario.id)) state.usuarios.push(msg.usuario);
+    if(msg.escenario && !escenario(msg.escenario.id)) state.escenarios.push(msg.escenario);
+    const dirigido = msg.alumnoId==='*' || msg.alumnoId===state.alumnoActivo;
+    if(!dirigido) return;                          // no es para este alumno
+    if(state.cola.some(c=>c.id===msg.casoId)) return; // evitar duplicados
+    state.cola.push({id:msg.casoId,escenarioId:msg.escenario?msg.escenario.id:msg.escenarioId,alumnoId:msg.alumnoId});
+    toast('📞 Nueva alarma en la central'); beep();
+    renderTabs();
+  } else if(msg.t==='retirar'){
+    if(state.cola.some(c=>c.id===msg.casoId)){ state.cola=state.cola.filter(c=>c.id!==msg.casoId); renderTabs(); }
+  }
+}
+/* Envía un mensaje a uno o varios alumnos abriendo una conexión de datos efímera */
+function rtcEnviarADatos(peerId,payload){
+  if(!rtc.peer) return;
+  let conn; try{ conn=rtc.peer.connect(peerId,{reliable:true}); }catch(e){ return; }
+  if(!conn) return;
+  const cerrar=setTimeout(()=>{try{conn.close();}catch(e){}},8000);
+  conn.on('open',()=>{ try{conn.send(payload);}catch(e){} setTimeout(()=>{clearTimeout(cerrar);try{conn.close();}catch(e){}},1500); });
+  conn.on('error',()=>{clearTimeout(cerrar);});
+}
+function rtcEnviarCaso(escId,alId,casoId){
+  if(state.rol!=='profesor'||!rtc.peer) return;
+  const esc0=escenario(escId); if(!esc0) return;
+  const usu0=usuario(esc0.usuarioId)||null;
+  const payload={t:'caso',casoId,alumnoId:alId,escenario:esc0,usuario:usu0};
+  const destinos = alId==='*' ? state.alumnos.map(a=>rtcIdAlumno(a)) : [rtcIdAlumno(alId)];
+  destinos.forEach(pid=>rtcEnviarADatos(pid,payload));
+}
+function rtcRetirarCaso(casoId){
+  if(state.rol!=='profesor'||!rtc.peer) return;
+  state.alumnos.map(a=>rtcIdAlumno(a)).forEach(pid=>rtcEnviarADatos(pid,{t:'retirar',casoId}));
 }
 function rtcStream(){ if(rtc.local)return rtc.local; if(!rtc.silent){try{const a=new (window.AudioContext||window.webkitAudioContext)();const d=a.createMediaStreamDestination();const o=a.createOscillator();const g=a.createGain();g.gain.value=0;o.connect(g);g.connect(d);o.start();rtc.silent=d.stream;}catch(e){rtc.silent=null;}} return rtc.silent||undefined; }
 function rtcLlamar(a){
