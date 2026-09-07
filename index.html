@@ -465,6 +465,8 @@ const state = {
     {id:'ag4',tipo:'Evaluación/Examen práctico',titulo:'Evaluación práctica MF1423',descripcion:'',alumnoId:'a1',companeroId:'',usuarioId:'',conLlamada:false,todoDia:false,fecha:hoyMas(2),horaIni:'11:00',horaFin:'11:40',estado:'Programado',recordatorio:false,recMin:15,serieId:'',alerta:null},
   ],
   llamada:null,   // llamada en curso en la central
+  simActivo:null, // {caseId, role:'OP'|'PD', escenarioId} cuando el alumno está en una simulación lanzada
+  simInvite:null, // {caseId, role, escenarioId} invitación entrante pendiente de aceptar
 };
 let seq = 100;
 // 17 tipos de evento de agenda + color por familia
@@ -585,6 +587,53 @@ const I18N = {
   // --- Genéricos ---
   'Sin datos.':'Sense dades.','Sin alumnos':'Sense alumnes','Sin usuarios.':'Sense usuaris.','No hay usuarios.':'No hi ha usuaris.',
   'Nueva alarma en la central':'Nova alarma a la central',
+  // --- Escenarios y casos / simulación a 2 ---
+  'Escenarios y casos':'Escenaris i casos','Nuevo escenario':'Nou escenari','Editar escenario':'Editar escenari',
+  'Crea o edita los casos (ficha, guion, protocolo y solución) y lánzalos: a un solo alumno, a toda la clase, o como':'Crea o edita els casos (fitxa, guió, protocol i solució) i llança\'ls: a un sol alumne, a tota la classe, o com a',
+  'simulación a 2':'simulació a 2','asignando teleoperador y persona dependiente.':'assignant teleoperador i persona dependent.',
+  'Lanzar caso':'Llançar cas','Lanzar un caso':'Llançar un cas','Teléfonos en cola':'Telèfons en cua',
+  'No hay teléfonos en cola. Lanza un caso desde una tarjeta de arriba.':'No hi ha telèfons en cua. Llança un cas des d\'una targeta de dalt.',
+  'Finalizada':'Finalitzada','En curso':'En curs','Sonando…':'Sonant…',
+  'Unirse a escuchar':'Unir-se a escoltar','Ver actuación':'Veure actuació','Nada en cola':'Res en cua',
+  'Título del caso':'Títol del cas','Tipo / objetivo':'Tipus / objectiu','Gravedad':'Gravetat',
+  'Usuario (ficha que verá el teleoperador)':'Usuari (fitxa que veurà el teleoperador)',
+  'Guion (lo que interpreta la persona dependiente)':'Guió (el que interpreta la persona dependent)',
+  'Pista para el alumno (opcional)':'Pista per a l\'alumne (opcional)','Orientación al pulsar':'Orientació en polsar',
+  'Recursos correctos (para la autoevaluación)':'Recursos correctes (per a l\'autoavaluació)',
+  'Protocolo de actuación (pasos)':'Protocol d\'actuació (passos)','Añadir paso':'Afegir pas','Sin pasos todavía.':'Encara sense passos.',
+  'Guardar escenario':'Guardar escenari','Escenario creado':'Escenari creat','Escenario actualizado':'Escenari actualitzat',
+  'Ponle un título al caso':'Posa-li un títol al cas','Elige un usuario para la ficha':'Tria un usuari per a la fitxa',
+  'Añade al menos un paso de protocolo':'Afig almenys un pas de protocol',
+  'Baja':'Baixa','Media':'Mitjana','Alta':'Alta','Crítica':'Crítica',
+  'Simulación a 2':'Simulació a 2','Individual':'Individual',
+  'Asigna los dos papeles. A ambos alumnos les entrará la llamada para unirse.':'Assigna els dos papers. A ambdós alumnes els entrarà la telefonada per a unir-se.',
+  'Teleoperador/a (atiende y registra)':'Teleoperador/a (atén i registra)',
+  'Persona dependiente (interpreta al usuario)':'Persona dependent (interpreta l\'usuari)',
+  'El alumno atiende el caso él solo en su central.':'L\'alumne atén el cas ell sol a la seua central.',
+  'El teleoperador y la persona dependiente deben ser alumnos distintos':'El teleoperador i la persona dependent han de ser alumnes distints',
+  'Simulación lanzada a':'Simulació llançada a','Te unes a escuchar (en silencio)':'T\'unixes a escoltar (en silenci)',
+  'La simulación ha finalizado':'La simulació ha finalitzat','Actuación recibida de':'Actuació rebuda de',
+  'Caso lanzado a':'Cas llançat a','Ya estás en esta simulación':'Ja estàs en esta simulació',
+  'Ya estás en la simulación':'Ja estàs en la simulació',
+  // --- Invitación / pantallas de rol ---
+  'SIMULACIÓN ENTRANTE':'SIMULACIÓ ENTRANT','Tu papel:':'El teu paper:',
+  'Vas a atender la llamada: verás la ficha del usuario y el protocolo.':'Atendràs la telefonada: veuràs la fitxa de l\'usuari i el protocol.',
+  'Vas a interpretar al usuario: verás tu guion para actuar.':'Interpretaràs l\'usuari: veuràs el teu guió per a actuar.',
+  'Unirse a la llamada':'Unir-se a la telefonada',
+  'Teleoperador/a':'Teleoperador/a','Persona dependiente':'Persona dependent',
+  'Estás en simulación · Persona dependiente':'Estàs en simulació · Persona dependent',
+  'Interpretas a esta persona hablando con el/la teleoperador/a. Cuando el teleoperador finalice, la llamada terminará.':'Interpretes esta persona parlant amb el/la teleoperador/a. Quan el teleoperador finalitze, la telefonada acabarà.',
+  'Eres':'Eres','Situación':'Situació','Tu guion — empieza diciendo:':'El teu guió — comença dient:',
+  'La conexión de voz aparece abajo a la derecha. Usa auriculares para evitar eco.':'La connexió de veu apareix baix a la dreta. Usa auriculars per a evitar eco.',
+  'Salir de la simulación':'Eixir de la simulació',
+  'Hablas con la persona dependiente':'Parles amb la persona dependent',
+  'Un compañero interpreta al usuario en directo. Escúchale (el audio está abajo a la derecha).':'Un company interpreta l\'usuari en directe. Escolta\'l (l\'àudio està baix a la dreta).',
+  'Simulación en curso':'Simulació en curs','Llamada en curso':'Telefonada en curs',
+  // --- Simulación libre ---
+  'Simulación libre · 3 roles':'Simulació lliure · 3 rols','Unirse a simulación libre':'Unir-se a simulació lliure',
+  'Sala de práctica libre':'Sala de pràctica lliure','(sin caso asignado). Elige tu papel:':'(sense cas assignat). Tria el teu paper:',
+  'Simulación del caso':'Simulació del cas','Simulación libre':'Simulació lliure',
+  'Lanzar':'Llançar','Rechazar':'Rebutjar','Retirada de la cola':'Retirada de la cua',
   // --- Párrafos y fragmentos ---
   'Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.':'Llança un cas a un alumne concret o a tota la classe. El veurà aparéixer com a alarma entrant en el seu lloc de la central.',
   ' crea el centro (define este código) y lo comparte. Los ':' crea el centre (definix este codi) i el compartix. Els ',
@@ -648,8 +697,7 @@ const TABS = {
     {k:'inicio',t:'Inicio'},
     {k:'gestion',t:'Alumnos y profesores'},
     {k:'ficticios',t:'Usuarios ficticios'},
-    {k:'escenarios',t:'Escenarios'},
-    {k:'lanzar',t:'Lanzar llamada'},
+    {k:'escenarios',t:'Escenarios y casos'},
     {k:'agenda',t:'Agenda'},
     {k:'alertas',t:'Alertas'},
     {k:'estadisticas',t:'Estadísticas'},
@@ -681,7 +729,7 @@ function go(k){currentTab=k;renderTabs();}
 function render(){
   const v=document.getElementById('view');
   const fn = ({
-    inicio:vInicio,gestion:vGestion,ficticios:vFicticios,escenarios:vEscenarios,lanzar:vLanzar,
+    inicio:vInicio,gestion:vGestion,ficticios:vFicticios,escenarios:vEscenarios,lanzar:vEscenarios,
     agenda:vAgenda,evaluacion:vEvaluacion,central:vCentral,mis:vMis,
     alertas:vAlertas,estadisticas:vEstadisticas,examenes:(state.rol==='profesor'?vExamenes:vExamenesAlumno),encuestas:vEncuestas,ayuda:vAyuda
   })[currentTab];
@@ -731,23 +779,14 @@ function vInicio(){
     <div class="card">
       <h3>⚡ Acciones rápidas</h3>
       <div class="row">
-        <button class="btn primary" onclick="go('lanzar')">Lanzar una llamada</button>
-        <button class="btn ok" onclick="simAbrir()">🎧 Unirse a simulación</button>
+        <button class="btn primary" onclick="go('escenarios')">Lanzar un caso</button>
+        <button class="btn ok" onclick="simAbrir()">🎧 Unirse a simulación libre</button>
         <button class="btn" onclick="go('evaluacion')">Evaluar actuaciones ${sinEval?`<span class="pill-count">${sinEval}</span>`:''}</button>
         <button class="btn" onclick="go('gestion')">Dar de alta alumno</button>
       </div>
       <p class="muted mt" style="font-size:13.5px">Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.</p>
     </div>
-    <div class="card">
-      <h3>📞 Llamadas en cola <span class="sub">esperando ser atendidas</span></h3>
-      ${state.cola.length? state.cola.map(c=>{
-        const e=escenario(c.escenarioId),u=usuario(e.usuarioId);
-        const dest=c.alumnoId==='*'?'Toda la clase':alumno(c.alumnoId).nombre;
-        return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
-          <div><b>${esc(e.titulo)}</b> · <span class="muted">${esc(u.nombre)}</span><br><span class="chip b">${esc(dest)}</span></div>
-          <button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div>`;
-      }).join(''):'<div class="list-empty">No hay llamadas en cola. Lánzalas desde “Lanzar llamada”.</div>'}
-    </div>
+    ${colaPanelProfesor()}
   </div>`;
 }
 
@@ -1009,52 +1048,176 @@ function addObs(uarg){
 
 function vEscenarios(){
   const cards=state.escenarios.map(e=>{
-    const u=usuario(e.usuarioId);
+    const u=usuario(e.usuarioId)||{nombre:'—',edad:'',dispositivo:''};
     return `<div class="card">
       <div class="between"><h3 style="margin:0"><span class="badge ${badgeClass(e.tipo)}">${tipoTxt(e.tipo)}</span> ${esc(e.titulo)}</h3>
       <span class="chip ${prioColor(prioridadDe(e))}">Prioridad ${prioridadDe(e)}</span></div>
       <div class="flex" style="margin:8px 0 6px"><span class="chip b">🗂️ ${categoriaDe(e)}</span><span class="chip">${e.protocolo.length} pasos</span></div>
       <p class="muted" style="font-size:13.5px;margin:6px 0">👤 ${esc(u.nombre)}, ${u.edad} años · ${esc(u.dispositivo)}</p>
       <p style="font-style:italic;color:#cfe0f0;font-size:14px">${esc(e.guion)}</p>
-      <div class="between mt"><span class="muted" style="font-size:12.5px">Solución cargada para autoevaluación</span>
-      <button class="btn primary sm" onclick="lanzarEsc('${e.id}')">Lanzar a un alumno</button></div>
+      <div class="between mt" style="gap:8px">
+        <button class="btn ghost sm" onclick="editarEscenario('${e.id}')">✏️ Editar</button>
+        <button class="btn primary sm" onclick="lanzarModal('${e.id}')">📞 Lanzar caso</button></div>
     </div>`;
   }).join('');
-  return `<h2 class="section">Escenarios de simulación</h2>
-    <p class="muted" style="margin-top:-8px">Casos predefinidos que puedes lanzar a la central. Cada uno lleva su ficha de usuario, guion, protocolo y solución para la evaluación automática.</p>
-    <div class="grid g2 mt">${cards}</div>`;
+  return `<div class="between"><h2 class="section" style="margin:0">Escenarios y casos</h2>
+      <button class="btn primary sm" onclick="editarEscenario(null)">＋ Nuevo escenario</button></div>
+    <p class="muted" style="margin-top:6px">Crea o edita los casos (ficha, guion, protocolo y solución) y lánzalos: a un solo alumno, a toda la clase, o como <b>simulación a 2</b> asignando teleoperador y persona dependiente.</p>
+    <div class="grid g2 mt">${cards}</div>
+    ${colaPanelProfesor()}`;
 }
-
-function vLanzar(){
-  const escOpts=state.escenarios.map(e=>`<option value="${e.id}">${tipoTxt(e.tipo)} — ${esc(e.titulo)} (${esc(usuario(e.usuarioId).nombre)})</option>`).join('');
-  const alOpts='<option value="*">Toda la clase</option>'+state.alumnos.map(a=>`<option value="${a.id}">${esc(a.nombre)}</option>`).join('');
-  return `<h2 class="section">Lanzar una llamada a la central</h2>
-  <div class="card" style="max-width:640px">
-    <label class="f">Escenario</label>
-    <select id="selEsc">${escOpts}</select>
-    <div class="mt"><label class="f">Enviar a</label><select id="selAl">${alOpts}</select></div>
-    <div class="mt"><button class="btn primary" onclick="lanzarDesdeForm()">📞 Lanzar llamada</button></div>
-    <p class="muted mt" style="font-size:13px">El alumno verá la alarma entrando en su puesto de la central. Puede lanzarse el mismo caso a varios alumnos.</p>
-  </div>
-  <div class="card mt" style="max-width:640px">
-    <h3>En cola ahora</h3>
-    ${state.cola.length?state.cola.map(c=>{const e=escenario(c.escenarioId);const dest=c.alumnoId==='*'?'Toda la clase':alumno(c.alumnoId).nombre;
-      return `<div class="between" style="padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(e.titulo)} → <b>${esc(dest)}</b></span><button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div>`;
-    }).join(''):'<div class="list-empty">Nada en cola</div>'}
-  </div>`;
+function colaPanelProfesor(){
+  const items=state.cola.slice().reverse();
+  const rows=items.length?items.map(c=>{
+    const e=escenario(c.escenarioId)||{titulo:'—'}; const u=e.usuarioId?usuario(e.usuarioId):null;
+    if(c.modo==='pareja'){
+      const op=alumno(c.opId)||{nombre:'—'}, pd=alumno(c.pdId)||{nombre:'—'};
+      const est=c.estado==='finalizada'?'<span class="chip g">Finalizada</span>':((c.opIn||c.pdIn)?'<span class="chip y">En curso</span>':'<span class="chip r">Sonando…</span>');
+      const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:`<button class="btn ok sm" onclick="profesorEscuchar('${c.id}')">🎧 Unirse a escuchar</button>`;
+      return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <div><b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br>
+        <span class="chip b">🎧 ${esc(op.nombre)}</span> <span class="chip b">🏠 ${esc(pd.nombre)}</span> ${est}</div>
+        <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
+    }
+    const dest=c.alumnoId==='*'?'Toda la clase':((alumno(c.alumnoId)||{}).nombre||'—');
+    const est=c.estado==='finalizada'?'<span class="chip g">Finalizada</span>':'<span class="chip r">Sonando…</span>';
+    const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:'';
+    return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div><b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br><span class="chip b">${esc(dest)}</span> ${est}</div>
+      <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
+  }).join(''):'<div class="list-empty">No hay teléfonos en cola. Lanza un caso desde una tarjeta de arriba.</div>';
+  return `<div class="card mt"><h3>📞 Teléfonos en cola</h3>${rows}</div>`;
 }
-function lanzarDesdeForm(){lanzar(document.getElementById('selEsc').value,document.getElementById('selAl').value);}
-function lanzarEsc(eid){lanzar(eid,'*');go('lanzar');}
-function lanzarA(aid){lanzar(state.escenarios[0].id,aid);}
-function lanzar(escId,alId){
-  const casoId=uid('c');
-  state.cola.push({id:casoId,escenarioId:escId,alumnoId:alId});
-  rtcEnviarCaso(escId,alId,casoId);           // propaga el caso al/los alumno(s) en otros dispositivos
-  const dest=alId==='*'?'toda la clase':alumno(alId).nombre;
-  toast('📞 Llamada lanzada a '+dest);
+/* ---- Editor de escenarios ---- */
+function editarEscenario(id){
+  const e=id?escenario(id):null;
+  state._escEdit = e ? {id:e.id,titulo:e.titulo,tipo:e.tipo,usuarioId:e.usuarioId,gravedad:e.gravedad,guion:e.guion,pista:e.pista||'',recursosCorrectos:[...(e.recursosCorrectos||[])],protocolo:[...(e.protocolo||[])]}
+    : {id:null,titulo:'',tipo:state.tipos[0].v,usuarioId:(state.usuarios[0]||{}).id||'',gravedad:'media',guion:'',pista:'',recursosCorrectos:[],protocolo:['','','']};
+  openModal('<div id="escEditorBody"></div>',true);
+  renderEscEditor();
+}
+function renderEscEditor(){
+  const d=state._escEdit, body=document.getElementById('escEditorBody'); if(!d||!body)return;
+  const tipoOpts=state.tipos.map(t=>`<option value="${t.v}" ${d.tipo===t.v?'selected':''}>${t.t}</option>`).join('');
+  const usuOpts=state.usuarios.map(u=>`<option value="${u.id}" ${d.usuarioId===u.id?'selected':''}>${esc(u.nombre)}${u.edad?` (${u.edad})`:''}</option>`).join('');
+  const gravOpts=[['baja','Baja'],['media','Media'],['alta','Alta'],['critica','Crítica']].map(([v,t])=>`<option value="${v}" ${d.gravedad===v?'selected':''}>${t}</option>`).join('');
+  const recChecks=state.recursos.map(r=>`<label class="proto-step" style="border:none;padding:4px 0"><input type="checkbox" ${d.recursosCorrectos.includes(r.v)?'checked':''} onchange="escToggleRec('${r.v}')"><span>${r.t}</span></label>`).join('');
+  const pasos=d.protocolo.map((p,i)=>`<div class="flex" style="gap:6px;margin-bottom:6px"><input value="${esc(p)}" oninput="state._escEdit.protocolo[${i}]=this.value" placeholder="Paso ${i+1}" style="flex:1"><button class="btn ghost sm" onclick="delProtoPaso(${i})">✕</button></div>`).join('');
+  body.innerHTML=`<div class="between"><h3 style="margin:0">${d.id?'Editar escenario':'Nuevo escenario'}</h3><button class="btn ghost sm" onclick="closeModal()">✕</button></div>
+    <label class="f mt">Título del caso</label><input value="${esc(d.titulo)}" oninput="state._escEdit.titulo=this.value" placeholder="p. ej. Caída en el baño">
+    <div class="row mt"><div style="flex:1"><label class="f">Tipo / objetivo</label><select onchange="state._escEdit.tipo=this.value">${tipoOpts}</select></div>
+      <div style="flex:1"><label class="f">Gravedad</label><select onchange="state._escEdit.gravedad=this.value">${gravOpts}</select></div></div>
+    <label class="f mt">Usuario (ficha que verá el teleoperador)</label><select onchange="state._escEdit.usuarioId=this.value">${usuOpts}</select>
+    <label class="f mt">Guion (lo que interpreta la persona dependiente)</label><textarea oninput="state._escEdit.guion=this.value" placeholder="&quot;Me he caído y no puedo levantarme...&quot;">${esc(d.guion)}</textarea>
+    <label class="f mt">Pista para el alumno (opcional)</label><textarea oninput="state._escEdit.pista=this.value" placeholder="Orientación al pulsar 💡 Pista">${esc(d.pista)}</textarea>
+    <label class="f mt">Recursos correctos (para la autoevaluación)</label><div class="card" style="background:var(--panel2);padding:10px">${recChecks}</div>
+    <div class="between mt"><label class="f" style="margin:0">Protocolo de actuación (pasos)</label><button class="btn ghost sm" onclick="addProtoPaso()">＋ Añadir paso</button></div>
+    <div class="mt">${pasos||'<span class="muted">Sin pasos todavía.</span>'}</div>
+    <div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarEscenario()">Guardar escenario</button></div>`;
+  aplicarIdioma(body);
+}
+function escToggleRec(v){const a=state._escEdit.recursosCorrectos,i=a.indexOf(v);i>=0?a.splice(i,1):a.push(v);}
+function addProtoPaso(){state._escEdit.protocolo.push('');renderEscEditor();}
+function delProtoPaso(i){state._escEdit.protocolo.splice(i,1);renderEscEditor();}
+function guardarEscenario(){
+  const d=state._escEdit; const titulo=(d.titulo||'').trim();
+  if(!titulo)return toast('Ponle un título al caso');
+  if(!d.usuarioId)return toast('Elige un usuario para la ficha');
+  const protocolo=d.protocolo.map(p=>(p||'').trim()).filter(Boolean);
+  if(!protocolo.length)return toast('Añade al menos un paso de protocolo');
+  const datos={titulo,tipo:d.tipo,objetivo:d.tipo,usuarioId:d.usuarioId,gravedad:d.gravedad,guion:d.guion,pista:d.pista,recursosCorrectos:[...d.recursosCorrectos],protocolo};
+  if(d.id){ Object.assign(escenario(d.id),datos); toast('Escenario actualizado'); }
+  else { state.escenarios.push(Object.assign({id:uid('e')},datos)); toast('Escenario creado'); }
+  state._escEdit=null; closeModal(); render();
+}
+/* ---- Lanzamiento con roles (pareja) o individual ---- */
+function lanzarModal(escId){
+  const e=escenario(escId); if(!e)return;
+  state._lanzar={escId,modo:'pareja'};
+  const alOpts=state.alumnos.map(a=>`<option value="${a.id}">${esc(a.nombre)}</option>`).join('');
+  const alOptsAll='<option value="*">Toda la clase</option>'+alOpts;
+  openModal(`<div class="between"><h3 style="margin:0">Lanzar: ${esc(e.titulo)}</h3><button class="btn ghost sm" onclick="closeModal()">✕</button></div>
+    <div class="agseg mt" style="display:flex"><button id="mPar" class="on" onclick="lanzarModo('pareja')">👥 Simulación a 2</button><button id="mSolo" onclick="lanzarModo('solo')">👤 Individual</button></div>
+    <div id="bloquePareja" class="mt">
+      <p class="muted" style="font-size:13px">Asigna los dos papeles. A ambos alumnos les entrará la llamada para unirse.</p>
+      <label class="f">🎧 Teleoperador/a (atiende y registra)</label><select id="selOp">${alOpts}</select>
+      <label class="f mt">🏠 Persona dependiente (interpreta al usuario)</label><select id="selPd">${alOpts}</select>
+    </div>
+    <div id="bloqueSolo" class="mt" hidden>
+      <p class="muted" style="font-size:13px">El alumno atiende el caso él solo en su central.</p>
+      <label class="f">Enviar a</label><select id="selSolo">${alOptsAll}</select>
+    </div>
+    <div class="between mt"><span class="muted" style="font-size:12px">Sala ${esc(state.sala||'')}</span><button class="btn primary" onclick="lanzarConfirmar('${escId}')">📞 Lanzar</button></div>`,true);
+  const pd=document.getElementById('selPd'); if(pd&&state.alumnos[1])pd.value=state.alumnos[1].id;
+}
+function lanzarModo(m){state._lanzar.modo=m;
+  const par=document.getElementById('mPar'),so=document.getElementById('mSolo');
+  if(par)par.classList.toggle('on',m==='pareja'); if(so)so.classList.toggle('on',m==='solo');
+  const bp=document.getElementById('bloquePareja'),bs=document.getElementById('bloqueSolo');
+  if(bp)bp.hidden=m!=='pareja'; if(bs)bs.hidden=m!=='solo';
+}
+function lanzarConfirmar(escId){
+  if(state._lanzar.modo==='solo'){ lanzar(escId,document.getElementById('selSolo').value); closeModal(); go('escenarios'); return; }
+  const opId=document.getElementById('selOp').value, pdId=document.getElementById('selPd').value;
+  if(opId===pdId)return toast('El teleoperador y la persona dependiente deben ser alumnos distintos');
+  lanzarPareja(escId,opId,pdId); closeModal(); go('escenarios');
+}
+function lanzarPareja(escId,opId,pdId){
+  const caseId=uid('sim');
+  state.cola.push({id:caseId,modo:'pareja',escenarioId:escId,opId,pdId,estado:'sonando',regId:null,opIn:false,pdIn:false});
+  rtcInvitarPareja(escId,opId,pdId,caseId);
+  toast('🎧 Simulación lanzada a '+((alumno(opId)||{}).nombre||'')+' y '+((alumno(pdId)||{}).nombre||''));
   render();
 }
-function quitarCola(id){state.cola=state.cola.filter(c=>c.id!==id);rtcRetirarCaso(id);toast('Retirada de la cola');render();}
+function profesorEscuchar(caseId){ simEntrarCaso(caseId,'OB'); toast('Te unes a escuchar (en silencio)'); }
+function lanzarEsc(eid){lanzarModal(eid);}
+function lanzarA(aid){lanzarModal(state.escenarios[0].id);}
+function lanzar(escId,alId){
+  const casoId=uid('c');
+  state.cola.push({id:casoId,modo:'solo',escenarioId:escId,alumnoId:alId,estado:'sonando',regId:null});
+  rtcEnviarCaso(escId,alId,casoId);           // propaga el caso al/los alumno(s) en otros dispositivos
+  const dest=alId==='*'?'toda la clase':alumno(alId).nombre;
+  toast('📞 Caso lanzado a '+dest);
+  render();
+}
+function quitarCola(id){
+  const c=state.cola.find(x=>x.id===id);
+  if(c&&c.modo==='pareja') rtcCancelarPareja(id,c.opId,c.pdId); else rtcRetirarCaso(id);
+  state.cola=state.cola.filter(x=>x.id!==id);toast('Retirada de la cola');render();
+}
+/* ---- Aceptar/rechazar invitación de simulación (alumno) ---- */
+function simAceptarInvite(){
+  const inv=state.simInvite; if(!inv)return; state.simInvite=null;
+  state.simActivo={caseId:inv.caseId,role:inv.role,escenarioId:inv.escenarioId,opId:inv.opId,pdId:inv.pdId};
+  simEntrarCaso(inv.caseId,inv.role);
+  rtcSimEstado(inv.caseId,inv.role,'en_curso');
+  if(inv.role==='OP'){
+    const e=escenario(inv.escenarioId);
+    state.llamada={cid:inv.caseId,escenarioId:e.id,inicio:Date.now(),pasos:new Set(),recursos:new Set(),tipo:null,notas:'',sim:true,pdId:inv.pdId};
+    clearInterval(timerInt);
+    timerInt=setInterval(()=>{const el=document.getElementById('tmr');if(el){const s=Math.floor((Date.now()-state.llamada.inicio)/1000);el.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}},500);
+  }
+  beep(); renderTabs();
+}
+function simRechazarInvite(){ const inv=state.simInvite; state.simInvite=null; if(inv) rtcSimEstado(inv.caseId,inv.role,'rechazada'); renderTabs(); }
+function simSalirPD(){ const s=state.simActivo; if(s) rtcSimEstado(s.caseId,s.role,'salida'); simSalir(); state.simActivo=null; renderTabs(); }
+function vSimPD(){
+  const s=state.simActivo, e=escenario(s.escenarioId), u=usuario(e.usuarioId)||{};
+  return `<h2 class="section">🏠 Estás en simulación · Persona dependiente</h2>
+    <div class="card">
+      <p class="muted">Interpretas a esta persona hablando con el/la teleoperador/a. Cuando el teleoperador finalice, la llamada terminará.</p>
+      <div class="card mt" style="background:var(--panel2)">
+        <div class="fila"><span>Eres</span><b>${esc(u.nombre)}${u.edad?` · ${u.edad} años`:''}</b></div>
+        <div class="fila"><span>Situación</span><span style="text-align:right">${esc(e.titulo)}</span></div>
+      </div>
+      <div class="card mt" style="background:#241a10;border-color:#5a4420">
+        <b style="color:#f0c078">🎭 Tu guion — empieza diciendo:</b>
+        <p style="font-style:italic;margin:6px 0 0">${esc(e.guion)}</p>
+      </div>
+      <p class="muted mt" style="font-size:12.5px">🎙️ La conexión de voz aparece abajo a la derecha. Usa auriculares para evitar eco.</p>
+      <div class="mt"><button class="btn danger sm" onclick="simSalirPD()">Salir de la simulación</button></div>
+    </div>`;
+}
 
 /* ===================== AGENDA AVANZADA ===================== */
 function hoyISO(){return fmtF(new Date());}
@@ -1331,7 +1494,26 @@ function autoEval(r,e){
    VISTAS — ALUMNO (central)
    ========================================================= */
 function vCentral(){
+  if(state.simActivo && state.simActivo.role==='PD') return vSimPD();
   if(state.llamada) return vLlamadaEnCurso();
+  if(state.simInvite){
+    const inv=state.simInvite, e=escenario(inv.escenarioId)||{titulo:'—'};
+    const rolTxt=inv.role==='OP'?'🎧 Teleoperador/a':'🏠 Persona dependiente';
+    const desc=inv.role==='OP'?'Vas a atender la llamada: verás la ficha del usuario y el protocolo.':'Vas a interpretar al usuario: verás tu guion para actuar.';
+    return `<h2 class="section">Puesto de la central</h2>
+    ${barraLlamadasAlumno()}
+    <div class="incoming">
+      <div class="pulse ring">🎧</div>
+      <div class="chip r" style="margin-bottom:6px">SIMULACIÓN ENTRANTE</div>
+      <h2>${esc(e.titulo)}</h2>
+      <p class="who">Tu papel: <b>${rolTxt}</b></p>
+      <p class="muted">${desc}</p>
+      <div class="call-actions" style="justify-content:center">
+        <button class="btn ok" onclick="simAceptarInvite()">✅ Unirse a la llamada</button>
+        <button class="btn ghost" onclick="simRechazarInvite()">Rechazar</button>
+      </div>
+    </div>`;
+  }
   const cola=colaDe(state.alumnoActivo);
   if(cola.length){
     const c=cola[0],e=escenario(c.escenarioId),u=usuario(e.usuarioId);
@@ -1405,8 +1587,11 @@ function vLlamadaEnCurso(){
   const pasos=e.protocolo.map((p,i)=>`<label class="proto-step"><input type="checkbox" ${L.pasos.has(i)?'checked':''} onchange="togglePaso(${i})"><span>${esc(p)}</span></label>`).join('');
   const tipos=state.tipos.map(t=>`<option value="${t.v}" ${L.tipo===t.v?'selected':''}>${t.t}</option>`).join('');
   const recs=state.recursos.map(r=>`<label class="proto-step" style="border:none;padding:5px 0"><input type="checkbox" ${L.recursos.has(r.v)?'checked':''} onchange="toggleRec('${r.v}')"><span>${r.t}</span></label>`).join('');
+  const bloqueVoz = L.sim
+    ? `<div class="card mt" style="background:#10241b;border-color:#265;padding:12px"><b style="color:#8fe0b3">🎙️ Hablas con la persona dependiente</b><p style="margin:6px 0 0;font-size:13px">Un compañero interpreta al usuario en directo. Escúchale (el audio está abajo a la derecha).</p></div>`
+    : `<div class="card mt" style="background:#241a10;border-color:#5a4420;padding:12px"><b style="color:#f0c078">🔊 El usuario dice:</b><p style="font-style:italic;margin:6px 0 0">${esc(e.guion)}</p></div>`;
   return `
-  <div class="between"><h2 class="section" style="margin:0">📞 Llamada en curso</h2>
+  <div class="between"><h2 class="section" style="margin:0">📞 ${L.sim?'Simulación en curso':'Llamada en curso'}</h2>
     <div class="flex"><span class="chip r">EN LÍNEA</span><span class="timer" id="tmr">00:00</span></div></div>
   <div class="callscreen mt">
     <div class="card ficha">
@@ -1419,10 +1604,7 @@ function vLlamadaEnCurso(){
       <div class="fila"><span>Contactos</span><span style="text-align:right">${esc(u.contactos)}</span></div>
       <div class="fila"><span>Centro médico</span><span style="text-align:right">${esc(u.medico)}</span></div>
       <div class="fila"><span>Notas</span><span style="text-align:right">${esc(u.notas)}</span></div>
-      <div class="card mt" style="background:#241a10;border-color:#5a4420;padding:12px">
-        <b style="color:#f0c078">🔊 El usuario dice:</b>
-        <p style="font-style:italic;margin:6px 0 0">${esc(e.guion)}</p>
-      </div>
+      ${bloqueVoz}
     </div>
     <div>
       <div class="card">
@@ -1458,6 +1640,8 @@ function cerrarLlamada(){
     tipoElegido:L.tipo,recursos:[...L.recursos],pasos:L.pasos.size,
     notas:L.notas,tiempo,eval:null,fecha:new Date().toISOString()};
   state.registros.push(reg);
+  rtcEnviarRegistro(reg,L.cid);                    // envía la actuación al profesor (evaluación cross-device)
+  if(L.sim){ rtcSimEnd(L.cid,L.pdId); simSalir(); state.simActivo=null; }  // finaliza la llamada para ambos
   state.cola=state.cola.filter(c=>c.id!==L.cid);
   state.llamada=null;clearInterval(timerInt);
   // feedback inmediato al alumno
@@ -1671,19 +1855,20 @@ function verNotificaciones(){ensureAlertas();const pend=state.alertas.filter(a=>
 
 /* ============ SIMULACIÓN EN GRUPO (3 roles, malla como el original) ============ */
 const SIMROLES={PD:'Persona dependiente',OP:'Teleoperador',OB:'Profesor / Oyente'};
-const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null};
-function simId(r){return state.sala+'-SIM-'+r;}
+const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'LIBRE'};
+function simId(r){return state.sala+'-SIM-'+(sim.caseId||'LIBRE')+'-'+r;}
 function simTargets(){return Object.keys(SIMROLES).filter(r=>r!==sim.role).map(simId);}
 function simAbrir(){
   const rolePref = state.rol==='profesor'?'OB':'OP';
   const opts=Object.entries(SIMROLES).map(([k,t])=>`<button class="btn ${k===rolePref?'primary':''}" style="width:100%;text-align:left;margin-bottom:8px" onclick="closeModal();simEntrar('${k}')">${k==='PD'?'🏠':k==='OP'?'🎧':'👀'} ${t}${k==='OB'?' (entra en silencio)':''}</button>`).join('');
-  openModal(`<div class="between"><h3 style="margin:0">Simulación en grupo · 3 roles</h3><button class="btn ghost sm" onclick="closeModal()">✕</button></div>
-    <p class="muted" style="font-size:13px">Los tres habláis/escucháis a la vez en la sala <b>${esc(state.sala||'')}</b>. Elige tu papel:</p>${opts}
+  openModal(`<div class="between"><h3 style="margin:0">Simulación libre · 3 roles</h3><button class="btn ghost sm" onclick="closeModal()">✕</button></div>
+    <p class="muted" style="font-size:13px">Sala de práctica libre <b>${esc(state.sala||'')}</b> (sin caso asignado). Elige tu papel:</p>${opts}
     <p class="muted" style="font-size:12px;margin-top:6px">Un alumno hace de <b>persona dependiente</b>, otro de <b>teleoperador</b>, y el <b>profesor</b> se une a escuchar/supervisar. Cada rol solo puede ocuparlo una persona.</p>`,true);
 }
-async function simEntrar(role){
-  if(sim.peer){toast('Ya estás en la simulación');return;}
-  sim.role=role;
+function simEntrar(role){ return simEntrarCaso('LIBRE',role); }
+async function simEntrarCaso(caseId,role){
+  if(sim.peer){ if(sim.caseId===caseId){toast('Ya estás en esta simulación');return;} simSalir(); }
+  sim.caseId=caseId||'LIBRE'; sim.role=role;
   try{sim.local=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){sim.local=null;}
   if(role==='OB'&&sim.local){sim.local.getAudioTracks().forEach(t=>t.enabled=false);sim.muted=true;}
   try{sim.peer=new Peer(simId(role),rtcOpts());}catch(e){toast('No se pudo iniciar');sim.role=null;return;}
@@ -1701,7 +1886,7 @@ function simWire(call,pid){ if(sim.conns[pid]&&sim.conns[pid].stream){try{call.c
 function simQuitar(pid){ if(sim.conns[pid]){ if(sim.conns[pid].audio)sim.conns[pid].audio.remove(); delete sim.conns[pid]; simPanel(); } }
 function simPlay(pid,st){ let a=sim.conns[pid].audio; if(!a){a=document.createElement('audio');a.autoplay=true;a.playsInline=true;document.body.appendChild(a);sim.conns[pid].audio=a;} a.srcObject=st;a.play().catch(()=>{}); }
 function simMute(){ sim.muted=!sim.muted; if(sim.local)sim.local.getAudioTracks().forEach(t=>t.enabled=!sim.muted); simPanel(); }
-function simSalir(){ clearInterval(sim.int); Object.values(sim.conns).forEach(c=>{try{c.call.close();}catch(e){} if(c.audio)c.audio.remove();}); sim.conns={}; try{sim.peer&&sim.peer.destroy();}catch(e){} sim.peer=null; sim.role=null; sim.muted=false; simPanel(); }
+function simSalir(){ clearInterval(sim.int); Object.values(sim.conns).forEach(c=>{try{c.call.close();}catch(e){} if(c.audio)c.audio.remove();}); sim.conns={}; try{sim.peer&&sim.peer.destroy();}catch(e){} sim.peer=null; sim.role=null; sim.muted=false; sim.caseId='LIBRE'; simPanel(); }
 function simPanel(){
   const el=document.getElementById('simWidget'); if(!el)return;
   if(!sim.peer){el.innerHTML='';return;}
@@ -1710,7 +1895,8 @@ function simPanel(){
     const c=sim.conns[simId(r)]; const st=c&&c.stream?'on':(c?'wait':''); const txt=c&&c.stream?'conectado':(c?'conectando…':'sin conectar');
     return `<div class="simrow"><span class="dot ${st}"></span><div style="flex:1"><b>${SIMROLES[r]}</b><br><small>${txt}</small></div></div>`;
   }).join('');
-  el.innerHTML=`<div class="simw"><div class="rtchead">🎧 Simulación en grupo · Sala ${esc(state.sala||'')}</div>${rows}
+  const cab = sim.caseId&&sim.caseId!=='LIBRE' ? '🎧 Simulación del caso' : '🎧 Simulación libre';
+  el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${rows}
     <div class="rtcbtns" style="margin-top:10px"><button class="btn sm" onclick="simMute()">${sim.muted?'🔇 Activar':'🎙️ Silenciar'}</button><button class="btn danger sm" onclick="simSalir()">Salir</button></div>
     <p class="muted" style="font-size:11px;margin:8px 0 0">Consejo: usad auriculares para evitar eco.</p></div>`;
   aplicarIdioma(el);
@@ -1737,26 +1923,75 @@ async function iniciarRTC(){
   try{rtc.peer=new Peer(rtcMiId(),rtcOpts());}catch(e){return;}
   rtc.peer.on('call',c=>rtcEntrante(c));
   rtc.peer.on('connection',c=>rtcData(c));
+  rtc.peer.on('open',()=>{ if(state.rol==='alumno') rtcHello(); });   // el alumno se anuncia al profesor
   rtc.peer.on('error',e=>{ if(e.type==='peer-unavailable'&&rtc.state==='llamando'){toast('El alumno no está conectado a esta sala');rtcColgar();} });
   rtc.peer.on('disconnected',()=>{try{rtc.peer.reconnect();}catch(e){}});
 }
+/* El alumno avisa al profesor de que ya está en la sala (para recibir casos ya lanzados) */
+function rtcHello(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sala+'-PROF',{t:'hello',alumnoId:state.alumnoActivo}); }
 /* ---- Canal de datos: el profesor "empuja" el caso lanzado al navegador del alumno ---- */
 function rtcData(conn){ conn.on('data',msg=>rtcRecibir(msg,conn)); }
+function rtcMerge(msg){ // asegura ficha+escenario en este navegador (casos personalizados)
+  if(msg.usuario && !usuario(msg.usuario.id)) state.usuarios.push(msg.usuario);
+  if(msg.escenario && !escenario(msg.escenario.id)) state.escenarios.push(msg.escenario);
+}
 function rtcRecibir(msg,conn){
   if(!msg||typeof msg!=='object') return;
-  if(state.rol!=='alumno') return;               // sólo el alumno recibe casos
+  /* ===== Mensajes que procesa el PROFESOR ===== */
+  if(state.rol==='profesor'){
+    if(msg.t==='hello'){                           // reenvía casos/parejas pendientes al alumno que acaba de entrar
+      const pid=rtcIdAlumno(msg.alumnoId);
+      state.cola.forEach(c=>{
+        if(c.estado==='finalizada') return;
+        if(c.modo==='solo' && (c.alumnoId===msg.alumnoId||c.alumnoId==='*')){
+          const e0=escenario(c.escenarioId); if(e0) rtcEnviarADatos(pid,{t:'caso',casoId:c.id,alumnoId:c.alumnoId,escenario:e0,usuario:usuario(e0.usuarioId)||null});
+        }
+        if(c.modo==='pareja' && (c.opId===msg.alumnoId||c.pdId===msg.alumnoId)){
+          const e0=escenario(c.escenarioId); const role=c.opId===msg.alumnoId?'OP':'PD';
+          if(e0) rtcEnviarADatos(pid,{t:'sim-invite',caseId:c.id,role,opId:c.opId,pdId:c.pdId,escenario:e0,usuario:usuario(e0.usuarioId)||null});
+        }
+      });
+      return;
+    }
+    if(msg.t==='sim-state'){                        // un alumno se ha unido / cambia el estado
+      const c=state.cola.find(x=>x.id===msg.caseId); if(c){ if(msg.estado)c.estado=msg.estado; if(msg.role==='OP')c.opIn=true; if(msg.role==='PD')c.pdIn=true; render(); }
+      return;
+    }
+    if(msg.t==='registro'){                         // el alumno envía su actuación para poder evaluarla
+      rtcMerge(msg);
+      if(msg.reg && !state.registros.some(r=>r.id===msg.reg.id)){ state.registros.push(msg.reg); toast('📝 Actuación recibida de '+((alumno(msg.reg.alumnoId)||{}).nombre||'un alumno')); }
+      const c=state.cola.find(x=>x.id===msg.caseId); if(c){ c.estado='finalizada'; c.regId=msg.reg?msg.reg.id:null; if(c.pdId) rtcEnviarADatos(rtcIdAlumno(c.pdId),{t:'sim-end',caseId:c.id}); }
+      render();
+      return;
+    }
+    if(msg.t==='sim-end'){ const c=state.cola.find(x=>x.id===msg.caseId); if(c){c.estado='finalizada'; if(c.pdId) rtcEnviarADatos(rtcIdAlumno(c.pdId),{t:'sim-end',caseId:c.id});} render(); return; }
+    return;
+  }
+  /* ===== Mensajes que procesa el ALUMNO ===== */
+  if(state.rol!=='alumno') return;
   if(msg.t==='caso'){
-    // asegurar que la ficha del usuario y el escenario existen en este navegador (por si son personalizados)
-    if(msg.usuario && !usuario(msg.usuario.id)) state.usuarios.push(msg.usuario);
-    if(msg.escenario && !escenario(msg.escenario.id)) state.escenarios.push(msg.escenario);
+    rtcMerge(msg);
     const dirigido = msg.alumnoId==='*' || msg.alumnoId===state.alumnoActivo;
-    if(!dirigido) return;                          // no es para este alumno
-    if(state.cola.some(c=>c.id===msg.casoId)) return; // evitar duplicados
-    state.cola.push({id:msg.casoId,escenarioId:msg.escenario?msg.escenario.id:msg.escenarioId,alumnoId:msg.alumnoId});
+    if(!dirigido) return;
+    if(state.cola.some(c=>c.id===msg.casoId)) return;
+    state.cola.push({id:msg.casoId,modo:'solo',escenarioId:msg.escenario?msg.escenario.id:msg.escenarioId,alumnoId:msg.alumnoId,estado:'sonando'});
     toast('📞 Nueva alarma en la central'); beep();
     renderTabs();
   } else if(msg.t==='retirar'){
     if(state.cola.some(c=>c.id===msg.casoId)){ state.cola=state.cola.filter(c=>c.id!==msg.casoId); renderTabs(); }
+  } else if(msg.t==='sim-invite'){
+    rtcMerge(msg);
+    if(state.simActivo){ return; }                 // ya está en una simulación
+    if(state.simInvite && state.simInvite.caseId===msg.caseId) return;
+    state.simInvite={caseId:msg.caseId,role:msg.role,opId:msg.opId,pdId:msg.pdId,escenarioId:msg.escenario?msg.escenario.id:msg.escenarioId};
+    toast('🎧 Simulación entrante: eres '+(msg.role==='OP'?'teleoperador/a':'persona dependiente')); beep();
+    go('central');
+  } else if(msg.t==='sim-end'){
+    if(state.simInvite && state.simInvite.caseId===msg.caseId) state.simInvite=null;
+    if(state.simActivo && state.simActivo.caseId===msg.caseId){
+      simSalir(); state.simActivo=null; state.llamada=null; clearInterval(timerInt);
+      toast('La simulación ha finalizado'); renderTabs();
+    }
   }
 }
 /* Envía un mensaje a uno o varios alumnos abriendo una conexión de datos efímera */
@@ -1779,6 +2014,29 @@ function rtcEnviarCaso(escId,alId,casoId){
 function rtcRetirarCaso(casoId){
   if(state.rol!=='profesor'||!rtc.peer) return;
   state.alumnos.map(a=>rtcIdAlumno(a)).forEach(pid=>rtcEnviarADatos(pid,{t:'retirar',casoId}));
+}
+/* --- Simulación lanzada por el profesor (pareja teleoperador + persona dependiente) --- */
+function rtcInvitarPareja(escId,opId,pdId,caseId){
+  if(state.rol!=='profesor'||!rtc.peer) return;
+  const e0=escenario(escId); if(!e0) return; const u0=usuario(e0.usuarioId)||null;
+  rtcEnviarADatos(rtcIdAlumno(opId),{t:'sim-invite',caseId,role:'OP',opId,pdId,escenario:e0,usuario:u0});
+  rtcEnviarADatos(rtcIdAlumno(pdId),{t:'sim-invite',caseId,role:'PD',opId,pdId,escenario:e0,usuario:u0});
+}
+function rtcCancelarPareja(caseId,opId,pdId){
+  if(state.rol!=='profesor'||!rtc.peer) return;
+  [opId,pdId].forEach(id=>{ if(id) rtcEnviarADatos(rtcIdAlumno(id),{t:'sim-end',caseId}); });
+}
+/* --- Mensajes del alumno hacia el profesor / compañero --- */
+function rtcSimEstado(caseId,role,estado){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sala+'-PROF',{t:'sim-state',caseId,role,estado}); }
+function rtcSimEnd(caseId,pdId){ // el teleoperador finaliza: avisa a profesor y a la persona dependiente
+  if(!rtc.peer) return;
+  rtcEnviarADatos(state.sala+'-PROF',{t:'sim-end',caseId});
+  if(pdId) rtcEnviarADatos(rtcIdAlumno(pdId),{t:'sim-end',caseId});
+}
+function rtcEnviarRegistro(reg,caseId){
+  if(state.rol!=='alumno'||!rtc.peer) return;
+  const e0=escenario(reg.escenarioId); const u0=e0?usuario(e0.usuarioId):null;
+  rtcEnviarADatos(state.sala+'-PROF',{t:'registro',reg,caseId,escenario:e0||null,usuario:u0||null});
 }
 function rtcStream(){ if(rtc.local)return rtc.local; if(!rtc.silent){try{const a=new (window.AudioContext||window.webkitAudioContext)();const d=a.createMediaStreamDestination();const o=a.createOscillator();const g=a.createGain();g.gain.value=0;o.connect(g);g.connect(d);o.start();rtc.silent=d.stream;}catch(e){rtc.silent=null;}} return rtc.silent||undefined; }
 function rtcLlamar(a){
