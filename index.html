@@ -925,6 +925,8 @@ const I18N = {
   'simulación a 2':'simulació a 2','asignando teleoperador y persona dependiente.':'assignant teleoperador i persona dependent.',
   'Lanzar caso':'Llançar cas','Lanzar un caso':'Llançar un cas','Teléfonos en cola':'Telèfons en cua',
   'Alumnos conectados':'Alumnes connectats',
+  'pendiente prof.':'pendent prof.',
+  'El profesor ha evaluado tu actuación':'El professor ha avaluat la teua actuació',
   'Todavía no has dado de alta a ningún alumno.':'Encara no has donat d\'alta cap alumne.',
   'Se marcan en verde los alumnos que tienen la central abierta en esta misma sala.':'Es marquen en verd els alumnes que tenen la central oberta en esta mateixa sala.',
   'No hay teléfonos en cola. Lanza un caso desde “Acciones rápidas”.':'No hi ha telèfons en cua. Llança un cas des d\'“Accions ràpides”.',
@@ -1916,7 +1918,12 @@ function actualizarTotal(rid){
   const pct=notaGlobal({eval:r._draft});
   const el=document.getElementById('evalTotal');if(el)el.innerHTML='Puntuación total: '+pct+'/100 <span style="color:#f2c94c">'+estrellas(pct)+'</span>';
 }
-function guardarEval(rid){const r=fnac(rid,state.registros);r.eval=Object.assign({},r._draft);toast('Evaluación guardada');closeModal();render();}
+function guardarEval(rid){
+  const r=fnac(rid,state.registros);
+  r.eval=Object.assign({},r._draft);
+  rtcEnviarEval(r);                      // que la nota le llegue al alumno
+  toast('Evaluación guardada');closeModal();render();
+}
 
 // puntuación automática sugerida (0/0.5/1 por criterio) a partir de lo que hizo el alumno
 function autoEval(r,e){
@@ -2508,6 +2515,7 @@ function rtcRecibir(msg,conn){
     if(msg.t==='bye'){ presenciaFuera(msg.alumnoId); return; }
     if(msg.t==='hello'){                           // reenvía casos/parejas pendientes al alumno que acaba de entrar
       const pid=rtcIdAlumno(msg.alumnoId);
+      rtcEnviarEvalsPendientes(msg.alumnoId);      // y las notas que se le hayan puesto mientras no estaba
       state.cola.forEach(c=>{
         if(c.estado==='finalizada') return;
         if(c.modo==='solo' && (c.alumnoId===msg.alumnoId||c.alumnoId==='*')){
@@ -2556,6 +2564,16 @@ function rtcRecibir(msg,conn){
   /* ===== Mensajes que procesa el ALUMNO ===== */
   if(state.rol!=='alumno') return;
   if(msg.t==='quien'){ rtcLatido(); return; }      // el profesor pregunta quién está dentro
+  if(msg.t==='eval'){                              // el profesor ha evaluado una actuación mía
+    const r=state.registros.find(x=>x.id===msg.regId);
+    if(r && msg.eval){
+      const nueva=!r.eval;
+      r.eval=Object.assign({},msg.eval);
+      if(nueva){ const n=notaGlobal(r); toast('<svg class="ic"><use href="#i-clipboard"/></svg> El profesor ha evaluado tu actuación'+(n!=null?': '+n+'/100':'')); }
+      render();
+    }
+    return;
+  }
   if(msg.t==='caso'){
     rtcMerge(msg);
     const dirigido = msg.alumnoId==='*' || msg.alumnoId===state.alumnoActivo;
@@ -2619,6 +2637,16 @@ function rtcSimEnd(caseId,pdId){ // el teleoperador finaliza: avisa a profesor y
   if(!rtc.peer) return;
   rtcEnviarADatos(state.sala+'-PROF',{t:'sim-end',caseId});
   if(pdId) rtcEnviarADatos(rtcIdAlumno(pdId),{t:'sim-end',caseId});
+}
+/* El profesor devuelve la nota al dispositivo del alumno */
+function rtcEnviarEval(r){
+  if(state.rol!=='profesor'||!rtc.peer||!r||!r.eval||!r.alumnoId) return;
+  rtcEnviarADatos(rtcIdAlumno(r.alumnoId),{t:'eval',regId:r.id,eval:r.eval});
+}
+function rtcEnviarEvalsPendientes(alumnoId){
+  if(state.rol!=='profesor'||!rtc.peer) return;
+  const pid=rtcIdAlumno(alumnoId);
+  state.registros.forEach(r=>{ if(r.alumnoId===alumnoId && r.eval) rtcEnviarADatos(pid,{t:'eval',regId:r.id,eval:r.eval}); });
 }
 function rtcEnviarRegistro(reg,caseId){
   if(state.rol!=='alumno'||!rtc.peer) return;
@@ -3063,12 +3091,47 @@ buildDict(); setLang(state.lang||'va');
   borrarProf=function(){ toast('No se puede eliminar el profesor titular de la cuenta.'); };
   editarProf=function(){ toast('Los datos del profesor/centro se gestionan desde tu cuenta.'); };
 
+  /* ============ SESIÓN POR PESTAÑA ============ */
+  /* La sesión se guarda en sessionStorage, no en localStorage: al cerrar la pestaña
+     (o el navegador) desaparece y hay que volver a iniciar sesión. Recargar la
+     página con F5 no expulsa a nadie, porque sessionStorage sobrevive al recargar. */
+  function gAlmacenSesion(){
+    try{
+      var t='__cd_test'; window.sessionStorage.setItem(t,'1'); window.sessionStorage.removeItem(t);
+      return window.sessionStorage;
+    }catch(e){                       // navegación privada o almacenamiento bloqueado: solo en memoria
+      var mem={};
+      return {
+        getItem:function(k){ return Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:null; },
+        setItem:function(k,v){ mem[k]=String(v); },
+        removeItem:function(k){ delete mem[k]; }
+      };
+    }
+  }
+  /* Borra sesiones que versiones anteriores dejaron guardadas en localStorage */
+  function gLimpiarSesionesViejas(){
+    try{
+      Object.keys(window.localStorage).forEach(function(k){
+        if(k.indexOf('sb-')===0 || k.indexOf('supabase.auth')===0) window.localStorage.removeItem(k);
+      });
+    }catch(e){}
+  }
+
   /* ============ ARRANQUE ============ */
   if(!window.supabase){
     gv().innerHTML='<h1>No se pudo cargar</h1><p class="g-sub">No se ha podido conectar con la plataforma (revisa tu conexión a internet y recarga la página).</p>';
     return;
   }
-  SB=window.supabase.createClient(SUPA_URL,SUPA_ANON);
+  gLimpiarSesionesViejas();
+  SB=window.supabase.createClient(SUPA_URL,SUPA_ANON,{
+    auth:{
+      storage: gAlmacenSesion(),
+      storageKey: 'caredesk-auth',
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  });
   window.SB=SB;
   SB.auth.onAuthStateChange(function(event,session){ if(event==='PASSWORD_RECOVERY'){ sesUser=session&&session.user; showGate(); g_go('nuevaPass'); } });
   (async function(){
