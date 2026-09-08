@@ -1922,7 +1922,8 @@ function actualizarTotal(rid){
 function guardarEval(rid){
   const r=fnac(rid,state.registros);
   r.eval=Object.assign({},r._draft);
-  rtcEnviarEval(r);                      // que la nota le llegue al alumno
+  try{ window.CD_DB && CD_DB.guardarEvaluacion(r); }catch(e){}   // persistir en Supabase
+  rtcEnviarEval(r);                      // y que la nota le llegue al alumno al momento
   toast('Evaluación guardada');closeModal();render();
 }
 
@@ -2135,6 +2136,7 @@ function cerrarLlamada(){
     tipoElegido:L.tipo,recursos:[...L.recursos],pasos:L.pasos.size,
     notas:L.notas,tiempo,eval:null,fecha:new Date().toISOString()};
   state.registros.push(reg);
+  try{ window.CD_DB && CD_DB.guardarActuacion(reg); }catch(e){}   // persistir en Supabase
   const recProm = rec.active ? recStop() : Promise.resolve(null);  // detener grabación antes de cerrar el audio
   rtcEnviarRegistro(reg,L.cid);                    // envía la actuación al profesor (evaluación cross-device)
   if(L.sim){ rtcSimEnd(L.cid,L.pdId); simSalir(); state.simActivo=null; }  // finaliza la llamada para ambos
@@ -2995,11 +2997,13 @@ buildDict(); setLang(state.lang||'va');
       GACC.sala=g_sala(sesUser.id);
       if(GACC.est.bloqueado) return g_pantallaBloqueado();
       await g_recargarRoster();
+      await g_cargarActuaciones();
       return g_abrirProfesor();
     } else {
       var al=await SB.from('alumnos').select('*').eq('id',sesUser.id).maybeSingle();
       if(!al.data){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta de alumno no está completa. Pide a tu profesor que te dé de alta con tu email.'}); }
       GACC.alu=al.data; GACC.sala=g_sala(al.data.profesor_id);
+      await g_cargarActuaciones();
       return g_abrirAlumno();
     }
   }
@@ -3010,6 +3014,93 @@ buildDict(); setLang(state.lang||'va');
     state.alumnos=invs.map(function(iv){return {id:'al_'+g_slug(iv.email),nombre:iv.nombre,email:iv.email,usada:!!iv.usada};});
   }
   window.g_recargarRoster=g_recargarRoster;
+
+  /* ============ ACTUACIONES Y EVALUACIONES → Supabase ============ */
+  function g_esProfesor(){ return GACC.perfil && GACC.perfil.rol==='profesor'; }
+  function g_profesorId(){ return g_esProfesor() ? GACC.uid : (GACC.alu ? GACC.alu.profesor_id : null); }
+  function g_nota(reg){ try{ return reg.eval ? notaGlobal(reg) : null; }catch(e){ return null; } }
+
+  /* Construye la fila completa a partir de una actuación del simulador */
+  function g_filaActuacion(reg){
+    var e=null,u=null;
+    try{ e=escenario(reg.escenarioId)||null; if(e) u=usuario(e.usuarioId)||null; }catch(err){}
+    var al=null;
+    try{ al=(state.alumnos||[]).filter(function(a){return a.id===reg.alumnoId;})[0]||null; }catch(err){}
+    return {
+      id:reg.id,
+      profesor_id:g_profesorId(),
+      alumno_id:(!g_esProfesor()?GACC.uid:null),
+      alumno_email:((al&&al.email)||(!g_esProfesor()?GACC.email:'')||'').toLowerCase(),
+      alumno_nombre:(al&&al.nombre)||(GACC.alu&&GACC.alu.nombre)||'',
+      reg:reg, escenario:e, usuario:u,
+      evaluacion:reg.eval||null,
+      nota:g_nota(reg),
+      evaluado_en:reg.eval?new Date().toISOString():null
+    };
+  }
+
+  window.CD_DB={
+    /* El alumno guarda su actuación al colgar */
+    guardarActuacion:function(reg){
+      if(!SB||!GACC.uid||!reg) return;
+      var fila=g_filaActuacion(reg);
+      if(!fila.profesor_id||!fila.alumno_email) return;
+      SB.from('actuaciones').upsert(fila,{onConflict:'id'}).then(function(r){
+        if(r.error) console.warn('CareDesk · no se pudo guardar la actuación:',r.error.message);
+      });
+    },
+    /* El profesor guarda la nota. Si la fila no llegó a crearse, la crea entera. */
+    guardarEvaluacion:function(reg){
+      if(!SB||!GACC.uid||!g_esProfesor()||!reg) return;
+      var patch={evaluacion:reg.eval,nota:g_nota(reg),evaluado_en:new Date().toISOString()};
+      SB.from('actuaciones').update(patch).eq('id',reg.id).select('id').then(function(r){
+        if(r.error){ console.warn('CareDesk · no se pudo guardar la evaluación:',r.error.message); return; }
+        if(!r.data||!r.data.length){
+          SB.from('actuaciones').upsert(g_filaActuacion(reg),{onConflict:'id'}).then(function(r2){
+            if(r2.error) console.warn('CareDesk · no se pudo crear la actuación evaluada:',r2.error.message);
+          });
+        }
+      });
+    }
+  };
+
+  /* Al entrar, recuperar el historial de la cuenta */
+  async function g_cargarActuaciones(){
+    if(!SB||!GACC.uid) return;
+    var q=SB.from('actuaciones').select('*').order('creado',{ascending:true});
+    q=g_esProfesor()?q.eq('profesor_id',GACC.uid):q.eq('alumno_id',GACC.uid);
+    var r=await q;
+    if(r.error){ console.warn('CareDesk · no se pudo leer el historial:',r.error.message); return; }
+    (r.data||[]).forEach(function(row){
+      try{
+        if(row.escenario||row.usuario) rtcMerge({escenario:row.escenario,usuario:row.usuario});
+        var reg=row.reg||{};
+        reg.id=row.id;
+        reg.alumnoId='al_'+g_slug(row.alumno_email||'');
+        reg.eval=row.evaluacion||null;
+        /* El caso puede faltar en este equipo (creado en otro, o de un curso
+           anterior). Nos aseguramos de que exista y de que tenga todos los
+           campos que leen las vistas, para no dejar la pantalla en blanco. */
+        if(reg.escenarioId){
+          var e0=escenario(reg.escenarioId);
+          if(!e0){
+            e0={id:reg.escenarioId,titulo:'Caso no disponible',tipo:'caida'};
+            state.escenarios.push(e0);
+          }
+          if(!e0.usuarioId || !usuario(e0.usuarioId)) e0.usuarioId=((state.usuarios[0]||{}).id||'u1');
+          if(!e0.titulo)   e0.titulo='Caso no disponible';
+          if(!e0.tipo)     e0.tipo='caida';
+          if(e0.objetivo===undefined) e0.objetivo=e0.tipo;
+          if(e0.gravedad===undefined) e0.gravedad='media';
+          if(e0.guion===undefined)    e0.guion='';
+          if(e0.pista===undefined)    e0.pista='';
+          if(!Array.isArray(e0.protocolo))         e0.protocolo=[];
+          if(!Array.isArray(e0.recursosCorrectos)) e0.recursosCorrectos=[];
+        }
+        if(!state.registros.some(function(x){return x.id===reg.id;})) state.registros.push(reg);
+      }catch(e){}
+    });
+  }
 
   function g_abrirProfesor(){
     state.profesores=[{id:GACC.uid,nombre:(GACC.perfil.nombre||GACC.email)}];
@@ -3033,6 +3124,7 @@ buildDict(); setLang(state.lang||'va');
     try{ rtc&&rtc.peer&&rtc.peer.destroy(); }catch(e){}
     try{ rtc.peer=null; }catch(e){}
     state.rol=null; state.alumnoActivo=null; state.llamada=null;
+    state.registros=[]; state.presencia={};
     var a=document.getElementById('app'); if(a)a.classList.add('hidden');
     try{ closeModal(); }catch(e){}
     GACC={}; window.GACC=GACC; sesUser=null;
