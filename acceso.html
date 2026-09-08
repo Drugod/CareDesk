@@ -1,82 +1,270 @@
-<title>Guía Supabase CareDesk</title>
+<title>Acceso CareDesk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@500;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--bg:#f3f6f5;--panel:#fff;--panel2:#eef3f2;--line:#dce6e4;--ink:#16242a;--muted:#5f727a;--accent:#0e8c8c;--accent-ink:#fff;--ok:#2e9e6b;--warn:#c0851d;--danger:#d14b3c;--serif:"Fraunces",Georgia,serif;--sans:"DM Sans",system-ui,sans-serif;--mono:"JetBrains Mono",monospace;}
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1418;--panel:#16212a;--panel2:#1c2831;--line:#2a3a42;--ink:#e8eef1;--muted:#93a6b0;--accent:#3ad0bd;--accent-ink:#04231e;}}
-  :root[data-theme="dark"]{--bg:#0e1418;--panel:#16212a;--panel2:#1c2831;--line:#2a3a42;--ink:#e8eef1;--muted:#93a6b0;--accent:#3ad0bd;--accent-ink:#04231e;}
+  :root{--bg:#f3f6f5;--panel:#fff;--panel2:#eef3f2;--line:#dce6e4;--ink:#16242a;--muted:#5f727a;--accent:#0e8c8c;--accent2:#0b7275;--accent-ink:#fff;--ok:#2e9e6b;--warn:#c0851d;--danger:#d14b3c;--serif:"Fraunces",Georgia,serif;--sans:"DM Sans",system-ui,sans-serif;--mono:"JetBrains Mono",monospace;--r:16px;}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
-  .wrap{max-width:800px;margin:0 auto;padding:48px 22px 90px}
-  .eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
-  h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,5vw,40px);line-height:1.06;margin:0 0 12px;text-wrap:balance}
-  h2{font-family:var(--serif);font-weight:600;font-size:22px;margin:36px 0 4px}
-  .lede{font-size:17px;color:var(--muted);max-width:60ch}
-  .step{display:flex;gap:16px;align-items:flex-start;margin:14px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
-  .n{width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center;font-family:var(--mono);font-weight:700;background:var(--accent);color:var(--accent-ink)}
-  .step h3{margin:0 0 4px;font-size:16.5px}
-  .step p{margin:6px 0;font-size:14.5px}
-  .step p:first-of-type{margin-top:0}
-  code{font-family:var(--mono);font-size:13px;background:var(--panel2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
-  .callout{background:color-mix(in srgb,var(--warn) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));border-radius:14px;padding:14px 18px;margin:16px 0;font-size:14.5px}
-  .callout b{color:var(--warn)}
-  .accent-note{background:color-mix(in srgb,var(--accent) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:14px;padding:16px 20px;margin:16px 0}
-  .kv{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:13px;margin:8px 0}
-  strong{color:var(--ink)}
-  .foot{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .bar{background:var(--ink);color:#fff;font-size:12.5px;padding:7px 16px;text-align:center}
+  .bar b{color:#fff}
+  .shell{max-width:470px;margin:36px auto;padding:0 18px}
+  .brand{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:22px}
+  .logo{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-weight:800;background:linear-gradient(135deg,var(--accent),#22b0a6);color:#fff;font-family:var(--mono)}
+  .brand .nm{font-size:20px;font-weight:700}.brand .sb{font-size:11px;color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:24px;box-shadow:0 16px 40px -24px rgba(20,55,58,.3)}
+  h1{font-family:var(--serif);font-weight:600;font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+  input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:11px 12px;border-radius:10px;font:inherit;font-size:15px}
+  input:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);border-color:var(--accent)}
+  .btn{width:100%;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:11px;padding:12px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;margin-top:16px}
+  .btn:disabled{opacity:.6;cursor:default}
+  .btn.sec{background:transparent;border:1px solid var(--line);color:var(--ink);margin-top:8px}
+  .btn.sm{width:auto;padding:8px 12px;font-size:13px;margin:0}
+  .links{margin-top:16px;display:flex;flex-direction:column;gap:8px;text-align:center}
+  .links a{color:var(--accent);font-size:14px;cursor:pointer;text-decoration:none}
+  .msg{border-radius:10px;padding:10px 12px;font-size:13.5px;margin:12px 0 0}
+  .msg.err{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);border:1px solid color-mix(in srgb,var(--danger) 35%,transparent)}
+  .msg.ok{background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 35%,transparent)}
+  .msg.info{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent2);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .lic{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13.5px}
+  .pill{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+  .pill.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+  .pill.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .pill.err{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+  td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .count{font-family:var(--mono);font-weight:700}
+  .tiny{font-size:12px;color:var(--muted)}
 </style>
-<div class="wrap">
-  <p class="eyebrow">CareDesk · Fase 2 · Puesta en marcha</p>
-  <h1>Guía para crear el proyecto en Supabase</h1>
-  <p class="lede">Sigue estos pasos (15–20 min). Al final me pasas dos claves y yo conecto el login, el registro, la demo y las licencias a tu base de datos. No necesitas saber programar: es todo clicar y pegar.</p>
-
-  <h2>Parte A · Crear el proyecto</h2>
-  <div class="step"><div class="n">1</div><div>
-    <h3>Crea tu cuenta</h3>
-    <p>Entra en <code>supabase.com</code> y pulsa <strong>Start your project</strong>. Puedes registrarte con tu email o con GitHub. Es gratis.</p>
-  </div></div>
-  <div class="step"><div class="n">2</div><div>
-    <h3>Crea un proyecto nuevo</h3>
-    <p><strong>New project</strong>. Ponle nombre <code>caredesk</code>. Elige una <strong>Database Password</strong> segura y <strong>apúntala</strong> (la necesitarás si algún día entras a la base a mano).</p>
-    <p><strong>Region:</strong> elige <strong>Europe (Frankfurt)</strong> — cercanía y datos en la UE (mejor para el RGPD).</p>
-    <p>Pulsa <strong>Create new project</strong> y espera 1–2 min a que se monte.</p>
-  </div></div>
-
-  <h2>Parte B · Crear las tablas</h2>
-  <div class="step"><div class="n">3</div><div>
-    <h3>Abre el editor SQL</h3>
-    <p>En el menú izquierdo, entra en <strong>SQL Editor</strong> → <strong>New query</strong>.</p>
-  </div></div>
-  <div class="step"><div class="n">4</div><div>
-    <h3>Pega el esquema y ejecútalo</h3>
-    <p>Abre el archivo que te paso, <code>caredesk_schema.sql</code>, <strong>selecciona todo</strong> y <strong>cópialo</strong>. Pégalo en el editor SQL y pulsa <strong>Run</strong> (o Ctrl+Enter).</p>
-    <p>Si todo va bien verás <em>“Success. No rows returned”</em>. Eso crea las tablas de cuentas, licencias, alumnos y el control de la demo.</p>
-  </div></div>
-
-  <h2>Parte C · Ajustes de acceso (Auth)</h2>
-  <div class="step"><div class="n">5</div><div>
-    <h3>Facilita las pruebas de hoy</h3>
-    <p>Ve a <strong>Authentication → Providers → Email</strong> y asegúrate de que <strong>Email</strong> está activado.</p>
-    <p>Para probar rápido hoy, en <strong>Authentication → Sign In / Providers</strong> (o <em>Email</em>) <strong>desactiva “Confirm email”</strong> temporalmente. Así las cuentas de prueba entran sin tener que confirmar el correo. <em>Antes de vender, lo volvemos a activar.</em></p>
-  </div></div>
-
-  <h2>Parte D · Pásame dos claves</h2>
-  <div class="step"><div class="n">6</div><div>
-    <h3>Copia la URL y la anon key</h3>
-    <p>Ve a <strong>Project Settings</strong> (el engranaje) → <strong>API</strong>. Copia estos dos valores y me los pegas en el chat:</p>
-    <div class="kv">Project URL   →  https://xxxxxxxx.supabase.co</div>
-    <div class="kv">anon public   →  eyJhbGciOi... (una clave larga)</div>
-    <div class="callout"><b>Tranquilo:</b> la <strong>anon key</strong> es pública por diseño (va en la web); la seguridad la ponen las reglas RLS que acabas de crear. <strong>NUNCA</strong> me pases la <code>service_role</code> ni la Database Password.</div>
-  </div></div>
-
-  <div class="accent-note">
-    <p style="margin:0 0 6px"><strong>Y ya está por tu parte.</strong> Cuando me pases esas dos claves:</p>
-    <p style="margin:0">Conecto el <strong>login único, el registro de profesor, la demo de 3 días y las licencias</strong> a tu Supabase y te doy una versión para publicar y probar. Después ajustamos el alta de alumnos por email (suele necesitar una o dos vueltas contra tu proyecto real) y lo dejamos redondo.</p>
-  </div>
-
-  <h2>Qué queda montado con esto</h2>
-  <p>Cuentas reales de profesor y alumno, licencia por curso, <strong>demo de 3 días con antifraude</strong> (un email no la repite), tope de 30 alumnos, y el acceso del alumno solo si su profesor lo ha invitado — todo con la seguridad de las reglas RLS. El diseño y las pantallas serán las del prototipo que ya validaste.</p>
-
-  <p class="foot">Guía de puesta en marcha · CareDesk Fase 2. El archivo <code>caredesk_schema.sql</code> se entrega junto a esta guía.</p>
+<div class="bar">🔗 Conectado a <b>Supabase</b> · cuentas y licencias reales</div>
+<div class="shell">
+  <div class="brand"><span class="logo">CD</span><div><div class="nm">CareDesk</div><div class="sb">Acceso a la plataforma</div></div></div>
+  <div id="view" class="card"><p class="sub">Cargando…</p></div>
+  <p class="tiny" style="text-align:center;margin-top:14px">CareDesk · Fase 2. Este acceso conecta con tu base de datos; el simulador (central, llamadas, evaluación) es la app de CareDesk.</p>
 </div>
+<script>
+/* ====== CONFIG Supabase ====== */
+const SUPA_URL='https://czrtfeoqwkhqvaasiqdb.supabase.co';
+const SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6cnRmZW9xd2tocXZhYXNpcWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTQzMTksImV4cCI6MjEwNDQzMDMxOX0.x40AzgyortqeNEJs2DJ8l-zm1_7F9x_kkq-7IKk6lFg';
+const V=document.getElementById('view');
+if(!window.supabase){ V.innerHTML='<h1>No se pudo cargar</h1><p class="sub">No se ha podido cargar la librería de Supabase (revisa la conexión a internet y recarga la página).</p>'; throw new Error('supabase-js no cargó'); }
+const SB=window.supabase.createClient(SUPA_URL,SUPA_ANON);
+
+let ctx={}, sesUser=null;
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const val=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+const msg=(id,t,cls)=>{const e=document.getElementById(id);if(e)e.innerHTML=`<div class="msg ${cls}">${esc(t)}</div>`;};
+const emailOk=e=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e||'');
+const diasRest=iso=>Math.ceil((new Date(iso+'T23:59:59')-new Date())/86400000);
+const fmt=iso=>{try{return new Date(iso).toLocaleDateString('es-ES')}catch(e){return iso}};
+function go(name,c){ctx=c||{};(VIEWS[name]||VIEWS.login)();}
+
+/* ====== arranque: ¿hay sesión? ====== */
+SB.auth.onAuthStateChange((event,session)=>{ if(event==='PASSWORD_RECOVERY'){sesUser=session&&session.user;go('nuevaPass');} });
+(async()=>{
+  const {data}=await SB.auth.getSession();
+  if(data.session){ sesUser=data.session.user; await irAPanel(); } else go('login');
+})();
+
+async function irAPanel(){
+  // busca el perfil del usuario logueado
+  const {data:perfil,error}=await SB.from('perfiles').select('rol,nombre').eq('id',sesUser.id).maybeSingle();
+  if(error||!perfil){ // usuario en Auth pero sin perfil (raro): cerrar sesión
+    await SB.auth.signOut(); sesUser=null; return go('login',{err:'Tu cuenta no tiene perfil. Vuelve a registrarte o contacta con soporte.'});
+  }
+  ctx.perfil=perfil;
+  if(perfil.rol==='profesor') return vPanelProfe();
+  return vPanelAlumno();
+}
+async function salir(){ await SB.auth.signOut(); sesUser=null; go('login'); }
+
+/* ============ PANTALLAS ============ */
+const VIEWS={
+ login:vLogin, registro:vRegistro, demo:vDemo, recuperar:vRecuperar, nuevaPass:vNuevaPass,
+ crearPassAlumno:vCrearPassAlumno
+};
+
+function vLogin(){
+  V.innerHTML=`<h1>Iniciar sesión</h1><p class="sub">Un solo acceso para profesores y alumnos.</p>
+    <label>Email</label><input id="e" type="email" value="${esc(ctx.email||'')}" placeholder="tu@email.com">
+    <label>Contraseña</label><input id="p" type="password">
+    <div id="m"></div>
+    <button class="btn" id="b" onclick="doLogin()">Entrar</button>
+    <div class="links">
+      <a onclick="go('registro')">Registrarme como profesor / centro</a>
+      <a onclick="go('demo')">Probar gratis 3 días (demo)</a>
+      <a onclick="go('crearPassAlumno')">Soy alumno · entrar por primera vez</a>
+      <a onclick="go('recuperar')">He olvidado mi contraseña</a>
+    </div>`;
+  if(ctx.err) msg('m',ctx.err,'err'); if(ctx.ok) msg('m',ctx.ok,'ok');
+}
+async function doLogin(){
+  const email=val('e').toLowerCase(),pass=val('p');
+  if(!emailOk(email))return msg('m','Escribe un email válido.','err');
+  busy('b',true);
+  const {error}=await SB.auth.signInWithPassword({email,password:pass});
+  busy('b',false);
+  if(error){ return msg('m', /Invalid login/.test(error.message)?'Email o contraseña incorrectos. Si eres alumno y es tu primera vez, usa “entrar por primera vez”.':error.message,'err'); }
+  const {data}=await SB.auth.getSession(); sesUser=data.session.user; irAPanel();
+}
+
+function vRegistro(){
+  V.innerHTML=`<h1>Registro de profesor / centro</h1><p class="sub">Crea tu cuenta. Tendrás una licencia de curso y podrás dar de alta hasta 30 alumnos.</p>
+    <label>Email de acceso</label><input id="e" type="email" placeholder="profesor@centro.es">
+    <label>Contraseña (mín. 6)</label><input id="p" type="password">
+    <div class="row"><div><label>Nombre del centro</label><input id="centro"></div><div><label>CIF / NIF</label><input id="cif"></div></div>
+    <label>Dirección</label><input id="dir">
+    <div class="row"><div><label>Persona de contacto</label><input id="cont"></div><div><label>Email de facturación</label><input id="ef" type="email"></div></div>
+    <div id="m"></div>
+    <button class="btn" id="b" onclick="doRegistro()">Crear cuenta</button>
+    <button class="btn sec" onclick="go('login')">Ya tengo cuenta · Iniciar sesión</button>`;
+}
+async function doRegistro(){
+  const email=val('e').toLowerCase(),pass=val('p');
+  if(!emailOk(email))return msg('m','Email no válido.','err');
+  if(pass.length<6)return msg('m','La contraseña debe tener al menos 6 caracteres.','err');
+  busy('b',true);
+  const {data,error}=await SB.auth.signUp({email,password:pass,options:{data:{
+    rol:'profesor',tipo_licencia:'curso',nombre:val('cont')||val('centro'),
+    centro:val('centro'),cif:val('cif'),direccion:val('dir'),contacto:val('cont'),email_factura:val('ef')||email
+  }}});
+  busy('b',false);
+  if(error) return msg('m', /already registered/i.test(error.message)?'Ese email ya tiene cuenta. Inicia sesión.':('No se pudo crear la cuenta: '+error.message),'err');
+  if(data.session){ sesUser=data.session.user; return irAPanel(); }
+  V.innerHTML=`<h1>Cuenta creada</h1><p class="sub">Te hemos enviado un email a <b>${esc(email)}</b> para confirmar la cuenta. Confírmala y luego inicia sesión.</p><button class="btn" onclick="go('login',{email:'${esc(email)}'})">Ir al login</button>`;
+}
+
+function vDemo(){
+  V.innerHTML=`<h1>Demo gratuita de 3 días</h1><p class="sub">Prueba CareDesk completo 3 días. Cada email solo puede tener una demo.</p>
+    <label>Email</label><input id="e" type="email" placeholder="tu@email.com">
+    <label>Crea una contraseña (mín. 6)</label><input id="p" type="password">
+    <div id="m"></div>
+    <button class="btn" id="b" onclick="doDemo()">Empezar demo de 3 días</button>
+    <button class="btn sec" onclick="go('login')">Volver</button>`;
+}
+async function doDemo(){
+  const email=val('e').toLowerCase(),pass=val('p');
+  if(!emailOk(email))return msg('m','Email no válido.','err');
+  if(pass.length<6)return msg('m','La contraseña debe tener al menos 6 caracteres.','err');
+  busy('b',true);
+  const {data,error}=await SB.auth.signUp({email,password:pass,options:{data:{rol:'profesor',tipo_licencia:'demo',nombre:'(demo)'}}});
+  busy('b',false);
+  if(error) return msg('m', /already registered/i.test(error.message)?'Ese email ya tiene cuenta o ya usó su demo. Inicia sesión.':'No se pudo iniciar la demo. Puede que ese email ya haya usado su demo de 3 días.','err');
+  if(data.session){ sesUser=data.session.user; return irAPanel(); }
+  V.innerHTML=`<h1>Casi listo</h1><p class="sub">Confirma tu email <b>${esc(email)}</b> y luego inicia sesión para empezar la demo.</p><button class="btn" onclick="go('login',{email:'${esc(email)}'})">Ir al login</button>`;
+}
+
+function vCrearPassAlumno(){
+  V.innerHTML=`<h1>Soy alumno · primer acceso</h1><p class="sub">Tu profesor te ha dado de alta con tu email. Crea aquí tu contraseña para entrar.</p>
+    <label>Tu email</label><input id="e" type="email" placeholder="tu@email.com">
+    <label>Crea una contraseña (mín. 6)</label><input id="p" type="password">
+    <div id="m"></div>
+    <button class="btn" id="b" onclick="doCrearPassAlumno()">Crear contraseña y entrar</button>
+    <button class="btn sec" onclick="go('login')">Ya tengo contraseña · Volver</button>`;
+}
+async function doCrearPassAlumno(){
+  const email=val('e').toLowerCase(),pass=val('p');
+  if(!emailOk(email))return msg('m','Email no válido.','err');
+  if(pass.length<6)return msg('m','La contraseña debe tener al menos 6 caracteres.','err');
+  busy('b',true);
+  const {data,error}=await SB.auth.signUp({email,password:pass});
+  busy('b',false);
+  if(error) return msg('m', /already registered/i.test(error.message)?'Ya tienes cuenta: entra con tu email y contraseña desde el login.':'Tu profesor aún no te ha dado de alta con este email (o el email no coincide). Pídeselo y vuelve a intentarlo.','err');
+  if(data.session){ sesUser=data.session.user; return irAPanel(); }
+  V.innerHTML=`<h1>Casi listo</h1><p class="sub">Confirma tu email <b>${esc(email)}</b> y luego inicia sesión.</p><button class="btn" onclick="go('login',{email:'${esc(email)}'})">Ir al login</button>`;
+}
+
+function vRecuperar(){
+  V.innerHTML=`<h1>Recuperar contraseña</h1><p class="sub">Te enviaremos un enlace por email para crear una nueva.</p>
+    <label>Email</label><input id="e" type="email" placeholder="tu@email.com">
+    <div id="m"></div>
+    <button class="btn" id="b" onclick="doRecuperar()">Enviar enlace</button>
+    <button class="btn sec" onclick="go('login')">Volver</button>`;
+}
+async function doRecuperar(){
+  const email=val('e').toLowerCase(); if(!emailOk(email))return msg('m','Email no válido.','err');
+  busy('b',true);
+  const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});
+  busy('b',false);
+  if(error) return msg('m',error.message,'err');
+  msg('m','Si ese email existe, te hemos enviado un enlace para cambiar la contraseña. Revisa tu correo.','ok');
+}
+function vNuevaPass(){
+  V.innerHTML=`<h1>Nueva contraseña</h1><p class="sub">Elige tu nueva contraseña.</p>
+    <label>Nueva contraseña (mín. 6)</label><input id="p" type="password">
+    <label>Repite la contraseña</label><input id="p2" type="password">
+    <div id="m"></div>
+    <button class="btn" id="b" onclick="doNuevaPass()">Guardar</button>`;
+}
+async function doNuevaPass(){
+  if(val('p')!==val('p2'))return msg('m','Las contraseñas no coinciden.','err');
+  if(val('p').length<6)return msg('m','Mínimo 6 caracteres.','err');
+  busy('b',true);
+  const {error}=await SB.auth.updateUser({password:val('p')});
+  busy('b',false);
+  if(error) return msg('m',error.message,'err');
+  await irAPanel();
+}
+
+/* ============ PANELES ============ */
+async function vPanelProfe(){
+  V.innerHTML=`<p class="sub">Cargando tu panel…</p>`;
+  const uid=sesUser.id;
+  const [{data:lic},{data:prof},{data:invs}]=await Promise.all([
+    SB.from('licencias').select('*').eq('profesor_id',uid).maybeSingle(),
+    SB.from('profesores').select('*').eq('id',uid).maybeSingle(),
+    SB.from('invitaciones').select('*').eq('profesor_id',uid).order('creado',{ascending:true})
+  ]);
+  const est=estadoLic(lic);
+  const n=(invs||[]).length;
+  const filas=(invs||[]).length?invs.map(a=>`<tr><td><b>${esc(a.nombre)}</b><br><span class="tiny">${esc(a.email)}</span></td>
+    <td>${a.usada?'<span class="pill ok">registrado</span>':'<span class="pill warn">pendiente</span>'}</td>
+    <td style="text-align:right">${a.usada?'':`<button class="btn sm sec" onclick="delInv('${esc(a.email)}')">Quitar</button>`}</td></tr>`).join(''):'<tr><td colspan="3" class="tiny">Aún no has dado de alta a ningún alumno.</td></tr>';
+  const bloqueado=est.bloqueado;
+  V.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h1 style="margin:0">Panel del profesor</h1><button class="btn sm sec" onclick="salir()">Salir</button></div>
+    <p class="sub">${esc(sesUser.email)}${prof&&prof.centro?' · '+esc(prof.centro):''}</p>
+    <div class="lic"><span>Licencia</span><span class="pill ${est.cls}">${est.txt}</span></div>
+    ${bloqueado?`<div class="msg err">Tu licencia no está activa. En la app real entrarías en modo limitado con aviso para renovar/pagar. (La activación de pago se hace desde el sistema.)</div>`:`<div class="msg ok">Sesión iniciada. En la versión integrada, desde aquí entrarías al simulador de CareDesk.</div>`}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px"><b>Mis alumnos <span class="count">(${n}/30)</span></b></div>
+    <div class="row" style="margin-top:8px"><input id="an" placeholder="Nombre del alumno"><input id="ae" type="email" placeholder="email@alumno.es"></div>
+    <div id="m"></div>
+    <button class="btn" id="b" onclick="doAlta()" ${bloqueado?'disabled':''}>Dar de alta alumno</button>
+    <table><thead><tr><th>Alumno</th><th>Estado</th><th></th></tr></thead><tbody>${filas}</tbody></table>
+    <p class="tiny" style="margin-top:10px">“Pendiente” = aún no ha creado su contraseña. El alumno entra por primera vez con su email desde el login.</p>`;
+}
+function estadoLic(L){
+  if(!L) return {txt:'sin licencia',cls:'err',bloqueado:true};
+  if(L.estado==='impagada') return {txt:'pendiente de pago',cls:'warn',bloqueado:true};
+  if(L.estado==='caducada') return {txt:(L.tipo==='demo'?'demo caducada':'licencia caducada'),cls:'err',bloqueado:true};
+  const dr=diasRest(L.fin);
+  if(dr<=0) return {txt:(L.tipo==='demo'?'demo caducada':'licencia caducada'),cls:'err',bloqueado:true};
+  if(L.tipo==='demo') return {txt:'demo · '+dr+' día'+(dr===1?'':'s')+' restantes',cls:'warn',bloqueado:false};
+  return {txt:'curso activo · hasta '+fmt(L.fin),cls:'ok',bloqueado:false};
+}
+async function doAlta(){
+  const nombre=val('an'),email=val('ae').toLowerCase();
+  if(!nombre)return msg('m','Escribe el nombre del alumno.','err');
+  if(!emailOk(email))return msg('m','Email de alumno no válido.','err');
+  busy('b',true);
+  const {error}=await SB.from('invitaciones').insert({email,profesor_id:sesUser.id,nombre});
+  busy('b',false);
+  if(error){ let t=error.message; if(/LIMITE_30/.test(t))t='Has llegado al máximo de 30 alumnos de tu licencia.'; else if(/duplicate|already exists/i.test(t))t='Ya existe un alumno con ese email.'; return msg('m',t,'err'); }
+  vPanelProfe();
+}
+async function delInv(email){ await SB.from('invitaciones').delete().eq('email',email); vPanelProfe(); }
+
+async function vPanelAlumno(){
+  const {data:al}=await SB.from('alumnos').select('*').eq('id',sesUser.id).maybeSingle();
+  const nom=(al&&al.nombre)||sesUser.email;
+  V.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h1 style="margin:0">¡Hola, ${esc(nom.split(' ')[0])}!</h1><button class="btn sm sec" onclick="salir()">Salir</button></div>
+    <p class="sub">${esc(sesUser.email)}</p>
+    <div class="msg ok">Has entrado como <b>alumno</b>. En la versión integrada, aquí se abriría tu <b>puesto de la central</b> de CareDesk.</div>
+    <p class="tiny">Tu cuenta está ligada a tu profesor. La central, llamadas y prácticas ya funcionan en la app de CareDesk.</p>`;
+}
+function busy(id,on){const b=document.getElementById(id);if(b){b.disabled=on;b.dataset._t=b.dataset._t||b.textContent;b.textContent=on?'…':b.dataset._t;}}
+</script>
