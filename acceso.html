@@ -1,0 +1,82 @@
+<title>Guía Supabase CareDesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  :root{--bg:#f3f6f5;--panel:#fff;--panel2:#eef3f2;--line:#dce6e4;--ink:#16242a;--muted:#5f727a;--accent:#0e8c8c;--accent-ink:#fff;--ok:#2e9e6b;--warn:#c0851d;--danger:#d14b3c;--serif:"Fraunces",Georgia,serif;--sans:"DM Sans",system-ui,sans-serif;--mono:"JetBrains Mono",monospace;}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1418;--panel:#16212a;--panel2:#1c2831;--line:#2a3a42;--ink:#e8eef1;--muted:#93a6b0;--accent:#3ad0bd;--accent-ink:#04231e;}}
+  :root[data-theme="dark"]{--bg:#0e1418;--panel:#16212a;--panel2:#1c2831;--line:#2a3a42;--ink:#e8eef1;--muted:#93a6b0;--accent:#3ad0bd;--accent-ink:#04231e;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+  .wrap{max-width:800px;margin:0 auto;padding:48px 22px 90px}
+  .eyebrow{font-size:12.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,5vw,40px);line-height:1.06;margin:0 0 12px;text-wrap:balance}
+  h2{font-family:var(--serif);font-weight:600;font-size:22px;margin:36px 0 4px}
+  .lede{font-size:17px;color:var(--muted);max-width:60ch}
+  .step{display:flex;gap:16px;align-items:flex-start;margin:14px 0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .n{width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center;font-family:var(--mono);font-weight:700;background:var(--accent);color:var(--accent-ink)}
+  .step h3{margin:0 0 4px;font-size:16.5px}
+  .step p{margin:6px 0;font-size:14.5px}
+  .step p:first-of-type{margin-top:0}
+  code{font-family:var(--mono);font-size:13px;background:var(--panel2);border:1px solid var(--line);padding:1px 6px;border-radius:6px}
+  .callout{background:color-mix(in srgb,var(--warn) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));border-radius:14px;padding:14px 18px;margin:16px 0;font-size:14.5px}
+  .callout b{color:var(--warn)}
+  .accent-note{background:color-mix(in srgb,var(--accent) 10%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:14px;padding:16px 20px;margin:16px 0}
+  .kv{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:13px;margin:8px 0}
+  strong{color:var(--ink)}
+  .foot{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+</style>
+<div class="wrap">
+  <p class="eyebrow">CareDesk · Fase 2 · Puesta en marcha</p>
+  <h1>Guía para crear el proyecto en Supabase</h1>
+  <p class="lede">Sigue estos pasos (15–20 min). Al final me pasas dos claves y yo conecto el login, el registro, la demo y las licencias a tu base de datos. No necesitas saber programar: es todo clicar y pegar.</p>
+
+  <h2>Parte A · Crear el proyecto</h2>
+  <div class="step"><div class="n">1</div><div>
+    <h3>Crea tu cuenta</h3>
+    <p>Entra en <code>supabase.com</code> y pulsa <strong>Start your project</strong>. Puedes registrarte con tu email o con GitHub. Es gratis.</p>
+  </div></div>
+  <div class="step"><div class="n">2</div><div>
+    <h3>Crea un proyecto nuevo</h3>
+    <p><strong>New project</strong>. Ponle nombre <code>caredesk</code>. Elige una <strong>Database Password</strong> segura y <strong>apúntala</strong> (la necesitarás si algún día entras a la base a mano).</p>
+    <p><strong>Region:</strong> elige <strong>Europe (Frankfurt)</strong> — cercanía y datos en la UE (mejor para el RGPD).</p>
+    <p>Pulsa <strong>Create new project</strong> y espera 1–2 min a que se monte.</p>
+  </div></div>
+
+  <h2>Parte B · Crear las tablas</h2>
+  <div class="step"><div class="n">3</div><div>
+    <h3>Abre el editor SQL</h3>
+    <p>En el menú izquierdo, entra en <strong>SQL Editor</strong> → <strong>New query</strong>.</p>
+  </div></div>
+  <div class="step"><div class="n">4</div><div>
+    <h3>Pega el esquema y ejecútalo</h3>
+    <p>Abre el archivo que te paso, <code>caredesk_schema.sql</code>, <strong>selecciona todo</strong> y <strong>cópialo</strong>. Pégalo en el editor SQL y pulsa <strong>Run</strong> (o Ctrl+Enter).</p>
+    <p>Si todo va bien verás <em>“Success. No rows returned”</em>. Eso crea las tablas de cuentas, licencias, alumnos y el control de la demo.</p>
+  </div></div>
+
+  <h2>Parte C · Ajustes de acceso (Auth)</h2>
+  <div class="step"><div class="n">5</div><div>
+    <h3>Facilita las pruebas de hoy</h3>
+    <p>Ve a <strong>Authentication → Providers → Email</strong> y asegúrate de que <strong>Email</strong> está activado.</p>
+    <p>Para probar rápido hoy, en <strong>Authentication → Sign In / Providers</strong> (o <em>Email</em>) <strong>desactiva “Confirm email”</strong> temporalmente. Así las cuentas de prueba entran sin tener que confirmar el correo. <em>Antes de vender, lo volvemos a activar.</em></p>
+  </div></div>
+
+  <h2>Parte D · Pásame dos claves</h2>
+  <div class="step"><div class="n">6</div><div>
+    <h3>Copia la URL y la anon key</h3>
+    <p>Ve a <strong>Project Settings</strong> (el engranaje) → <strong>API</strong>. Copia estos dos valores y me los pegas en el chat:</p>
+    <div class="kv">Project URL   →  https://xxxxxxxx.supabase.co</div>
+    <div class="kv">anon public   →  eyJhbGciOi... (una clave larga)</div>
+    <div class="callout"><b>Tranquilo:</b> la <strong>anon key</strong> es pública por diseño (va en la web); la seguridad la ponen las reglas RLS que acabas de crear. <strong>NUNCA</strong> me pases la <code>service_role</code> ni la Database Password.</div>
+  </div></div>
+
+  <div class="accent-note">
+    <p style="margin:0 0 6px"><strong>Y ya está por tu parte.</strong> Cuando me pases esas dos claves:</p>
+    <p style="margin:0">Conecto el <strong>login único, el registro de profesor, la demo de 3 días y las licencias</strong> a tu Supabase y te doy una versión para publicar y probar. Después ajustamos el alta de alumnos por email (suele necesitar una o dos vueltas contra tu proyecto real) y lo dejamos redondo.</p>
+  </div>
+
+  <h2>Qué queda montado con esto</h2>
+  <p>Cuentas reales de profesor y alumno, licencia por curso, <strong>demo de 3 días con antifraude</strong> (un email no la repite), tope de 30 alumnos, y el acceso del alumno solo si su profesor lo ha invitado — todo con la seguridad de las reglas RLS. El diseño y las pantallas serán las del prototipo que ya validaste.</p>
+
+  <p class="foot">Guía de puesta en marcha · CareDesk Fase 2. El archivo <code>caredesk_schema.sql</code> se entrega junto a esta guía.</p>
+</div>
