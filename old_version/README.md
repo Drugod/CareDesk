@@ -1,2 +1,0 @@
-# simulatele-llamada
-simulatele-llamada
