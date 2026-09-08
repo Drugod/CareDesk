@@ -1195,8 +1195,9 @@ function vInicio(){
     </div>
   </div>
   ${panelPresencia()}
-  ${colaPanelProfesor()}
-  ${panelGrabaciones()}`;
+  ${colaPanelProfesor()}`;
+  /* La grabación ya no se lista en Inicio: se escucha dentro de la evaluación
+     (grabacionHtml en abrirEval). Para reactivar el listado, añadir ${panelGrabaciones()} aquí. */
 }
 
 function vGestion(){
