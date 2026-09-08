@@ -258,8 +258,51 @@
   .step .dot .ic{width:26px;height:26px;stroke-width:1.7}
   .logo .ic{color:var(--accent-ink);width:20px;height:20px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ====== Puerta de acceso (login Supabase) — todo bajo #gate para no chocar con el simulador ====== */
+#gate{position:fixed;inset:0;z-index:9000;background:var(--bg);overflow:auto;display:block}
+#gate.hidden{display:none}
+#gate .g-bar{background:var(--ink);color:#fff;font-size:12.5px;padding:7px 16px;text-align:center}
+#gate .g-shell{max-width:470px;margin:34px auto;padding:0 18px 60px}
+#gate .g-brand{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:20px}
+#gate .g-logo{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-weight:800;background:linear-gradient(135deg,var(--accent),#22b0a6);color:#fff;font-family:var(--mono)}
+#gate .g-nm{font-size:20px;font-weight:700}#gate .g-sb{font-size:11px;color:var(--muted)}
+#gate .g-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 16px 40px -24px rgba(20,55,58,.3)}
+#gate h1{font-family:var(--serif);font-weight:600;font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+#gate .g-sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+#gate label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+#gate input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:11px 12px;border-radius:10px;font:inherit;font-size:15px}
+#gate input:focus{outline:2px solid color-mix(in srgb,var(--accent) 40%,transparent);border-color:var(--accent)}
+#gate .g-btn{width:100%;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-radius:11px;padding:12px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;margin-top:16px}
+#gate .g-btn:disabled{opacity:.6;cursor:default}
+#gate .g-btn.sec{background:transparent;border:1px solid var(--line);color:var(--ink);margin-top:8px}
+#gate .g-btn.sm{width:auto;padding:8px 12px;font-size:13px;margin:0}
+#gate .g-links{margin-top:16px;display:flex;flex-direction:column;gap:8px;text-align:center}
+#gate .g-links a{color:var(--accent);font-size:14px;cursor:pointer;text-decoration:none}
+#gate .g-msg{border-radius:10px;padding:10px 12px;font-size:13.5px;margin:12px 0 0}
+#gate .g-msg.err{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);border:1px solid color-mix(in srgb,var(--danger) 35%,transparent)}
+#gate .g-msg.ok{background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 35%,transparent)}
+#gate .g-msg.info{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent2);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+#gate .g-row{display:flex;gap:10px}#gate .g-row>*{flex:1}
+#gate .g-lic{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:16px 0;font-size:13.5px}
+#gate .g-pill{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+#gate .g-pill.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+#gate .g-pill.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+#gate .g-pill.err{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
+#gate .g-tiny{font-size:12px;color:var(--muted);text-align:center;margin-top:14px}
+</style>
 </head>
 <body>
+<!-- ============ PUERTA DE ACCESO (login único Supabase) ============ -->
+<section id="gate">
+  <div class="g-bar">CareDesk · plataforma de teleasistencia educativa</div>
+  <div class="g-shell">
+    <div class="g-brand"><span class="g-logo">CD</span><div><div class="g-nm">CareDesk</div><div class="g-sb">Acceso a la plataforma</div></div></div>
+    <div id="gateView" class="g-card"><p class="g-sub">Cargando…</p></div>
+    <p class="g-tiny">Un solo acceso para profesores y alumnos. Tras iniciar sesión entrarás al simulador.</p>
+  </div>
+</section>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol viewBox="0 0 24 24" id="i-x"><path d="M6 6l12 12M18 6L6 18"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-headset"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><path d="M4 13h2a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4z"/><path d="M20 13h-2a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2z"/><path d="M20 19a3 3 0 0 1-3 2h-2"/></symbol>
@@ -295,7 +338,7 @@
 </defs></svg>
 
 <!-- ============ SPLASH / ROLE SELECT ============ -->
-<section id="splash" class="splash">
+<section id="splash" class="splash hidden">
   <div style="display:flex;justify-content:flex-end;margin-bottom:6px">
     <div class="langsw"><button data-lang="va" onclick="setLang('va')">VA</button><button data-lang="es" onclick="setLang('es')">ES</button></div>
   </div>
@@ -341,7 +384,7 @@
     <div class="langsw"><button data-lang="va" onclick="setLang('va')">VA</button><button data-lang="es" onclick="setLang('es')">ES</button></div>
     <button class="btn ghost sm" onclick="verNotificaciones()" title="Notificaciones"><svg class="ic"><use href="#i-bell"/></svg></button>
     <div class="role-pill">Sesión: <b id="whoLabel">—</b></div>
-    <button class="btn ghost sm" onclick="salir()">Cambiar rol</button>
+    <button class="btn ghost sm" onclick="salir()" title="Cerrar sesión">Cerrar sesión</button>
   </header>
   <main>
     <nav class="tabs" id="tabs"></nav>
@@ -374,9 +417,9 @@ const state = {
   rol:null, alumnoActivo:null,
   profesores:[{id:'p1',nombre:'Prof. Antuan'}],
   alumnos:[
-    {id:'a1',nombre:'Lucía Fernández'},
-    {id:'a2',nombre:'Marcos Ruiz'},
-    {id:'a3',nombre:'Aixa El Amrani'},
+    {id:'a1',nombre:'Lucía Fernández',email:'lucia@example.com'},
+    {id:'a2',nombre:'Marcos Ruiz',email:'marcos@example.com'},
+    {id:'a3',nombre:'Aixa El Amrani',email:'aixa@example.com'},
   ],
   // usuarios ficticios = personas simuladas que atienden los alumnos (ficha completa)
   usuarios:[
@@ -565,6 +608,14 @@ function esc(s){return (s==null?'':(''+s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<
 /* ================= i18n · Valencià (per defecte) / Castellà ================= */
 state.lang = state.lang || 'va';
 const I18N = {
+  'Nombre y email':'Nom i email',
+  'Email del alumno':"Email de l'alumne",
+  'sin email':'sense email',
+  'Con el email, el alumno podrá entrar a la plataforma (creará su contraseña la primera vez). Límite de 30 alumnos por licencia.':"Amb l'email, l'alumne podrà entrar a la plataforma (crearà la seua contrasenya la primera vegada). Límit de 30 alumnes per llicència.",
+  'Escribe un email válido para el alumno':"Escriu un email vàlid per a l'alumne",
+  'Has llegado al máximo de 30 alumnos de tu licencia':'Has arribat al màxim de 30 alumnes de la teua llicència',
+  'Ya hay un alumno con ese email':'Ja hi ha un alumne amb eixe email',
+  'Email no válido':'Email no vàlid',
   'Guía rápida':'Guia ràpida',
   'Comparte el código de tu centro':'Comparteix el codi del teu centre',
   'Entra como profesor: la app te da un código de 4 dígitos (o escribe el tuyo). Compártelo con tus alumnos; ellos entran como alumno, escriben ese código y eligen su nombre.':"Entra com a professor: l'app et dóna un codi de 4 dígits (o escriu el teu). Compartix-lo amb els teus alumnes; ells entren com a alumne, escriuen eixe codi i trien el seu nom.",
@@ -947,9 +998,9 @@ function aplicarIdioma(root){
   root=root||document.body; if(!root)return;
   root.querySelectorAll('option:not([value])').forEach(o=>{ if(o.__v===undefined){o.__v=o.textContent;o.setAttribute('value',o.__v);} });
   const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null); const arr=[]; while(w.nextNode())arr.push(w.currentNode);
-  arr.forEach(n=>{ const t=n.nodeValue; if(!t||!t.trim())return; if(!ORIG.has(n))ORIG.set(n,t); const src=ORIG.get(n); const nv=state.lang==='va'?trad(src):src; if(n.nodeValue!==nv)n.nodeValue=nv; });
-  root.querySelectorAll('[placeholder]').forEach(e=>{ if(e.__po===undefined)e.__po=e.getAttribute('placeholder'); e.setAttribute('placeholder',state.lang==='va'?trad(e.__po):e.__po); });
-  root.querySelectorAll('[title]').forEach(e=>{ if(e.__to===undefined)e.__to=e.getAttribute('title'); e.setAttribute('title',state.lang==='va'?trad(e.__to):e.__to); });
+  arr.forEach(n=>{ const t=n.nodeValue; if(!t||!t.trim())return; if(n.parentElement&&n.parentElement.closest('#gate'))return; if(!ORIG.has(n))ORIG.set(n,t); const src=ORIG.get(n); const nv=state.lang==='va'?trad(src):src; if(n.nodeValue!==nv)n.nodeValue=nv; });
+  root.querySelectorAll('[placeholder]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__po===undefined)e.__po=e.getAttribute('placeholder'); e.setAttribute('placeholder',state.lang==='va'?trad(e.__po):e.__po); });
+  root.querySelectorAll('[title]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__to===undefined)e.__to=e.getAttribute('title'); e.setAttribute('title',state.lang==='va'?trad(e.__to):e.__to); });
 }
 function setLang(l){ state.lang=l; aplicarIdioma(document.body); document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-lang')===l)); }
 function prioridadDe(e){return ({critica:'Alta',alta:'Alta',media:'Media',baja:'Baja'})[e.gravedad]||'Media'}
@@ -1015,9 +1066,9 @@ const TABS = {
     {k:'inicio',t:'Inicio'},
     {k:'casos',t:'Escenarios y usuarios'},
     {k:'gestion',t:'Alumnos y profesores'},
-    {k:'agenda',t:'Agenda'},
     {k:'avaluacio',t:'Evaluación'},
     {k:'ayuda',t:'Ayuda'},
+    /* Agenda/Alertas desconectadas del menú (código conservado): para reactivar, añadir {k:'agenda',t:'Agenda'} */
   ],
   alumno:[
     {k:'central',t:'Central'},
@@ -1134,7 +1185,7 @@ function vGestion(){
     const regs=registrosDe(a.id);
     const notas=regs.map(notaGlobal).filter(n=>n!=null);
     const media=notas.length?Math.round(notas.reduce((x,y)=>x+y,0)/notas.length)+'/100':'—';
-    return `<tr><td><b>${esc(a.nombre)}</b></td><td>${regs.length}</td><td>${media}</td>
+    return `<tr><td><b>${esc(a.nombre)}</b><br><span class="muted" style="font-size:12px">${a.email?esc(a.email):'<span style=\"color:var(--warn)\">sin email</span>'}</span></td><td>${regs.length}</td><td>${media}</td>
       <td><div style="display:flex;gap:6px;flex-wrap:nowrap;justify-content:flex-end">
       <button class="btn ghost sm" onclick="rtcLlamar('${a.id}')"><svg class="ic"><use href="#i-phone"/></svg> Llamar</button>
       <button class="btn ghost sm" onclick="lanzarA('${a.id}')">Lanzar caso</button>
@@ -1148,13 +1199,15 @@ function vGestion(){
   <h2 class="section">Alumnos y profesores</h2>
   <div class="grid">
     <div class="card">
-      <h3><svg class="ic"><use href="#i-users"/></svg> Alumnos <span class="sub">${state.alumnos.length} en la clase</span></h3>
-      <table><thead><tr><th>Nombre</th><th>Actuaciones</th><th>Media</th><th></th></tr></thead>
+      <h3><svg class="ic"><use href="#i-users"/></svg> Alumnos <span class="sub">${state.alumnos.length} / 30</span></h3>
+      <table><thead><tr><th>Nombre y email</th><th>Actuaciones</th><th>Media</th><th></th></tr></thead>
       <tbody>${filaAl||'<tr><td colspan=4 class="list-empty">Sin alumnos</td></tr>'}</tbody></table>
       <div class="row mt">
-        <div style="flex:2"><label class="f">Nombre del nuevo alumno</label><input id="nuevoAlumno" placeholder="Nombre y apellidos"></div>
-        <div style="flex:0;display:flex;align-items:flex-end"><button class="btn primary" onclick="addAlumno()">Dar de alta</button></div>
+        <div style="flex:1;min-width:150px"><label class="f">Nombre del nuevo alumno</label><input id="nuevoAlumno" placeholder="Nombre y apellidos"></div>
+        <div style="flex:1;min-width:150px"><label class="f">Email del alumno</label><input id="nuevoAlumnoEmail" type="email" placeholder="alumno@correo.com"></div>
       </div>
+      <div class="mt"><button class="btn primary" onclick="addAlumno()">Dar de alta</button></div>
+      <p class="muted" style="font-size:12.5px;margin:8px 0 0">Con el email, el alumno podrá entrar a la plataforma (creará su contraseña la primera vez). Límite de 30 alumnos por licencia.</p>
     </div>
     <div class="card">
       <h3><svg class="ic"><use href="#i-cap"/></svg> Profesores</h3>
@@ -1166,13 +1219,22 @@ function vGestion(){
     </div>
   </div>`;
 }
-function addAlumno(){const n=document.getElementById('nuevoAlumno').value.trim();if(!n)return toast('Escribe un nombre');state.alumnos.push({id:uid('a'),nombre:n});toast('Alumno dado de alta');render();}
+function emailValido(e){return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((e||'').trim());}
+function addAlumno(){
+  const n=document.getElementById('nuevoAlumno').value.trim();
+  const e=document.getElementById('nuevoAlumnoEmail').value.trim().toLowerCase();
+  if(!n)return toast('Escribe un nombre');
+  if(!emailValido(e))return toast('Escribe un email válido para el alumno');
+  if(state.alumnos.length>=30)return toast('Has llegado al máximo de 30 alumnos de tu licencia');
+  if(state.alumnos.some(a=>(a.email||'').toLowerCase()===e))return toast('Ya hay un alumno con ese email');
+  state.alumnos.push({id:uid('a'),nombre:n,email:e});toast('Alumno dado de alta');render();
+}
 function addProf(){const n=document.getElementById('nuevoProf').value.trim();if(!n)return toast('Escribe un nombre');state.profesores.push({id:uid('p'),nombre:n});toast('Profesor añadido');render();}
 function editarProf(id){const p=fnac(id,state.profesores);openModal(`<h3 style="margin-top:0">Editar profesor</h3><label class="f">Nombre</label><input id="edNom" value="${esc(p.nombre)}"><div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarProf('${id}')">Guardar</button></div>`,true);}
 function guardarProf(id){const v=document.getElementById('edNom').value.trim();if(!v)return toast('Escribe un nombre');fnac(id,state.profesores).nombre=v;toast('Profesor actualizado');closeModal();render();}
 function borrarProf(id){if(state.profesores.length<=1)return toast('Debe quedar al menos un profesor');state.profesores=state.profesores.filter(p=>p.id!==id);toast('Profesor eliminado');render();}
-function editarAlumno(id){const a=alumno(id);openModal(`<h3 style="margin-top:0">Editar alumno</h3><label class="f">Nombre</label><input id="edNom" value="${esc(a.nombre)}"><div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarAlumno('${id}')">Guardar</button></div>`,true);}
-function guardarAlumno(id){const v=document.getElementById('edNom').value.trim();if(!v)return toast('Escribe un nombre');alumno(id).nombre=v;toast('Alumno actualizado');closeModal();render();}
+function editarAlumno(id){const a=alumno(id);openModal(`<h3 style="margin-top:0">Editar alumno</h3><label class="f">Nombre</label><input id="edNom" value="${esc(a.nombre)}"><label class="f mt">Email</label><input id="edEmail" type="email" value="${esc(a.email||'')}" placeholder="alumno@correo.com"><div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarAlumno('${id}')">Guardar</button></div>`,true);}
+function guardarAlumno(id){const v=document.getElementById('edNom').value.trim();const e=document.getElementById('edEmail').value.trim().toLowerCase();if(!v)return toast('Escribe un nombre');if(e&&!emailValido(e))return toast('Email no válido');if(e&&state.alumnos.some(a=>a.id!==id&&(a.email||'').toLowerCase()===e))return toast('Ya hay un alumno con ese email');const a=alumno(id);a.nombre=v;a.email=e;toast('Alumno actualizado');closeModal();render();}
 function borrarAlumno(id){state.alumnos=state.alumnos.filter(a=>a.id!==id);state.cola=state.cola.filter(c=>c.alumnoId!==id);toast('Alumno eliminado');render();}
 
 /* ===================== USUARIOS FICTICIOS ===================== */
@@ -2271,7 +2333,7 @@ function miPerfil(){const p=state.profesores[0]||{nombre:'Profesor'};openModal(`
 function guardarPerfil(){const p=state.profesores[0];if(p){p.nombre=document.getElementById('mpN').value.trim()||p.nombre;p.email=document.getElementById('mpE').value;p.tel=document.getElementById('mpT').value;}toast('Perfil actualizado');closeModal();render();}
 function cambiarPass(){openModal(`<h3 style="margin-top:0">Cambiar contraseña</h3><label class="f">Contraseña actual</label><input type="password" id="cp1"><label class="f mt">Nueva contraseña (mín. 6)</label><input type="password" id="cp2"><label class="f mt">Repetir nueva</label><input type="password" id="cp3"><div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarPass()">Guardar</button></div>`,true);}
 function guardarPass(){const a=document.getElementById('cp2').value,b=document.getElementById('cp3').value;if(a.length<6)return toast('Mínimo 6 caracteres');if(a!==b)return toast('Las contraseñas no coinciden');toast('Contraseña actualizada');closeModal();}
-function verNotificaciones(){ensureAlertas();const pend=state.alertas.filter(a=>a.estado==='Pendiente');const rows=pend.length?pend.map(a=>`<div class="agev"><div class="bar" style="background:var(--warn)"></div><div class="meta"><b>${esc(a.titulo)}</b><small>${esc(ownerNom(a.alumnoId))} · ${a.fecha} ${a.hora||''}</small></div></div>`).join(''):'<p class="muted">No tienes notificaciones.</p>';openModal(`<div class="between"><h3 style="margin:0">Notificaciones</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div><div class="mt">${rows}</div>${state.rol==='profesor'?'<div class="between mt"><span></span><button class="btn ghost sm" onclick="closeModal();go(\'alertas\')">Ver todas las alertas</button></div>':''}`);}
+function verNotificaciones(){ensureAlertas();const pend=state.alertas.filter(a=>a.estado==='Pendiente');const rows=pend.length?pend.map(a=>`<div class="agev"><div class="bar" style="background:var(--warn)"></div><div class="meta"><b>${esc(a.titulo)}</b><small>${esc(ownerNom(a.alumnoId))} · ${a.fecha} ${a.hora||''}</small></div></div>`).join(''):'<p class="muted">No tienes notificaciones.</p>';openModal(`<div class="between"><h3 style="margin:0">Notificaciones</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div><div class="mt">${rows}</div>`);}
 
 /* ============ SIMULACIÓN EN GRUPO (3 roles, malla como el original) ============ */
 const SIMROLES={PD:'Persona dependiente',OP:'Teleoperador',OB:'Profesor / Oyente'};
@@ -2591,6 +2653,312 @@ function cargarGrabaciones(){
 function borrarGrabacion(regId){ idbDel(regId); const g=state.grabaciones[regId]; if(g&&g.url){try{URL.revokeObjectURL(g.url);}catch(e){}} delete state.grabaciones[regId]; toast('Grabación borrada'); render(); }
 /* aplicar idioma por defecto (valencià) al cargar */
 buildDict(); setLang(state.lang||'va');
+</script>
+
+<script>
+/* ==========================================================================
+   CareDesk · Puerta de acceso (cuentas y licencias reales con Supabase)
+   Este bloque se ejecuta DESPUÉS del script del simulador, así que puede
+   usar state, entrar(), render(), toast(), esc(), rtc..., etc.
+   ========================================================================== */
+(function(){
+  /* ---- CONFIG Supabase ---- */
+  var SUPA_URL='https://czrtfeoqwkhqvaasiqdb.supabase.co';
+  var SUPA_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6cnRmZW9xd2tocXZhYXNpcWRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTQzMTksImV4cCI6MjEwNDQzMDMxOX0.x40AzgyortqeNEJs2DJ8l-zm1_7F9x_kkq-7IKk6lFg';
+
+  var SB=null, sesUser=null, GACC={};
+  window.GACC=GACC;
+
+  var gv=function(){return document.getElementById('gateView');};
+  var g_val=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
+  var g_msg=function(id,t,cls){var e=document.getElementById(id);if(e)e.innerHTML='<div class="g-msg '+cls+'">'+esc(t)+'</div>';};
+  var g_busy=function(id,on){var b=document.getElementById(id);if(b){b.disabled=on;b.dataset._t=b.dataset._t||b.textContent;b.textContent=on?'…':b.dataset._t;}};
+  var g_emailOk=function(e){return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e||'');};
+  var g_slug=function(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');};
+  var g_sala=function(uid){return 'CD'+String(uid||'').replace(/[^a-zA-Z0-9]/g,'').slice(0,12).toUpperCase();};
+  var g_diasRest=function(iso){return Math.ceil((new Date(iso+'T23:59:59')-new Date())/86400000);};
+  var g_fmt=function(iso){try{return new Date(iso).toLocaleDateString('es-ES');}catch(e){return iso;}};
+
+  function showGate(){var g=document.getElementById('gate');if(g)g.classList.remove('hidden');var a=document.getElementById('app');if(a)a.classList.add('hidden');}
+  function hideGate(){var g=document.getElementById('gate');if(g)g.classList.add('hidden');}
+
+  /* ---- estado de licencia ---- */
+  function g_estadoLic(L){
+    if(!L) return {txt:'sin licencia',cls:'err',bloqueado:true};
+    if(L.estado==='impagada') return {txt:'pendiente de pago',cls:'warn',bloqueado:true};
+    if(L.estado==='caducada') return {txt:(L.tipo==='demo'?'demo caducada':'licencia caducada'),cls:'err',bloqueado:true};
+    var dr=g_diasRest(L.fin);
+    if(dr<=0) return {txt:(L.tipo==='demo'?'demo caducada':'licencia caducada'),cls:'err',bloqueado:true};
+    if(L.tipo==='demo') return {txt:'demo · '+dr+' día'+(dr===1?'':'s')+' restantes',cls:'warn',bloqueado:false};
+    return {txt:'curso activo · hasta '+g_fmt(L.fin),cls:'ok',bloqueado:false};
+  }
+
+  /* ---- navegación entre pantallas de la puerta ---- */
+  var VIEWS={};
+  var GCTX={};
+  function g_go(name,c){GCTX=c||{};(VIEWS[name]||VIEWS.login)();}
+  window.g_go=g_go;
+
+  /* ============ PANTALLAS DE ACCESO ============ */
+  VIEWS.login=function(){
+    gv().innerHTML='<h1>Iniciar sesión</h1><p class="g-sub">Un solo acceso para profesores y alumnos.</p>'+
+      '<label>Email</label><input id="ge" type="email" value="'+esc(GCTX.email||'')+'" placeholder="tu@email.com">'+
+      '<label>Contraseña</label><input id="gp" type="password">'+
+      '<div id="gm"></div>'+
+      '<button class="g-btn" id="gb" onclick="g_doLogin()">Entrar</button>'+
+      '<div class="g-links">'+
+      '<a onclick="g_go(\'registro\')">Registrarme como profesor / centro</a>'+
+      '<a onclick="g_go(\'demo\')">Probar gratis 3 días (demo)</a>'+
+      '<a onclick="g_go(\'crearPassAlumno\')">Soy alumno · entrar por primera vez</a>'+
+      '<a onclick="g_go(\'recuperar\')">He olvidado mi contraseña</a>'+
+      '</div>';
+    if(GCTX.err) g_msg('gm',GCTX.err,'err'); if(GCTX.ok) g_msg('gm',GCTX.ok,'ok');
+  };
+  window.g_doLogin=async function(){
+    var email=g_val('ge').toLowerCase(),pass=g_val('gp');
+    if(!g_emailOk(email))return g_msg('gm','Escribe un email válido.','err');
+    g_busy('gb',true);
+    var r=await SB.auth.signInWithPassword({email:email,password:pass});
+    g_busy('gb',false);
+    if(r.error){return g_msg('gm', /Invalid login/.test(r.error.message)?'Email o contraseña incorrectos. Si eres alumno y es tu primera vez, usa “entrar por primera vez”.':r.error.message,'err');}
+    var s=await SB.auth.getSession(); sesUser=s.data.session.user; g_irAPanel();
+  };
+
+  VIEWS.registro=function(){
+    gv().innerHTML='<h1>Registro de profesor / centro</h1><p class="g-sub">Crea tu cuenta. Tendrás una licencia de curso y podrás dar de alta hasta 30 alumnos.</p>'+
+      '<label>Email de acceso</label><input id="ge" type="email" placeholder="profesor@centro.es">'+
+      '<label>Contraseña (mín. 6)</label><input id="gp" type="password">'+
+      '<div class="g-row"><div><label>Nombre del centro</label><input id="gcentro"></div><div><label>CIF / NIF</label><input id="gcif"></div></div>'+
+      '<label>Dirección</label><input id="gdir">'+
+      '<div class="g-row"><div><label>Persona de contacto</label><input id="gcont"></div><div><label>Email de facturación</label><input id="gef" type="email"></div></div>'+
+      '<div id="gm"></div>'+
+      '<button class="g-btn" id="gb" onclick="g_doRegistro()">Crear cuenta</button>'+
+      '<button class="g-btn sec" onclick="g_go(\'login\')">Ya tengo cuenta · Iniciar sesión</button>';
+  };
+  window.g_doRegistro=async function(){
+    var email=g_val('ge').toLowerCase(),pass=g_val('gp');
+    if(!g_emailOk(email))return g_msg('gm','Email no válido.','err');
+    if(pass.length<6)return g_msg('gm','La contraseña debe tener al menos 6 caracteres.','err');
+    g_busy('gb',true);
+    var r=await SB.auth.signUp({email:email,password:pass,options:{data:{
+      rol:'profesor',tipo_licencia:'curso',nombre:g_val('gcont')||g_val('gcentro'),
+      centro:g_val('gcentro'),cif:g_val('gcif'),direccion:g_val('gdir'),contacto:g_val('gcont'),email_factura:g_val('gef')||email
+    }}});
+    g_busy('gb',false);
+    if(r.error) return g_msg('gm', /already registered/i.test(r.error.message)?'Ese email ya tiene cuenta. Inicia sesión.':('No se pudo crear la cuenta: '+r.error.message),'err');
+    if(r.data.session){ sesUser=r.data.session.user; return g_irAPanel(); }
+    gv().innerHTML='<h1>Cuenta creada</h1><p class="g-sub">Te hemos enviado un email a <b>'+esc(email)+'</b> para confirmar la cuenta. Confírmala y luego inicia sesión.</p><button class="g-btn" onclick="g_go(\'login\',{email:\''+esc(email)+'\'})">Ir al login</button>';
+  };
+
+  VIEWS.demo=function(){
+    gv().innerHTML='<h1>Demo gratuita de 3 días</h1><p class="g-sub">Prueba CareDesk completo 3 días. Cada email solo puede tener una demo.</p>'+
+      '<label>Email</label><input id="ge" type="email" placeholder="tu@email.com">'+
+      '<label>Crea una contraseña (mín. 6)</label><input id="gp" type="password">'+
+      '<div id="gm"></div>'+
+      '<button class="g-btn" id="gb" onclick="g_doDemo()">Empezar demo de 3 días</button>'+
+      '<button class="g-btn sec" onclick="g_go(\'login\')">Volver</button>';
+  };
+  window.g_doDemo=async function(){
+    var email=g_val('ge').toLowerCase(),pass=g_val('gp');
+    if(!g_emailOk(email))return g_msg('gm','Email no válido.','err');
+    if(pass.length<6)return g_msg('gm','La contraseña debe tener al menos 6 caracteres.','err');
+    g_busy('gb',true);
+    var r=await SB.auth.signUp({email:email,password:pass,options:{data:{rol:'profesor',tipo_licencia:'demo',nombre:'(demo)'}}});
+    g_busy('gb',false);
+    if(r.error) return g_msg('gm', /already registered/i.test(r.error.message)?'Ese email ya tiene cuenta o ya usó su demo. Inicia sesión.':'No se pudo iniciar la demo. Puede que ese email ya haya usado su demo de 3 días.','err');
+    if(r.data.session){ sesUser=r.data.session.user; return g_irAPanel(); }
+    gv().innerHTML='<h1>Casi listo</h1><p class="g-sub">Confirma tu email <b>'+esc(email)+'</b> y luego inicia sesión para empezar la demo.</p><button class="g-btn" onclick="g_go(\'login\',{email:\''+esc(email)+'\'})">Ir al login</button>';
+  };
+
+  VIEWS.crearPassAlumno=function(){
+    gv().innerHTML='<h1>Soy alumno · primer acceso</h1><p class="g-sub">Tu profesor te ha dado de alta con tu email. Crea aquí tu contraseña para entrar.</p>'+
+      '<label>Tu email</label><input id="ge" type="email" placeholder="tu@email.com">'+
+      '<label>Crea una contraseña (mín. 6)</label><input id="gp" type="password">'+
+      '<div id="gm"></div>'+
+      '<button class="g-btn" id="gb" onclick="g_doCrearPassAlumno()">Crear contraseña y entrar</button>'+
+      '<button class="g-btn sec" onclick="g_go(\'login\')">Ya tengo contraseña · Volver</button>';
+  };
+  window.g_doCrearPassAlumno=async function(){
+    var email=g_val('ge').toLowerCase(),pass=g_val('gp');
+    if(!g_emailOk(email))return g_msg('gm','Email no válido.','err');
+    if(pass.length<6)return g_msg('gm','La contraseña debe tener al menos 6 caracteres.','err');
+    g_busy('gb',true);
+    var r=await SB.auth.signUp({email:email,password:pass});
+    g_busy('gb',false);
+    if(r.error) return g_msg('gm', /already registered/i.test(r.error.message)?'Ya tienes cuenta: entra con tu email y contraseña desde el login.':'Tu profesor aún no te ha dado de alta con este email (o el email no coincide). Pídeselo y vuelve a intentarlo.','err');
+    if(r.data.session){ sesUser=r.data.session.user; return g_irAPanel(); }
+    gv().innerHTML='<h1>Casi listo</h1><p class="g-sub">Confirma tu email <b>'+esc(email)+'</b> y luego inicia sesión.</p><button class="g-btn" onclick="g_go(\'login\',{email:\''+esc(email)+'\'})">Ir al login</button>';
+  };
+
+  VIEWS.recuperar=function(){
+    gv().innerHTML='<h1>Recuperar contraseña</h1><p class="g-sub">Te enviaremos un enlace por email para crear una nueva.</p>'+
+      '<label>Email</label><input id="ge" type="email" placeholder="tu@email.com">'+
+      '<div id="gm"></div>'+
+      '<button class="g-btn" id="gb" onclick="g_doRecuperar()">Enviar enlace</button>'+
+      '<button class="g-btn sec" onclick="g_go(\'login\')">Volver</button>';
+  };
+  window.g_doRecuperar=async function(){
+    var email=g_val('ge').toLowerCase(); if(!g_emailOk(email))return g_msg('gm','Email no válido.','err');
+    g_busy('gb',true);
+    var r=await SB.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});
+    g_busy('gb',false);
+    if(r.error) return g_msg('gm',r.error.message,'err');
+    g_msg('gm','Si ese email existe, te hemos enviado un enlace para cambiar la contraseña. Revisa tu correo.','ok');
+  };
+
+  VIEWS.nuevaPass=function(){
+    gv().innerHTML='<h1>Nueva contraseña</h1><p class="g-sub">Elige tu nueva contraseña.</p>'+
+      '<label>Nueva contraseña (mín. 6)</label><input id="gp" type="password">'+
+      '<label>Repite la contraseña</label><input id="gp2" type="password">'+
+      '<div id="gm"></div>'+
+      '<button class="g-btn" id="gb" onclick="g_doNuevaPass()">Guardar</button>';
+  };
+  window.g_doNuevaPass=async function(){
+    if(g_val('gp')!==g_val('gp2'))return g_msg('gm','Las contraseñas no coinciden.','err');
+    if(g_val('gp').length<6)return g_msg('gm','Mínimo 6 caracteres.','err');
+    g_busy('gb',true);
+    var r=await SB.auth.updateUser({password:g_val('gp')});
+    g_busy('gb',false);
+    if(r.error) return g_msg('gm',r.error.message,'err');
+    await g_irAPanel();
+  };
+
+  function g_pantallaBloqueado(){
+    showGate();
+    var est=GACC.est||{txt:'sin licencia',cls:'err'};
+    var esDemo=GACC.lic&&GACC.lic.tipo==='demo';
+    gv().innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><h1 style="margin:0">Licencia no activa</h1><button class="g-btn sm sec" onclick="g_salir()">Salir</button></div>'+
+      '<div class="g-lic"><span>Estado de tu licencia</span><span class="g-pill '+est.cls+'">'+esc(est.txt)+'</span></div>'+
+      '<p class="g-sub">'+(esDemo?'Tu demo de 3 días ha terminado. Para seguir usando CareDesk, contrata una licencia de curso.':'Tu licencia de curso está pendiente de activación o de pago. La activación se hace desde el sistema; contacta con soporte para activarla.')+'</p>'+
+      '<div class="g-msg info">Cuando tu licencia esté activa, al iniciar sesión entrarás directamente al simulador.</div>';
+  }
+
+  /* ============ ENRUTADO SEGÚN ROL → SIMULADOR ============ */
+  async function g_irAPanel(){
+    gv().innerHTML='<p class="g-sub">Entrando…</p>';
+    var pr=await SB.from('perfiles').select('rol,nombre').eq('id',sesUser.id).maybeSingle();
+    if(pr.error||!pr.data){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta no tiene perfil. Regístrate de nuevo o contacta con soporte.'}); }
+    GACC.uid=sesUser.id; GACC.perfil=pr.data; GACC.email=sesUser.email;
+    if(pr.data.rol==='profesor'){
+      var res=await Promise.all([
+        SB.from('licencias').select('*').eq('profesor_id',sesUser.id).maybeSingle(),
+        SB.from('profesores').select('*').eq('id',sesUser.id).maybeSingle()
+      ]);
+      GACC.lic=res[0].data; GACC.prof=res[1].data; GACC.est=g_estadoLic(res[0].data);
+      GACC.sala=g_sala(sesUser.id);
+      if(GACC.est.bloqueado) return g_pantallaBloqueado();
+      await g_recargarRoster();
+      return g_abrirProfesor();
+    } else {
+      var al=await SB.from('alumnos').select('*').eq('id',sesUser.id).maybeSingle();
+      if(!al.data){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta de alumno no está completa. Pide a tu profesor que te dé de alta con tu email.'}); }
+      GACC.alu=al.data; GACC.sala=g_sala(al.data.profesor_id);
+      return g_abrirAlumno();
+    }
+  }
+
+  async function g_recargarRoster(){
+    var r=await SB.from('invitaciones').select('*').eq('profesor_id',GACC.uid).order('creado',{ascending:true});
+    var invs=r.data||[];
+    state.alumnos=invs.map(function(iv){return {id:'al_'+g_slug(iv.email),nombre:iv.nombre,email:iv.email,usada:!!iv.usada};});
+  }
+  window.g_recargarRoster=g_recargarRoster;
+
+  function g_abrirProfesor(){
+    state.profesores=[{id:GACC.uid,nombre:(GACC.perfil.nombre||GACC.email)}];
+    window._salaTmp=GACC.sala;
+    hideGate();
+    entrar('profesor');
+    // aviso de licencia (demo con días restantes)
+    if(GACC.est&&GACC.est.cls==='warn'){ try{ toast('Licencia '+GACC.est.txt); }catch(e){} }
+  }
+  function g_abrirAlumno(){
+    var meId='al_'+g_slug(GACC.email);
+    state.alumnos=[{id:meId,nombre:GACC.alu.nombre,email:GACC.email,usada:true}];
+    window._salaTmp=GACC.sala;
+    hideGate();
+    entrar('alumno',meId);
+  }
+
+  /* ---- salir: cierra sesión y vuelve al login ---- */
+  window.g_salir=function(){
+    try{ if(typeof rtcColgar==='function') rtcColgar(); }catch(e){}
+    try{ rtc&&rtc.peer&&rtc.peer.destroy(); }catch(e){}
+    try{ rtc.peer=null; }catch(e){}
+    state.rol=null; state.alumnoActivo=null; state.llamada=null;
+    var a=document.getElementById('app'); if(a)a.classList.add('hidden');
+    try{ closeModal(); }catch(e){}
+    GACC={}; window.GACC=GACC; sesUser=null;
+    if(SB){ try{ SB.auth.signOut(); }catch(e){} }
+    showGate(); g_go('login');
+  };
+  // el botón "Salir" del simulador usa salir(): lo redirigimos al cierre de sesión real
+  salir=window.g_salir;
+
+  /* ============ ALTA / BAJA DE ALUMNOS → Supabase (invitaciones) ============ */
+  addAlumno=async function(){
+    var n=(document.getElementById('nuevoAlumno').value||'').trim();
+    var e=(document.getElementById('nuevoAlumnoEmail').value||'').trim().toLowerCase();
+    if(!n)return toast('Escribe un nombre');
+    if(!g_emailOk(e))return toast('Escribe un email válido para el alumno');
+    if(state.alumnos.length>=30)return toast('Has llegado al máximo de 30 alumnos de tu licencia');
+    if(state.alumnos.some(function(a){return (a.email||'').toLowerCase()===e;}))return toast('Ya hay un alumno con ese email');
+    var r=await SB.from('invitaciones').insert({email:e,profesor_id:GACC.uid,nombre:n});
+    if(r.error){ var t=r.error.message; if(/LIMITE_30/.test(t))t='Has llegado al máximo de 30 alumnos de tu licencia.'; else if(/duplicate|already exists/i.test(t))t='Ya existe un alumno con ese email.'; return toast(t); }
+    await g_recargarRoster(); toast('Alumno dado de alta'); render();
+  };
+  borrarAlumno=async function(id){
+    var a=state.alumnos.find(function(x){return x.id===id;});
+    if(!a)return;
+    var r=await SB.from('invitaciones').delete().eq('email',a.email);
+    if(r.error) return toast('No se pudo eliminar: '+r.error.message);
+    // limpiar cola local de ese alumno
+    state.cola=(state.cola||[]).filter(function(c){return c.alumnoId!==id;});
+    await g_recargarRoster(); toast(a.usada?'Alumno retirado de tu lista':'Alumno eliminado'); render();
+  };
+  editarAlumno=function(id){
+    var a=state.alumnos.find(function(x){return x.id===id;}); if(!a)return;
+    openModal('<h3 style="margin-top:0">Editar alumno</h3>'+
+      '<label class="f">Nombre</label><input id="edNom" value="'+esc(a.nombre)+'">'+
+      '<label class="f mt">Email</label><input id="edEmail" type="email" value="'+esc(a.email||'')+'" disabled style="opacity:.7">'+
+      '<p class="muted" style="font-size:12px;margin:6px 0 0">El email no se puede cambiar aquí (identifica la cuenta del alumno). Para cambiarlo, elimina y vuelve a dar de alta.</p>'+
+      '<div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarAlumno(\''+id+'\')">Guardar</button></div>',true);
+  };
+  guardarAlumno=async function(id){
+    var a=state.alumnos.find(function(x){return x.id===id;}); if(!a)return;
+    var v=(document.getElementById('edNom').value||'').trim();
+    if(!v)return toast('Escribe un nombre');
+    if(a.usada){
+      // alumno ya registrado: actualizar su ficha (permitido por RLS al profesor)
+      var r=await SB.from('alumnos').update({nombre:v}).eq('email',a.email);
+      if(r.error) return toast('No se pudo actualizar: '+r.error.message);
+    } else {
+      // pendiente: no hay UPDATE en invitaciones → borrar y volver a crear con el nuevo nombre
+      await SB.from('invitaciones').delete().eq('email',a.email);
+      var r2=await SB.from('invitaciones').insert({email:a.email,profesor_id:GACC.uid,nombre:v});
+      if(r2.error) return toast('No se pudo actualizar: '+r2.error.message);
+    }
+    await g_recargarRoster(); toast('Alumno actualizado'); closeModal(); render();
+  };
+  // en modo cuenta hay un solo profesor (el titular): estos botones informan
+  addProf=function(){ toast('Cada cuenta tiene un profesor titular. Para más profesores, usa una licencia por profesor.'); };
+  borrarProf=function(){ toast('No se puede eliminar el profesor titular de la cuenta.'); };
+  editarProf=function(){ toast('Los datos del profesor/centro se gestionan desde tu cuenta.'); };
+
+  /* ============ ARRANQUE ============ */
+  if(!window.supabase){
+    gv().innerHTML='<h1>No se pudo cargar</h1><p class="g-sub">No se ha podido conectar con la plataforma (revisa tu conexión a internet y recarga la página).</p>';
+    return;
+  }
+  SB=window.supabase.createClient(SUPA_URL,SUPA_ANON);
+  window.SB=SB;
+  SB.auth.onAuthStateChange(function(event,session){ if(event==='PASSWORD_RECOVERY'){ sesUser=session&&session.user; showGate(); g_go('nuevaPass'); } });
+  (async function(){
+    var s=await SB.auth.getSession();
+    if(s.data.session){ sesUser=s.data.session.user; await g_irAPanel(); } else { g_go('login'); }
+  })();
+})();
+
 </script>
 </body>
 </html>
