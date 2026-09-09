@@ -1408,6 +1408,7 @@ function guardarUF(){
   if(d.edad) d.edad=parseInt(d.edad,10)||d.edad;
   const i=state.usuarios.findIndex(u=>u.id===d.id);
   if(i>=0) state.usuarios[i]=d; else state.usuarios.push(d);
+  try{ window.CD_DB && CD_DB.guardarUsuario(d); }catch(e){}       // persistir en Supabase
   toast('Usuario ficticio guardado');closeModal();render();
 }
 function verFicha(id){
@@ -1571,8 +1572,10 @@ function guardarEscenario(){
   const protocolo=d.protocolo.map(p=>(p||'').trim()).filter(Boolean);
   if(!protocolo.length)return toast('Añade al menos un paso de protocolo');
   const datos={titulo,tipo:d.tipo,objetivo:d.tipo,usuarioId:d.usuarioId,gravedad:d.gravedad,guion:d.guion,pista:d.pista,recursosCorrectos:[...d.recursosCorrectos],protocolo};
-  if(d.id){ Object.assign(escenario(d.id),datos); toast('Escenario actualizado'); }
-  else { state.escenarios.push(Object.assign({id:uid('e')},datos)); toast('Escenario creado'); }
+  let obj;
+  if(d.id){ obj=escenario(d.id); Object.assign(obj,datos); toast('Escenario actualizado'); }
+  else { obj=Object.assign({id:uid('e')},datos); state.escenarios.push(obj); toast('Escenario creado'); }
+  try{ window.CD_DB && CD_DB.guardarEscenario(obj); }catch(e){}   // persistir en Supabase
   state._escEdit=null; closeModal(); render();
 }
 /* ---- Lanzamiento con roles (pareja) o individual ---- */
@@ -2908,9 +2911,10 @@ buildDict(); setLang(state.lang||'va');
     var rolReal=pr&&pr.data?pr.data.rol:null;
     if(rolReal && rolReal!==gLoginRol){
       await SB.auth.signOut(); sesUser=null;
-      var etiqueta=(rolReal==='profesor')?'Profesor':'Alumno';
       return g_go('login',{email:email,rol:gLoginRol,
-        err:'Esa cuenta es de '+(rolReal==='profesor'?'profesor':'alumno')+'. Entra por la pestaña “'+etiqueta+'”.'});
+        err:(gLoginRol==='profesor')
+          ? 'Este email/contraseña no pertenece a ningún centro/profesor.'
+          : 'Este email/contraseña no pertenece a ningún alumno.'});
     }
     g_irAPanel();
   };
@@ -3039,12 +3043,14 @@ buildDict(); setLang(state.lang||'va');
       GACC.sala=g_sala(sesUser.id);
       if(GACC.est.bloqueado) return g_pantallaBloqueado();
       await g_recargarRoster();
+      await g_cargarCatalogo();
       await g_cargarActuaciones();
       return g_abrirProfesor();
     } else {
       var al=await SB.from('alumnos').select('*').eq('id',sesUser.id).maybeSingle();
       if(!al.data){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta de alumno no está completa. Pide a tu profesor que te dé de alta con tu email.'}); }
       GACC.alu=al.data; GACC.sala=g_sala(al.data.profesor_id);
+      await g_cargarCatalogo();
       await g_cargarActuaciones();
       return g_abrirAlumno();
     }
@@ -3056,6 +3062,61 @@ buildDict(); setLang(state.lang||'va');
     state.alumnos=invs.map(function(iv){return {id:'al_'+g_slug(iv.email),nombre:iv.nombre,email:iv.email,usada:!!iv.usada};});
   }
   window.g_recargarRoster=g_recargarRoster;
+
+  /* ============ CATÁLOGO (escenarios y usuarios ficticios) → Supabase ============ */
+  /* Copia del catálogo de ejemplo tal y como viene en el archivo, para poder
+     devolverlo al cerrar sesión y que la siguiente cuenta no herede el ajeno. */
+  var SEED_CAT=null;
+  try{ SEED_CAT=JSON.parse(JSON.stringify({usuarios:state.usuarios,escenarios:state.escenarios})); }catch(e){}
+  function g_restaurarCatalogo(){
+    if(!SEED_CAT) return;
+    try{
+      state.usuarios=JSON.parse(JSON.stringify(SEED_CAT.usuarios));
+      state.escenarios=JSON.parse(JSON.stringify(SEED_CAT.escenarios));
+    }catch(e){}
+  }
+  function g_profCatalogo(){ return g_esProfesor()?GACC.uid:(GACC.alu?GACC.alu.profesor_id:null); }
+
+  /* Todo escenario tiene que apuntar a una ficha que exista */
+  function g_sanearCatalogo(){
+    if(!state.usuarios||!state.usuarios.length) return;
+    var fb=state.usuarios[0].id;
+    (state.escenarios||[]).forEach(function(e){
+      if(!e.usuarioId||!usuario(e.usuarioId)) e.usuarioId=fb;
+      if(e.objetivo===undefined) e.objetivo=e.tipo;
+      if(!Array.isArray(e.protocolo)) e.protocolo=[];
+      if(!Array.isArray(e.recursosCorrectos)) e.recursosCorrectos=[];
+    });
+  }
+
+  /* La primera vez que entra un profesor, su catálogo de ejemplo pasa a ser suyo */
+  async function g_sembrarCatalogo(){
+    var us=(state.usuarios||[]).map(function(u){return {profesor_id:GACC.uid,id:u.id,datos:u};});
+    var es=(state.escenarios||[]).map(function(e){return {profesor_id:GACC.uid,id:e.id,datos:e};});
+    try{
+      if(us.length) await SB.from('usuarios_ficticios').upsert(us,{onConflict:'profesor_id,id'});
+      if(es.length) await SB.from('escenarios').upsert(es,{onConflict:'profesor_id,id'});
+    }catch(e){ console.warn('CareDesk · no se pudo guardar el catálogo inicial:',e); }
+  }
+
+  async function g_cargarCatalogo(){
+    var pid=g_profCatalogo(); if(!SB||!pid) return;
+    var res=await Promise.all([
+      SB.from('usuarios_ficticios').select('id,datos').eq('profesor_id',pid),
+      SB.from('escenarios').select('id,datos').eq('profesor_id',pid)
+    ]);
+    if(res[0].error||res[1].error){
+      console.warn('CareDesk · no se pudo leer el catálogo:',(res[0].error||res[1].error).message); return;
+    }
+    var us=res[0].data||[], es=res[1].data||[];
+    if(!us.length && !es.length){                 // cuenta nueva
+      if(g_esProfesor()) await g_sembrarCatalogo();
+      return;
+    }
+    if(us.length) state.usuarios  = us.map(function(r){ return Object.assign({},r.datos,{id:r.id}); });
+    if(es.length) state.escenarios = es.map(function(r){ return Object.assign({},r.datos,{id:r.id}); });
+    g_sanearCatalogo();
+  }
 
   /* ============ ACTUACIONES Y EVALUACIONES → Supabase ============ */
   function g_esProfesor(){ return GACC.perfil && GACC.perfil.rol==='profesor'; }
@@ -3082,6 +3143,18 @@ buildDict(); setLang(state.lang||'va');
   }
 
   window.CD_DB={
+    /* El profesor guarda un caso que acaba de crear o editar */
+    guardarEscenario:function(e){
+      if(!SB||!g_esProfesor()||!e||!e.id) return;
+      SB.from('escenarios').upsert({profesor_id:GACC.uid,id:e.id,datos:e,actualizado:new Date().toISOString()},{onConflict:'profesor_id,id'})
+        .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo guardar el escenario:',r.error.message); });
+    },
+    /* Ídem con una ficha de usuario ficticio */
+    guardarUsuario:function(u){
+      if(!SB||!g_esProfesor()||!u||!u.id) return;
+      SB.from('usuarios_ficticios').upsert({profesor_id:GACC.uid,id:u.id,datos:u,actualizado:new Date().toISOString()},{onConflict:'profesor_id,id'})
+        .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo guardar la ficha:',r.error.message); });
+    },
     /* El alumno guarda su actuación al colgar */
     guardarActuacion:function(reg){
       if(!SB||!GACC.uid||!reg) return;
@@ -3167,6 +3240,7 @@ buildDict(); setLang(state.lang||'va');
     try{ rtc.peer=null; }catch(e){}
     state.rol=null; state.alumnoActivo=null; state.llamada=null;
     state.registros=[]; state.presencia={};
+    g_restaurarCatalogo();
     var a=document.getElementById('app'); if(a)a.classList.add('hidden');
     try{ closeModal(); }catch(e){}
     GACC={}; window.GACC=GACC; sesUser=null;
