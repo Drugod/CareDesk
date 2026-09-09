@@ -266,7 +266,7 @@
 #gate.hidden{display:none}
 #gate .g-bar{background:var(--ink);color:#fff;font-size:12.5px;padding:7px 16px;text-align:center}
 #gate .g-shell{max-width:470px;margin:34px auto;padding:0 18px 60px}
-#gate .g-brand{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:20px}
+#gate .g-brand{display:flex;align-items:center;gap:11px;justify-content:center;text-align:center;margin-bottom:20px}
 #gate .g-logo{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;font-weight:800;background:linear-gradient(135deg,var(--accent),#22b0a6);color:#fff;font-family:var(--mono)}
 #gate .g-nm{font-size:20px;font-weight:700}#gate .g-sb{font-size:11px;color:var(--muted)}
 #gate .g-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 16px 40px -24px rgba(20,55,58,.3)}
@@ -925,6 +925,10 @@ const I18N = {
   'simulación a 2':'simulació a 2','asignando teleoperador y persona dependiente.':'assignant teleoperador i persona dependent.',
   'Lanzar caso':'Llançar cas','Lanzar un caso':'Llançar un cas','Teléfonos en cola':'Telèfons en cua',
   'Alumnos conectados':'Alumnes connectats',
+  'Descargar todas las grabaciones':'Descarregar totes les gravacions',
+  'Clasificó como':'Ha classificat com a','Puntuación':'Puntuació','sin evaluar':'sense avaluar','Tiempo':'Temps',
+  'No hay grabaciones guardadas en este equipo':'No hi ha gravacions guardades en este equip',
+  'Si el navegador pide permiso para varias descargas, acéptalo.':'Si el navegador demana permís per a diverses descàrregues, accepta\'l.',
   'pendiente prof.':'pendent prof.',
   'El profesor ha evaluado tu actuación':'El professor ha avaluat la teua actuació',
   'Todavía no has dado de alta a ningún alumno.':'Encara no has donat d\'alta cap alumne.',
@@ -1849,7 +1853,12 @@ function crearPares(){const f=document.getElementById('parF').value,h=document.g
 }
 
 function vEvaluacion(){
-  if(!state.registros.length) return `<h2 class="section">Evaluación práctica</h2><div class="card list-empty">Todavía no hay observaciones registradas. Cuando un alumno atienda una llamada aparecerá aquí para evaluar sobre 100 puntos.</div>`;
+  if(!state.registros.length){
+    const nG=Object.keys(state.grabaciones||{}).length;
+    return `<div class="between"><h2 class="section" style="margin:0">Evaluación práctica</h2>
+      ${nG?`<button class="btn ghost sm" onclick="descargarTodasGrab()"><svg class="ic"><use href="#i-download"/></svg> Descargar todas las grabaciones <span class="pill-count">${nG}</span></button>`:''}</div>
+      <div class="card list-empty mt">Todavía no hay observaciones registradas. Cuando un alumno atienda una llamada aparecerá aquí para evaluar sobre 100 puntos.</div>`;
+  }
   const notas=state.registros.map(notaGlobal).filter(n=>n!=null);
   const media=notas.length?Math.round(notas.reduce((a,b)=>a+b,0)/notas.length):null;
   const filas=state.registros.slice().reverse().map(r=>{
@@ -1865,8 +1874,10 @@ function vEvaluacion(){
       <td><button class="btn primary sm" onclick="abrirEval('${r.id}')">${r.eval?'Revisar':'Evaluar'}</button></td>
     </tr>`;
   }).join('');
-  return `<h2 class="section">Evaluación práctica</h2>
-    <div class="grid g3">
+  const nGrab=Object.keys(state.grabaciones||{}).length;
+  return `<div class="between"><h2 class="section" style="margin:0">Evaluación práctica</h2>
+      ${nGrab?`<button class="btn ghost sm" onclick="descargarTodasGrab()"><svg class="ic"><use href="#i-download"/></svg> Descargar todas las grabaciones <span class="pill-count">${nGrab}</span></button>`:''}</div>
+    <div class="grid g3 mt">
       <div class="card stat"><div class="n">${state.registros.length}</div><div class="l">Observaciones</div></div>
       <div class="card stat"><div class="n">${state.registros.filter(r=>!r.eval).length}</div><div class="l">Pendientes de evaluar</div></div>
       <div class="card stat"><div class="n">${media!=null?media+'/100':'—'}</div><div class="l">Calificación media</div></div>
@@ -2785,6 +2796,25 @@ function guardarGrabacionProfesor(meta,blob){
 function cargarGrabaciones(){
   idbAll().then(list=>{ list.forEach(g=>{ try{ if(!state.grabaciones[g.id])state.grabaciones[g.id]={url:URL.createObjectURL(g.blob),alumnoId:g.alumnoId,escenarioId:g.escenarioId,dur:g.dur,ts:g.ts,mime:g.mime}; }catch(e){} }); if(list.length)render(); });
 }
+/* Descarga de golpe todas las grabaciones guardadas en este equipo */
+function descargarTodasGrab(){
+  const ids=Object.keys(state.grabaciones||{}).filter(id=>state.grabaciones[id]&&state.grabaciones[id].url);
+  if(!ids.length) return toast('No hay grabaciones guardadas en este equipo');
+  ids.sort((a,b)=>(state.grabaciones[a].ts||0)-(state.grabaciones[b].ts||0));
+  toast('Descargando '+ids.length+' grabaciones. Si el navegador pide permiso para varias descargas, acéptalo.',5200);
+  ids.forEach((id,i)=>{
+    setTimeout(()=>{
+      const g=state.grabaciones[id]; if(!g||!g.url)return;
+      try{
+        const a=document.createElement('a');
+        a.href=g.url; a.download=nombreArchivoGrab(id,g);
+        a.style.display='none';
+        document.body.appendChild(a); a.click();
+        setTimeout(()=>{try{a.remove();}catch(e){}},1000);
+      }catch(e){}
+    }, i*450);
+  });
+}
 function borrarGrabacion(regId){ idbDel(regId); const g=state.grabaciones[regId]; if(g&&g.url){try{URL.revokeObjectURL(g.url);}catch(e){}} delete state.grabaciones[regId]; toast('Grabación borrada'); render(); }
 /* aplicar idioma por defecto (valencià) al cargar */
 buildDict(); setLang(state.lang||'va');
@@ -2853,14 +2883,15 @@ buildDict(); setLang(state.lang||'va');
     var lk=document.getElementById('gLoginLinks'); if(lk)lk.innerHTML=g_loginLinksHtml(gLoginRol);
   };
   VIEWS.login=function(){
-    gLoginRol='alumno';
+    gLoginRol=(GCTX.rol==='profesor')?'profesor':'alumno';
+    var esProf=(gLoginRol==='profesor');
     gv().innerHTML='<h1>Iniciar sesión</h1><p class="g-sub">Entra con tu email y contraseña.</p>'+
-      '<div class="g-tabs"><button id="gTabAl" class="on" onclick="g_loginTab(\'alumno\')">Alumno</button><button id="gTabPr" onclick="g_loginTab(\'profesor\')">Profesor</button></div>'+
+      '<div class="g-tabs"><button id="gTabAl" class="'+(esProf?'':'on')+'" onclick="g_loginTab(\'alumno\')">Alumno</button><button id="gTabPr" class="'+(esProf?'on':'')+'" onclick="g_loginTab(\'profesor\')">Profesor</button></div>'+
       '<label>Email</label><input id="ge" type="email" value="'+esc(GCTX.email||'')+'" placeholder="tu@email.com">'+
       '<label>Contraseña</label><input id="gp" type="password">'+
       '<div id="gm"></div>'+
       '<button class="g-btn" id="gb" onclick="g_doLogin()">Entrar</button>'+
-      '<div class="g-links" id="gLoginLinks">'+g_loginLinksHtml('alumno')+'</div>';
+      '<div class="g-links" id="gLoginLinks">'+g_loginLinksHtml(gLoginRol)+'</div>';
     if(GCTX.err) g_msg('gm',GCTX.err,'err'); if(GCTX.ok) g_msg('gm',GCTX.ok,'ok');
   };
   window.g_doLogin=async function(){
@@ -2870,7 +2901,18 @@ buildDict(); setLang(state.lang||'va');
     var r=await SB.auth.signInWithPassword({email:email,password:pass});
     g_busy('gb',false);
     if(r.error){return g_msg('gm', /Invalid login/.test(r.error.message)?'Email o contraseña incorrectos. Si eres alumno y es tu primera vez, usa “entrar por primera vez”.':r.error.message,'err');}
-    var s=await SB.auth.getSession(); sesUser=s.data.session.user; g_irAPanel();
+    var s=await SB.auth.getSession(); sesUser=s.data.session.user;
+    /* La pestaña elegida debe corresponder con el rol real de la cuenta:
+       un alumno no entra por la pestaña de profesor ni al revés. */
+    var pr=await SB.from('perfiles').select('rol').eq('id',sesUser.id).maybeSingle();
+    var rolReal=pr&&pr.data?pr.data.rol:null;
+    if(rolReal && rolReal!==gLoginRol){
+      await SB.auth.signOut(); sesUser=null;
+      var etiqueta=(rolReal==='profesor')?'Profesor':'Alumno';
+      return g_go('login',{email:email,rol:gLoginRol,
+        err:'Esa cuenta es de '+(rolReal==='profesor'?'profesor':'alumno')+'. Entra por la pestaña “'+etiqueta+'”.'});
+    }
+    g_irAPanel();
   };
 
   VIEWS.registro=function(){
