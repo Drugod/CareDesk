@@ -243,6 +243,10 @@
   .note-amber{background:#f9efd6;border:1px solid #e6d29e;border-radius:10px;padding:12px}
   .note-amber b{color:#9a6a12}
   .note-info{background:#eef4f8;border:1px solid #cfe0ea;border-radius:12px;padding:12px}
+  .note-warn{background:#fdf4e3;border:1px solid #ecd8a8;border-radius:12px;padding:12px}
+  .legal h4{margin:16px 0 4px;font-size:14px;color:var(--accent2)}
+  .legal p,.legal li{font-size:13.5px;line-height:1.55;margin:6px 0}
+  .legal ul{margin:6px 0 6px 18px;padding:0}
   .chip-rec{background:#fbe4e0;color:#b23a2c;border:1px solid #f0c4bc}
   .chip-practica{background:#efe6fb;color:#6a4bb0;border:1px solid #ddd0f2}
   .chip-profe{background:#e3f4ec;color:#1f7a52;border:1px solid #bfe6d2}
@@ -304,7 +308,9 @@
   <div class="g-shell">
     <div class="g-brand"><div><div class="g-nm">CareDesk</div><div class="g-sb">Acceso a la plataforma</div></div></div>
     <div id="gateView" class="g-card"><p class="g-sub">Cargando…</p></div>
-    <p class="g-tiny">Un solo acceso para profesores y alumnos. Tras iniciar sesión entrarás al simulador.</p>
+    <p class="g-tiny">Un solo acceso para profesores y alumnos. Tras iniciar sesión entrarás al simulador.<br>
+      <a href="#" onclick="verLegal('privacidad');return false" style="color:var(--accent2)">Política de privacidad</a> ·
+      <a href="#" onclick="verLegal('aviso');return false" style="color:var(--accent2)">Aviso legal</a></p>
   </div>
 </section>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -1033,7 +1039,7 @@ function aplicarIdioma(root){
   root=root||document.body; if(!root)return;
   root.querySelectorAll('option:not([value])').forEach(o=>{ if(o.__v===undefined){o.__v=o.textContent;o.setAttribute('value',o.__v);} });
   const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null); const arr=[]; while(w.nextNode())arr.push(w.currentNode);
-  arr.forEach(n=>{ const t=n.nodeValue; if(!t||!t.trim())return; if(n.parentElement&&n.parentElement.closest('#gate'))return; if(!ORIG.has(n))ORIG.set(n,t); const src=ORIG.get(n); const nv=state.lang==='va'?trad(src):src; if(n.nodeValue!==nv)n.nodeValue=nv; });
+  arr.forEach(n=>{ const t=n.nodeValue; if(!t||!t.trim())return; if(n.parentElement&&n.parentElement.closest('#gate,.no-i18n'))return; if(!ORIG.has(n))ORIG.set(n,t); const src=ORIG.get(n); const nv=state.lang==='va'?trad(src):src; if(n.nodeValue!==nv)n.nodeValue=nv; });
   root.querySelectorAll('[placeholder]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__po===undefined)e.__po=e.getAttribute('placeholder'); e.setAttribute('placeholder',state.lang==='va'?trad(e.__po):e.__po); });
   root.querySelectorAll('[title]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__to===undefined)e.__to=e.getAttribute('title'); e.setAttribute('title',state.lang==='va'?trad(e.__to):e.__to); });
 }
@@ -1934,6 +1940,7 @@ function vEvaluacion(){
   return `<div class="between"><h2 class="section" style="margin:0">Evaluación práctica</h2>
       <div class="flex" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">${carpetaPanel()}
       ${nGrab?`<button class="btn ghost sm" onclick="descargarTodasGrab()"><svg class="ic"><use href="#i-download"/></svg> Descargar todas las grabaciones <span class="pill-count">${nGrab}</span></button>`:''}</div></div>
+    ${avisoRetencion()}
     <div class="grid g3 mt">
       <div class="card stat"><div class="n">${state.registros.length}</div><div class="l">Observaciones</div></div>
       <div class="card stat"><div class="n">${state.registros.filter(r=>!r.eval).length}</div><div class="l">Pendientes de evaluar</div></div>
@@ -2242,6 +2249,170 @@ function vMis(){
   return `<h2 class="section">Mis actuaciones</h2><div class="card"><table><thead><tr><th>Caso</th><th>Clasifiqué</th><th>Tiempo</th><th>Nota</th></tr></thead><tbody>${filas}</tbody></table></div>`;
 }
 
+/* =========================================================
+   PROTECCIÓN DE DATOS (RGPD)
+   Rellena estos datos una sola vez: se usan en todos los textos.
+   ========================================================= */
+const LEGAL = {
+  prestador:  '[NOMBRE O RAZÓN SOCIAL DEL PRESTADOR]',
+  nif:        '[NIF / CIF]',
+  domicilio:  '[DOMICILIO COMPLETO]',
+  email:      '[EMAIL DE CONTACTO]',
+  web:        '[DIRECCIÓN WEB DE CAREDESK]',
+  region:     '[REGIÓN DEL PROYECTO SUPABASE — compruébala en Settings → General]',
+  version:    '1.0',
+  fecha:      'septiembre de 2026'
+};
+
+/* Curso escolar: empieza el 1 de septiembre. Devuelve el año de inicio. */
+function cursoDe(ts){ const d=new Date(ts||Date.now()); return d.getMonth()>=8 ? d.getFullYear() : d.getFullYear()-1; }
+function cursoActual(){ return cursoDe(Date.now()); }
+function cursoTxt(y){ return y+'/'+String(y+1).slice(2); }
+/* Grabaciones cuyo plazo de conservación (el curso escolar) ya ha vencido */
+function grabacionesCaducadas(){
+  const c=cursoActual();
+  return Object.keys(state.grabaciones||{}).filter(id=>cursoDe(state.grabaciones[id].ts)<c);
+}
+function avisoRetencion(){
+  const cad=grabacionesCaducadas();
+  if(!cad.length) return '';
+  const cursos=[...new Set(cad.map(id=>cursoTxt(cursoDe(state.grabaciones[id].ts))))].join(', ');
+  return `<div class="card note-warn mt"><div class="between" style="gap:12px;flex-wrap:wrap">
+    <div><b><svg class="ic"><use href="#i-alert"/></svg> Plazo de conservación vencido</b>
+    <p class="muted" style="margin:4px 0 0;font-size:13.5px">Hay ${cad.length} grabación${cad.length===1?'':'es'} del curso ${esc(cursos)}. El plazo acordado con el centro es el curso escolar, así que deberían borrarse.</p></div>
+    <button class="btn danger sm" onclick="borrarCaducadas()"><svg class="ic"><use href="#i-trash"/></svg> Revisar y borrar</button>
+  </div></div>`;
+}
+function borrarCaducadas(){
+  const cad=grabacionesCaducadas();
+  if(!cad.length) return toast('No hay grabaciones fuera de plazo');
+  confirmar(`¿Borrar ${cad.length} grabación${cad.length===1?'':'es'} fuera de plazo?`,
+    'Se eliminan del equipo definitivamente. Las actuaciones y las notas se conservan: solo desaparece el audio.',
+    ()=>{
+      cad.forEach(id=>{ idbDel(id); const g=state.grabaciones[id]; if(g&&g.url){try{URL.revokeObjectURL(g.url);}catch(e){}} delete state.grabaciones[id]; });
+      toast('Grabaciones fuera de plazo eliminadas'); render();
+    });
+}
+
+function legalHtml(seccion){
+  const L=LEGAL;
+  const privacidad=`
+    <h3 style="margin-top:0">Política de privacidad</h3>
+    <p class="muted" style="font-size:12px">Versión ${esc(L.version)} · ${esc(L.fecha)}</p>
+
+    <h4>Quién trata tus datos</h4>
+    <p>CareDesk es una herramienta de simulación que el <b>centro educativo</b> utiliza dentro de su actividad docente.
+    El <b>centro es el responsable del tratamiento</b> de los datos del alumnado y del profesorado.
+    ${esc(L.prestador)} (NIF ${esc(L.nif)}, ${esc(L.domicilio)}) presta el servicio y actúa como
+    <b>encargado del tratamiento</b>: solo trata los datos siguiendo las instrucciones del centro,
+    según el contrato de encargo firmado entre ambos (artículo 28 del RGPD).</p>
+
+    <h4>Qué datos se tratan</h4>
+    <ul>
+      <li><b>De identificación y acceso:</b> nombre y apellidos, correo electrónico y contraseña cifrada.</li>
+      <li><b>De la actividad formativa:</b> casos atendidos, tiempo empleado, decisiones tomadas, calificaciones y observaciones del profesorado.</li>
+      <li><b>Grabaciones de voz</b> de las llamadas simuladas entre alumnado, con fines exclusivamente de evaluación docente.</li>
+      <li><b>Del centro,</b> para la licencia: denominación, NIF, dirección y datos de facturación.</li>
+    </ul>
+    <p>No se recogen datos de salud, ni ideología, ni ningún otro dato de categoría especial.
+    Las personas usuarias que aparecen en los casos son <b>ficticias</b>: no corresponden a personas reales.</p>
+
+    <h4>Para qué y con qué base legal</h4>
+    <p>Los datos se tratan para impartir y evaluar el módulo formativo. La base jurídica es el
+    <b>cumplimiento de una misión de interés público</b> en el ámbito educativo (artículo 6.1.e del RGPD),
+    en relación con la normativa educativa aplicable. Las grabaciones se realizan dentro de la función docente
+    de evaluación; <b>no se difunden ni se publican</b> en ningún caso.</p>
+
+    <h4>Dónde se guardan</h4>
+    <p><b>Las grabaciones de voz no salen del ordenador del profesorado.</b> Se guardan en el almacenamiento local
+    del navegador de ese equipo y, si el profesorado lo configura, en una carpeta de ese mismo ordenador.
+    No se suben a ningún servidor ni a internet.</p>
+    <p>El resto de la información (cuentas, listas de clase, casos, actuaciones y calificaciones) se guarda en
+    <b>Supabase</b>, que actúa como subencargado del tratamiento, en la región ${esc(L.region)}.
+    La voz de las llamadas viaja <b>directamente entre los navegadores</b> del alumnado, cifrada;
+    solo cuando la red del centro impide la conexión directa se retransmite por un servidor intermedio,
+    que no la almacena.</p>
+
+    <h4>Cuánto tiempo</h4>
+    <ul>
+      <li><b>Grabaciones de voz:</b> hasta el final del curso escolar en que se realizaron. La aplicación avisa
+      al profesorado cuando el plazo ha vencido y permite borrarlas.</li>
+      <li><b>Actuaciones y calificaciones:</b> mientras el centro deba conservar el expediente académico.</li>
+      <li><b>Cuentas de acceso:</b> mientras dure la licencia. Al darse de baja un alumno, su cuenta se elimina.</li>
+    </ul>
+
+    <h4>Quién más puede verlos</h4>
+    <p>Solo el profesorado responsable del grupo y el propio alumnado respecto de sus datos.
+    No se ceden datos a terceros ni se usan con fines comerciales, ni para publicidad, ni para entrenar sistemas
+    de inteligencia artificial. Los proveedores tecnológicos necesarios para el servicio actúan como
+    subencargados con contrato.</p>
+
+    <h4>Tus derechos</h4>
+    <p>Puedes solicitar acceder a tus datos, rectificarlos, suprimirlos, limitar u oponerte a su tratamiento y
+    solicitar su portabilidad. Como el <b>responsable es el centro educativo</b>, dirige tu solicitud a la
+    secretaría o a la persona delegada de protección de datos del centro. También puedes escribir a
+    ${esc(L.email)} y tu petición se trasladará al centro.</p>
+    <p>Si consideras que tus datos no se han tratado correctamente, puedes reclamar ante la
+    <b>Agencia Española de Protección de Datos</b> (www.aepd.es).</p>
+
+    <h4>Menores de edad</h4>
+    <p>A partir de los 14 años el alumnado puede consentir por sí mismo los tratamientos que se basen en su
+    consentimiento. Por debajo de esa edad hará falta la autorización de quien ejerza la patria potestad o tutela.
+    En todo caso, el centro informa a las familias del uso de esta herramienta.</p>`;
+
+  const avisoLegal=`
+    <h3 style="margin-top:0">Aviso legal y condiciones de uso</h3>
+    <p class="muted" style="font-size:12px">Versión ${esc(L.version)} · ${esc(L.fecha)}</p>
+
+    <h4>Titularidad</h4>
+    <p>Este servicio es titularidad de ${esc(L.prestador)}, NIF ${esc(L.nif)}, con domicilio en ${esc(L.domicilio)}.
+    Contacto: ${esc(L.email)}. Dirección web: ${esc(L.web)}.</p>
+
+    <h4>Qué es CareDesk</h4>
+    <p>CareDesk es un <b>simulador con fines educativos</b> de una central de teleasistencia, pensado para la
+    formación profesional. <b>No es un servicio de teleasistencia real.</b> No atiende emergencias, no está conectado
+    a ningún servicio de emergencias y no debe utilizarse para prestar asistencia a personas reales.
+    Ante una emergencia real hay que llamar al 112.</p>
+
+    <h4>Uso permitido</h4>
+    <p>El acceso está reservado al profesorado y alumnado de los centros con licencia en vigor. Las credenciales
+    son personales e intransferibles. No está permitido difundir, publicar ni compartir fuera del entorno docente
+    las grabaciones ni las actuaciones del alumnado.</p>
+
+    <h4>Contenidos</h4>
+    <p>Los casos, las fichas y los datos de las personas usuarias que aparecen en el simulador son
+    <b>ficticios</b> y se han creado con fines docentes. Cualquier parecido con personas reales es casual.</p>
+
+    <h4>Responsabilidad</h4>
+    <p>El servicio se presta procurando su disponibilidad y continuidad, pero depende de la conexión a internet
+    del centro y de los navegadores del alumnado. Las grabaciones se guardan en el equipo del profesorado:
+    corresponde al centro custodiarlas y hacer copia si lo considera necesario.</p>`;
+
+  const proteccion=`
+    <h3 style="margin-top:0">Protección de datos · resumen</h3>
+    <p>Esto es lo esencial en pocas líneas. El detalle está en la política de privacidad.</p>
+    <ul>
+      <li>El <b>centro educativo</b> es el responsable de tus datos; CareDesk solo los trata por encargo suyo.</li>
+      <li>Se graba la voz de las llamadas simuladas <b>para que el profesorado pueda evaluarlas</b>.</li>
+      <li>Esas grabaciones <b>no se suben a internet</b>: se quedan en el ordenador del profesorado.</li>
+      <li>Se borran al terminar el curso escolar.</li>
+      <li>No se publican, no se ceden a terceros y no se usan con fines comerciales.</li>
+      <li>Puedes pedir acceder a tus datos, corregirlos o suprimirlos en la secretaría del centro.</li>
+    </ul>`;
+
+  return seccion==='aviso'?avisoLegal:(seccion==='resumen'?proteccion:privacidad);
+}
+function verLegal(seccion){
+  openModal(`<div class="between"><h3 style="margin:0">Información legal</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <div class="flex" style="gap:6px;margin:10px 0">
+      <button class="btn ${seccion==='resumen'?'primary':'ghost'} sm" onclick="verLegal('resumen')">Resumen</button>
+      <button class="btn ${(!seccion||seccion==='privacidad')?'primary':'ghost'} sm" onclick="verLegal('privacidad')">Privacidad</button>
+      <button class="btn ${seccion==='aviso'?'primary':'ghost'} sm" onclick="verLegal('aviso')">Aviso legal</button>
+    </div>
+    <div class="no-i18n legal" style="max-height:60vh;overflow:auto">${legalHtml(seccion)}</div>
+    <p class="muted no-i18n" style="font-size:11.5px;margin:10px 0 0">Estos textos se muestran siempre en castellano para evitar traducciones automáticas en un documento legal.</p>`,true);
+}
+
 /* ---------- util UI ---------- */
 let toastT=null;
 function toast(msg,ms){const el=document.getElementById('toast');el.innerHTML=msg;aplicarIdioma(el);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),ms||2200);}
@@ -2454,6 +2625,12 @@ function vAyuda(){
    <div class="card"><h3 style="margin:0 0 12px"><svg class="ic"><use href="#i-bulb"/></svg> Guía rápida</h3>${pasos}</div>
    <div class="card mt"><div class="between"><div><b>Manual del profesor</b><p class="muted" style="font-size:13px;margin:4px 0 0">Guía de uso de la plataforma.</p></div><button class="btn sm" onclick="toast('En la versión real, aquí se descargaría el PDF del manual.')">Descargar PDF</button></div></div>
    <div class="flex mt" style="gap:8px"><button class="btn sm" onclick="miPerfil()">Mi perfil</button><button class="btn sm" onclick="cambiarPass()">Cambiar contraseña</button></div>
+   <div class="card mt note-teal"><div class="between" style="gap:12px;flex-wrap:wrap">
+     <div><b><svg class="ic"><use href="#i-file"/></svg> Protección de datos</b>
+     <p class="muted" style="margin:4px 0 0;font-size:13px">Qué datos se tratan, dónde se guardan las grabaciones y cuánto tiempo se conservan. Comparte este resumen con tu alumnado al empezar el curso.</p></div>
+     <div class="flex" style="gap:6px"><button class="btn sm" onclick="verLegal('resumen')">Ver resumen</button>
+     <button class="btn ghost sm" onclick="verLegal('privacidad')">Política completa</button></div>
+   </div></div>
    <h3 class="mt">Preguntas frecuentes</h3>${acc}`;
 }
 function toggleFaq(i){state._faq=state._faq===i?null:i;render();}
