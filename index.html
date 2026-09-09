@@ -604,6 +604,9 @@ function hoyMas(d){const x=new Date();x.setDate(x.getDate()+d);return x.toISOStr
 function fnac(id,arr,key='id'){return arr.find(o=>o[key]===id)}
 function usuario(id){return fnac(id,state.usuarios)}
 function escenario(id){return fnac(id,state.escenarios)}
+/* Un escenario eliminado que aún tiene actuaciones registradas se queda oculto
+   (no se lista, pero sigue resolviendo el título y la ficha de esas actuaciones). */
+function escenariosVisibles(){return state.escenarios.filter(e=>!e._oculto)}
 function alumno(id){return fnac(id,state.alumnos)}
 function tipoTxt(v){const o=state.tipos.find(t=>t.v===v);return o?o.t:v}
 function recursoTxt(v){const o=state.recursos.find(t=>t.v===v);return o?o.t:v}
@@ -925,7 +928,19 @@ const I18N = {
   'simulación a 2':'simulació a 2','asignando teleoperador y persona dependiente.':'assignant teleoperador i persona dependent.',
   'Lanzar caso':'Llançar cas','Lanzar un caso':'Llançar un cas','Teléfonos en cola':'Telèfons en cua',
   'Alumnos conectados':'Alumnes connectats',
+  'Alumno actualizado · email de acceso cambiado':'Alumne actualitzat · email d\'accés canviat',
+  'Alumno actualizado':'Alumne actualitzat','Alumno y cuenta eliminados':'Alumne i compte eliminats',
+  'Alumno eliminado':'Alumne eliminat','Alumno dado de alta':'Alumne donat d\'alta',
+  'Ese alumno no está en tu lista':'Eixe alumne no està en la teua llista',
+  'Ya hay otro alumno con ese email':'Ja hi ha un altre alumne amb eixe email',
+  'Escribe un email válido':'Escriu un email vàlid','Escribe un nombre':'Escriu un nom',
+  'Eliminar':'Eliminar','Cancelar':'Cancel·lar','Sin asignar':'Sense assignar',
+  'Esta acción no se puede deshacer.':'Esta acció no es pot desfer.',
+  'Caso eliminado':'Cas eliminat','Ficha eliminada':'Fitxa eliminada',
   'Descargar todas las grabaciones':'Descarregar totes les gravacions',
+  'Elegir carpeta del equipo':'Triar carpeta de l\'equip','Copiar todas ahí':'Copiar-les totes ahí','Cambiar':'Canviar',
+  'Antes elige una carpeta':'Abans tria una carpeta','Sin permiso sobre esa carpeta':'Sense permís sobre eixa carpeta',
+  'No había nada que copiar':'No hi havia res a copiar',
   'Clasificó como':'Ha classificat com a','Puntuación':'Puntuació','sin evaluar':'sense avaluar','Tiempo':'Temps',
   'No hay grabaciones guardadas en este equipo':'No hi ha gravacions guardades en este equip',
   'Si el navegador pide permiso para varias descargas, acéptalo.':'Si el navegador demana permís per a diverses descàrregues, accepta\'l.',
@@ -1173,7 +1188,7 @@ function notaBloque(r,b,draft){
    VISTAS — PROFESOR
    ========================================================= */
 function vInicio(){
-  const nAl=state.alumnos.length, nEsc=state.escenarios.length;
+  const nAl=state.alumnos.length, nEsc=escenariosVisibles().length;
   const nReg=state.registros.length, pend=state.cola.length;
   const sinEval=state.registros.filter(r=>!r.eval).length;
   const notas=state.registros.map(notaGlobal).filter(n=>n!=null);
@@ -1261,7 +1276,7 @@ function guardarAlumno(id){const v=document.getElementById('edNom').value.trim()
 function borrarAlumno(id){state.alumnos=state.alumnos.filter(a=>a.id!==id);state.cola=state.cola.filter(c=>c.alumnoId!==id);toast('Alumno eliminado');render();}
 
 /* ===================== USUARIOS FICTICIOS ===================== */
-function ownerNom(id){const a=alumno(id);return a?a.nombre:'—';}
+function ownerNom(id){const a=alumno(id);return a?a.nombre:'Sin asignar';}
 function estrellasN(n){n=Math.max(0,Math.min(5,n||0));return '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(0,5-n);}
 function obsDe(uid){return state.observaciones.filter(o=>o.usuarioId===uid);}
 function ufCard(u){
@@ -1278,6 +1293,7 @@ function ufCard(u){
       <button class="btn ghost sm" onclick="editarUF('${u.id}')">Editar</button>
       <button class="btn ghost sm" onclick="verObs('${u.id}')">Obs${ob.length?` <span class="pill-count">${ob.length}</span>`:''}</button>
       <button class="btn ghost sm" onclick="toggleActivo('${u.id}')">${u.activo?'Desactivar':'Activar'}</button>
+      <button class="btn ghost sm" onclick="borrarUF('${u.id}')"><svg class="ic"><use href="#i-trash"/></svg> Eliminar</button>
     </div></div>`;
 }
 function ufFiltrados(){
@@ -1330,7 +1346,7 @@ function ufVacio(){return {id:uid('u'),nombre:'',pila:'',apellidos:'',expediente
   calle:'',numero:'',piso:'',cp:'',provincia:'',ciudad:'',tipoVivienda:'Piso',accesoInstr:'',custodiaLlaves:false,ascensor:false,mascotas:false,
   situacionFamiliar:'',situacionLaboral:'',profesion:'',dependencia:'Autónomo',convivientes:1,cuidador:false,cuidadorTipo:'Familiar',
   alergias:'',ayudas:[],pastillero:false,acuda:false,contactosEmergencia:[],patologias:'',medico:'',notas:'',
-  dueno:(state.alumnos[0]&&state.alumnos[0].id)||'',dir:'',tel:''};}
+  dueno:'',dir:'',tel:''};}
 function reFormUF(){const sc=document.getElementById('ufScroll');const top=sc?sc.scrollTop:0;formUF();const s2=document.getElementById('ufScroll');if(s2)s2.scrollTop=top;}
 function nuevoUF(){state._uf=ufVacio();state._ufEdit=false;formUF();}
 function editarUF(id){state._uf=JSON.parse(JSON.stringify(usuario(id)));state._ufEdit=true;formUF();}
@@ -1346,7 +1362,8 @@ function formUF(){
   const S=(f,opts,blank)=>{const O=(d[f]&&!opts.includes(d[f]))?[d[f],...opts]:opts;return `<select onchange="state._uf['${f}']=this.value">`+(blank?`<option value="" ${!d[f]?'selected':''}>—</option>`:'')+O.map(o=>`<option ${d[f]===o?'selected':''}>${o}</option>`).join('')+`</select>`;};
   const SW=(f,lab,re)=>`<label class="flex" style="gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" ${d[f]?'checked':''} onchange="state._uf['${f}']=this.checked;${re?'reFormUF()':''}" style="width:auto"> ${lab}</label>`;
   const L=(t)=>`<label class="f">${t}</label>`;
-  const alOpts=state.alumnos.map(a=>`<option value="${a.id}" ${d.dueno===a.id?'selected':''}>${esc(a.nombre)}</option>`).join('');
+  const alOpts='<option value="" '+(!d.dueno||!alumno(d.dueno)?'selected':'')+'>Sin asignar</option>'+
+    state.alumnos.map(a=>`<option value="${a.id}" ${d.dueno===a.id?'selected':''}>${esc(a.nombre)}</option>`).join('');
   const idiomasChips=d.idiomas.map((x,i)=>`<span class="chip b" style="margin:2px">${esc(x)} <span onclick="quitarIdioma(${i})" style="cursor:pointer"><svg class="ic"><use href="#i-x"/></svg></span></span>`).join('');
   const ayudasChips=c.ayudas.map(a=>`<span class="chip ${d.ayudas.includes(a)?'b':''}" style="cursor:pointer;margin:2px" onclick="toggleAyuda('${a}')">${a}</span>`).join('');
   const contactos=d.contactosEmergencia.map((ct,i)=>`
@@ -1411,6 +1428,22 @@ function guardarUF(){
   try{ window.CD_DB && CD_DB.guardarUsuario(d); }catch(e){}       // persistir en Supabase
   toast('Usuario ficticio guardado');closeModal();render();
 }
+function borrarUF(id){
+  const u=usuario(id); if(!u)return;
+  const casos=state.escenarios.filter(e=>e.usuarioId===id);
+  if(casos.length){
+    return toast('No se puede eliminar: la usan '+casos.length+' caso'+(casos.length===1?'':'s')+' ('+casos.slice(0,2).map(c=>c.titulo).join(', ')+(casos.length>2?'…':'')+')');
+  }
+  const obs=obsDe(id).length;
+  confirmar(`¿Eliminar la ficha de “${esc(u.nombre)}”?`,
+    obs?`Se borrarán también sus ${obs} observación${obs===1?'':'es'}. Esta acción no se puede deshacer.`:'Esta acción no se puede deshacer.',
+    ()=>{
+      state.usuarios=state.usuarios.filter(x=>x.id!==id);
+      state.observaciones=state.observaciones.filter(o=>o.usuarioId!==id);
+      try{ window.CD_DB && CD_DB.borrarUsuario(id); }catch(err){}
+      toast('Ficha eliminada'); closeModal(); render();
+    });
+}
 function verFicha(id){
   const u=usuario(id);
   const fila=(k,v)=>v?`<div class="fila"><span>${k}</span><span style="text-align:right">${esc(''+v)}</span></div>`:'';
@@ -1472,7 +1505,7 @@ function addObs(uarg){
 }
 
 function vEscenarios(){
-  const cards=state.escenarios.map(e=>{
+  const cards=escenariosVisibles().map(e=>{
     const u=usuario(e.usuarioId)||{nombre:'—',edad:'',dispositivo:''};
     return `<div class="card">
       <div class="between"><h3 style="margin:0"><span class="badge ${badgeClass(e.tipo)}">${tipoTxt(e.tipo)}</span> ${esc(e.titulo)}</h3>
@@ -1481,7 +1514,10 @@ function vEscenarios(){
       <p class="muted" style="font-size:13.5px;margin:6px 0"><svg class="ic"><use href="#i-user"/></svg> ${esc(u.nombre)}, ${u.edad} años · ${esc(u.dispositivo)}</p>
       <p class="quote">${esc(e.guion)}</p>
       <div class="between mt" style="gap:8px">
-        <button class="btn ghost sm" onclick="editarEscenario('${e.id}')"><svg class="ic"><use href="#i-pencil"/></svg> Editar</button></div>
+        <div class="flex" style="gap:6px">
+          <button class="btn ghost sm" onclick="editarEscenario('${e.id}')"><svg class="ic"><use href="#i-pencil"/></svg> Editar</button>
+          <button class="btn ghost sm" onclick="borrarEscenario('${e.id}')"><svg class="ic"><use href="#i-trash"/></svg> Eliminar</button>
+        </div></div>
     </div>`;
   }).join('');
   return `<div class="between"><h2 class="section" style="margin:0">Escenarios y casos</h2>
@@ -1578,11 +1614,27 @@ function guardarEscenario(){
   try{ window.CD_DB && CD_DB.guardarEscenario(obj); }catch(e){}   // persistir en Supabase
   state._escEdit=null; closeModal(); render();
 }
+function borrarEscenario(id){
+  const e=escenario(id); if(!e)return;
+  const usos=state.registros.filter(r=>r.escenarioId===id).length;
+  const enCola=state.cola.some(c=>c.escenarioId===id);
+  if(enCola) return toast('Ese caso está ahora mismo en la cola. Retíralo antes de eliminarlo.');
+  const aviso = usos
+    ? `Hay ${usos} actuación${usos===1?'':'es'} registrada${usos===1?'':'s'} con este caso. Se conservan y se seguirán pudiendo evaluar, pero el caso desaparecerá de la lista.`
+    : 'Esta acción no se puede deshacer.';
+  confirmar(`¿Eliminar el caso “${esc(e.titulo)}”?`, aviso, ()=>{
+    if(usos){ e._oculto=true; }                       // lo mantenemos para las actuaciones antiguas
+    else { state.escenarios=state.escenarios.filter(x=>x.id!==id); }
+    try{ window.CD_DB && CD_DB.borrarEscenario(id); }catch(err){}
+    toast('Caso eliminado'); closeModal(); render();
+  });
+}
+
 /* ---- Lanzamiento con roles (pareja) o individual ---- */
 function elegirCasoModal(){
-  if(!state.escenarios.length){toast('Todavía no hay escenarios. Créalos en “Escenarios y usuarios”.');return;}
+  if(!escenariosVisibles().length){toast('Todavía no hay escenarios. Créalos en “Escenarios y usuarios”.');return;}
   if(!state.alumnos.length){toast('Da de alta al menos un alumno para poder lanzar un caso');return;}
-  const opts=state.escenarios.map(e=>{
+  const opts=escenariosVisibles().map(e=>{
     const u=usuario(e.usuarioId)||{nombre:'—'};
     return `<option value="${e.id}">${esc(e.titulo)} · ${esc(u.nombre)}</option>`;
   }).join('');
@@ -1633,7 +1685,7 @@ function lanzarPareja(escId,opId,pdId){
 }
 function profesorEscuchar(caseId){ simEntrarCaso(caseId,'OB'); toast('Te unes a escuchar (en silencio)'); }
 function lanzarEsc(eid){lanzarModal(eid);}
-function lanzarA(aid){lanzarModal(state.escenarios[0].id);}
+function lanzarA(aid){const v=escenariosVisibles();if(v.length)lanzarModal(v[0].id);}
 function lanzar(escId,alId){
   const casoId=uid('c');
   state.cola.push({id:casoId,modo:'solo',escenarioId:escId,alumnoId:alId,estado:'sonando',regId:null});
@@ -1859,7 +1911,8 @@ function vEvaluacion(){
   if(!state.registros.length){
     const nG=Object.keys(state.grabaciones||{}).length;
     return `<div class="between"><h2 class="section" style="margin:0">Evaluación práctica</h2>
-      ${nG?`<button class="btn ghost sm" onclick="descargarTodasGrab()"><svg class="ic"><use href="#i-download"/></svg> Descargar todas las grabaciones <span class="pill-count">${nG}</span></button>`:''}</div>
+      <div class="flex" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">${carpetaPanel()}
+      ${nG?`<button class="btn ghost sm" onclick="descargarTodasGrab()"><svg class="ic"><use href="#i-download"/></svg> Descargar todas las grabaciones <span class="pill-count">${nG}</span></button>`:''}</div></div>
       <div class="card list-empty mt">Todavía no hay observaciones registradas. Cuando un alumno atienda una llamada aparecerá aquí para evaluar sobre 100 puntos.</div>`;
   }
   const notas=state.registros.map(notaGlobal).filter(n=>n!=null);
@@ -1879,7 +1932,8 @@ function vEvaluacion(){
   }).join('');
   const nGrab=Object.keys(state.grabaciones||{}).length;
   return `<div class="between"><h2 class="section" style="margin:0">Evaluación práctica</h2>
-      ${nGrab?`<button class="btn ghost sm" onclick="descargarTodasGrab()"><svg class="ic"><use href="#i-download"/></svg> Descargar todas las grabaciones <span class="pill-count">${nGrab}</span></button>`:''}</div>
+      <div class="flex" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">${carpetaPanel()}
+      ${nGrab?`<button class="btn ghost sm" onclick="descargarTodasGrab()"><svg class="ic"><use href="#i-download"/></svg> Descargar todas las grabaciones <span class="pill-count">${nGrab}</span></button>`:''}</div></div>
     <div class="grid g3 mt">
       <div class="card stat"><div class="n">${state.registros.length}</div><div class="l">Observaciones</div></div>
       <div class="card stat"><div class="n">${state.registros.filter(r=>!r.eval).length}</div><div class="l">Pendientes de evaluar</div></div>
@@ -2034,7 +2088,7 @@ function descartar(cid){state.cola=state.cola.filter(c=>c.id!==cid);toast('Llama
 /* ---- Diálogo de práctica del alumno (solo o con un compañero) ---- */
 function practicarDialog(){
   if(state.simActivo){return toast('Ya estás en una simulación');}
-  const escOpts=state.escenarios.map(e=>`<option value="${e.id}">${tipoTxt(e.tipo)} — ${esc(e.titulo)}</option>`).join('');
+  const escOpts=escenariosVisibles().map(e=>`<option value="${e.id}">${tipoTxt(e.tipo)} — ${esc(e.titulo)}</option>`).join('');
   const otros=state.alumnos.filter(a=>a.id!==state.alumnoActivo);
   const partOpts=otros.length?otros.map(a=>`<option value="${a.id}">${esc(a.nombre)}</option>`).join(''):'<option value="">(no hay compañeros)</option>';
   state._prac={modo:'solo'};
@@ -2193,8 +2247,22 @@ let toastT=null;
 function toast(msg,ms){const el=document.getElementById('toast');el.innerHTML=msg;aplicarIdioma(el);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),ms||2200);}
 function openModal(html,persistente){const cerrar=persistente?'':'onclick="if(event.target===this)closeModal()"';const mr=document.getElementById('modalRoot');mr.innerHTML=`<div class="modal-bg" ${cerrar}><div class="modal">${html}</div></div>`;aplicarIdioma(mr);}
 function closeModal(){document.getElementById('modalRoot').innerHTML='';}
+/* Confirmación con dos botones (evita confirm() nativo, que bloquea la página) */
+let _confirmFn=null;
+function confirmar(titulo,texto,alConfirmar){
+  _confirmFn=alConfirmar;
+  openModal(`<div class="between"><h3 style="margin:0">${titulo}</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <p class="muted mt" style="font-size:13.5px">${texto}</p>
+    <div class="between mt"><span></span><div>
+      <button class="btn ghost sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn danger" onclick="confirmarSi()"><svg class="ic"><use href="#i-trash"/></svg> Eliminar</button>
+    </div></div>`,true);
+}
+function confirmarSi(){ const f=_confirmFn; _confirmFn=null; closeModal(); if(typeof f==='function')f(); }
 
 /* ===================== EXÁMENES ===================== */
+/* Cualquier cambio en la configuración de exámenes se persiste entera */
+function examenesTocado(){ try{ window.CD_DB && CD_DB.guardarExamenes(); }catch(e){} }
 function ensureExamenes(){ if(state.examenes)return; state.examenes={
   modulos:[['MF1423','Llamadas entrantes'],['MF1424','Llamadas salientes'],['MF1425','Herramientas y habilidades']],
   preguntas:[
@@ -2226,7 +2294,7 @@ function exBanco(mod){
 }
 function nuevaPregunta(mod){state._q={id:uid('q'),modulo:mod,enunciado:'',opciones:['','','',''],correcta:0,nivel:'Ambos niveles',origen:'centro'};state._qEdit=false;formPregunta();}
 function editarPregunta(id){state._q=JSON.parse(JSON.stringify(fnac(id,state.examenes.preguntas)));state._qEdit=true;formPregunta();}
-function borrarPregunta(id){state.examenes.preguntas=state.examenes.preguntas.filter(q=>q.id!==id);toast('Pregunta eliminada');render();}
+function borrarPregunta(id){state.examenes.preguntas=state.examenes.preguntas.filter(q=>q.id!==id);examenesTocado();toast('Pregunta eliminada');render();}
 function formPregunta(){
   const q=state._q;
   const ops=q.opciones.map((o,i)=>`<div class="flex" style="gap:8px;margin-top:6px"><span style="width:20px;font-weight:700">${'ABCD'[i]}</span><input value="${esc(o)}" onchange="state._q.opciones[${i}]=this.value" placeholder="Opción ${'ABCD'[i]}"></div>`).join('');
@@ -2237,7 +2305,7 @@ function formPregunta(){
      <div><label class="f">Nivel</label><select onchange="state._q.nivel=this.value">${NIVELES.map(n=>`<option ${q.nivel===n?'selected':''}>${n}</option>`).join('')}</select></div></div>
    <div class="between mt"><span></span><div><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarPregunta()">Guardar</button></div></div>`,true);
 }
-function guardarPregunta(){const q=state._q;if(!q.enunciado.trim())return toast('Escribe el enunciado');const i=state.examenes.preguntas.findIndex(x=>x.id===q.id);if(i>=0)state.examenes.preguntas[i]=q;else state.examenes.preguntas.push(q);toast('Pregunta guardada');closeModal();render();}
+function guardarPregunta(){const q=state._q;if(!q.enunciado.trim())return toast('Escribe el enunciado');const i=state.examenes.preguntas.findIndex(x=>x.id===q.id);if(i>=0)state.examenes.preguntas[i]=q;else state.examenes.preguntas.push(q);examenesTocado();toast('Pregunta guardada');closeModal();render();}
 function exExamenes(mod){
   const exs=state.examenes.examenes.filter(e=>e.modulo===mod);
   const rows=exs.map(e=>`<tr><td><b>${esc(e.titulo)}</b></td><td>${esc(e.nivel)}</td><td>${e.preguntaIds.length}</td><td><span class="chip ${e.publicado?'g':'y'}">${e.publicado?'Publicado':'Borrador'}</span></td><td><button class="btn ghost sm" onclick="togglePublicar('${e.id}')">${e.publicado?'Despublicar':'Publicar'}</button><button class="btn ghost sm" onclick="borrarExamen('${e.id}')"><svg class="ic"><use href="#i-x"/></svg></button></td></tr>`).join('')||'<tr><td colspan=5 class="list-empty">Sin exámenes</td></tr>';
@@ -2252,18 +2320,18 @@ function publicarExamen(mod){openModal(`<h3 style="margin-top:0">Crear examen ·
 function crearExamen(mod){const t=document.getElementById('exT').value.trim()||('Examen '+mod),niv=document.getElementById('exN').value,num=parseInt(document.getElementById('exNum').value)||5;
   const pool=state.examenes.preguntas.filter(q=>q.modulo===mod&&(niv==='Ambos niveles'||q.nivel===niv||q.nivel==='Ambos niveles'));
   if(!pool.length)return toast('No hay preguntas para ese módulo/nivel');
-  state.examenes.examenes.push({id:uid('ex'),modulo:mod,titulo:t,nivel:niv,preguntaIds:pool.slice(0,num).map(q=>q.id),publicado:true});toast('Examen publicado');closeModal();render();}
-function togglePublicar(id){const e=fnac(id,state.examenes.examenes);e.publicado=!e.publicado;render();}
-function borrarExamen(id){state.examenes.examenes=state.examenes.examenes.filter(e=>e.id!==id);render();}
+  state.examenes.examenes.push({id:uid('ex'),modulo:mod,titulo:t,nivel:niv,preguntaIds:pool.slice(0,num).map(q=>q.id),publicado:true});examenesTocado();toast('Examen publicado');closeModal();render();}
+function togglePublicar(id){const e=fnac(id,state.examenes.examenes);e.publicado=!e.publicado;examenesTocado();render();}
+function borrarExamen(id){state.examenes.examenes=state.examenes.examenes.filter(e=>e.id!==id);examenesTocado();render();}
 function exRubrica(mod){
   const r=state.examenes.rubricas[mod]||[];
-  const rows=r.map((c,i)=>`<div class="row" style="align-items:flex-end;margin-bottom:6px"><div style="flex:2"><input value="${esc(c.t)}" onchange="state.examenes.rubricas['${mod}'][${i}].t=this.value"></div><div><input type="number" value="${c.peso}" onchange="state.examenes.rubricas['${mod}'][${i}].peso=parseInt(this.value)||0"></div><div style="flex:0"><button class="btn ghost sm" onclick="borrarCriterio('${mod}',${i})"><svg class="ic"><use href="#i-x"/></svg></button></div></div>`).join('')||'<p class="muted">Sin criterios.</p>';
+  const rows=r.map((c,i)=>`<div class="row" style="align-items:flex-end;margin-bottom:6px"><div style="flex:2"><input value="${esc(c.t)}" onchange="state.examenes.rubricas['${mod}'][${i}].t=this.value;examenesTocado()"></div><div><input type="number" value="${c.peso}" onchange="state.examenes.rubricas['${mod}'][${i}].peso=parseInt(this.value)||0;examenesTocado()"></div><div style="flex:0"><button class="btn ghost sm" onclick="borrarCriterio('${mod}',${i})"><svg class="ic"><use href="#i-x"/></svg></button></div></div>`).join('')||'<p class="muted">Sin criterios.</p>';
   const total=r.reduce((a,c)=>a+(c.peso||0),0);
   return `<div class="card"><div class="between"><h3 style="margin:0">Rúbrica práctica · ${mod}</h3><span class="chip ${total===100?'g':'y'}">Suma de pesos: ${total}</span></div>${rows}
-   <div class="between mt"><button class="btn ghost sm" onclick="addCriterio('${mod}')">+ Añadir criterio</button><button class="btn ok sm" onclick="toast('Rúbrica guardada')">Guardar rúbrica</button></div></div>`;
+   <div class="between mt"><button class="btn ghost sm" onclick="addCriterio('${mod}')">+ Añadir criterio</button><button class="btn ok sm" onclick="examenesTocado();toast('Rúbrica guardada')">Guardar rúbrica</button></div></div>`;
 }
-function addCriterio(mod){(state.examenes.rubricas[mod]=state.examenes.rubricas[mod]||[]).push({t:'Nuevo criterio',peso:0});render();}
-function borrarCriterio(mod,i){state.examenes.rubricas[mod].splice(i,1);render();}
+function addCriterio(mod){(state.examenes.rubricas[mod]=state.examenes.rubricas[mod]||[]).push({t:'Nuevo criterio',peso:0});examenesTocado();render();}
+function borrarCriterio(mod,i){state.examenes.rubricas[mod].splice(i,1);examenesTocado();render();}
 function exResultados(mod){
   const rs=state.examenes.resultados.filter(r=>r.modulo===mod);
   const rows=rs.slice().reverse().map(r=>`<tr><td>${esc(ownerNom(r.alumnoId))}</td><td>${r.modulo}</td><td>${esc(r.tipo)}</td><td>${esc(r.nivel||'')}</td><td><b>${r.nota}/100</b></td><td>${r.aciertos!=null?r.aciertos+'/'+r.total:'—'}</td><td>${r.fecha}</td></tr>`).join('')||'<tr><td colspan=7 class="list-empty">Sin resultados</td></tr>';
@@ -2272,7 +2340,11 @@ function exResultados(mod){
 }
 function registrarPractico(mod){const alOpts=state.alumnos.map(a=>`<option value="${a.id}">${esc(a.nombre)}</option>`).join('');
   openModal(`<h3 style="margin-top:0">Registrar examen práctico · ${mod}</h3><label class="f">Alumno</label><select id="rpAl">${alOpts}</select><label class="f mt">Nota (0-100)</label><input id="rpNota" type="number" value="80"><div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarPractico('${mod}')">Guardar</button></div>`,true);}
-function guardarPractico(mod){const al=document.getElementById('rpAl').value,nota=parseInt(document.getElementById('rpNota').value)||0;state.examenes.resultados.push({id:uid('res'),alumnoId:al,modulo:mod,tipo:'práctico',nivel:'',nota,aciertos:null,total:null,fecha:hoyISO()});toast('Resultado registrado');closeModal();render();}
+function guardarPractico(mod){const al=document.getElementById('rpAl').value,nota=parseInt(document.getElementById('rpNota').value)||0;
+  const res={id:uid('res'),alumnoId:al,modulo:mod,tipo:'práctico',nivel:'',nota,aciertos:null,total:null,fecha:hoyISO()};
+  state.examenes.resultados.push(res);
+  try{ window.CD_DB && CD_DB.guardarResultado(res); }catch(e){}
+  toast('Resultado registrado');closeModal();render();}
 function vExamenesAlumno(){
   ensureExamenes();const pubs=state.examenes.examenes.filter(e=>e.publicado);const mis=state.examenes.resultados.filter(r=>r.alumnoId===state.alumnoActivo);
   const cards=pubs.map(e=>{const hecho=mis.filter(r=>r.examenId===e.id).sort((a,b)=>b.nota-a.nota)[0];return `<div class="card"><div class="between"><h3 style="margin:0">${esc(e.titulo)} <span class="sub">${e.modulo} · ${esc(e.nivel)}</span></h3>${hecho?`<span class="chip g">${hecho.nota}/100</span>`:''}</div><p class="muted" style="font-size:13px">${e.preguntaIds.length} preguntas</p><button class="btn primary sm" onclick="realizarExamen('${e.id}')">${hecho?'Repetir':'Realizar examen'}</button></div>`;}).join('')||'<div class="list-empty">No hay exámenes publicados todavía.</div>';
@@ -2283,7 +2355,10 @@ function formRealizar(){const E=state._examActivo;const e=fnac(E.id,state.examen
   const preg=E.qs.map((q,i)=>`<div class="card" style="background:var(--panel2);margin-bottom:8px"><b style="font-size:14px">${i+1}. ${esc(q.enunciado)}</b>${q.opciones.map((o,j)=>`<label class="flex" style="gap:8px;margin-top:6px;font-size:14px;cursor:pointer"><input type="radio" name="q${i}" style="width:auto" onchange="state._examActivo.resp[${i}]=${j}"> ${'ABCD'[j]}) ${esc(o)}</label>`).join('')}</div>`).join('');
   openModal(`<div class="between"><h3 style="margin:0">${esc(e.titulo)}</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div><div style="max-height:64vh;overflow:auto">${preg}</div><div class="between mt"><span class="muted" style="font-size:12px">Responde y entrega</span><button class="btn ok" onclick="entregarExamen()">Entregar</button></div>`,true);}
 function entregarExamen(){const E=state._examActivo;const e=fnac(E.id,state.examenes.examenes);let ac=0;E.qs.forEach((q,i)=>{if(E.resp[i]===q.correcta)ac++;});const nota=Math.round(ac/E.qs.length*100);
-  state.examenes.resultados.push({id:uid('res'),examenId:e.id,alumnoId:state.alumnoActivo,modulo:e.modulo,tipo:'teórico',nivel:e.nivel,nota,aciertos:ac,total:E.qs.length,fecha:hoyISO()});closeModal();
+  const res={id:uid('res'),examenId:e.id,alumnoId:state.alumnoActivo,modulo:e.modulo,tipo:'teórico',nivel:e.nivel,nota,aciertos:ac,total:E.qs.length,fecha:hoyISO()};
+  state.examenes.resultados.push(res);
+  try{ window.CD_DB && CD_DB.guardarResultado(res); }catch(e){}
+  closeModal();
   openModal(`<h3 style="margin-top:0">Resultado</h3><p style="font-size:15px"><b>${nota}/100</b> · ${ac} de ${E.qs.length} correctas</p><div class="bar"><i style="width:${nota}%"></i></div><div class="between mt"><span></span><button class="btn primary" onclick="closeModal();render()">Entendido</button></div>`);}
 
 /* ===================== ALERTAS ===================== */
@@ -2787,16 +2862,79 @@ function rtcEnviarGrabacion(peerId,meta,u8){
 }
 /* ---- Persistencia en el equipo del profesor (IndexedDB) ---- */
 let _DB=null;
-function idbOpen(){ return new Promise((res,rej)=>{ if(_DB)return res(_DB); try{ const r=indexedDB.open('caredesk',1); r.onupgradeneeded=e=>{const db=e.target.result; if(!db.objectStoreNames.contains('grab'))db.createObjectStore('grab',{keyPath:'id'});}; r.onsuccess=e=>{_DB=e.target.result;res(_DB);}; r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); }
+function idbOpen(){ return new Promise((res,rej)=>{ if(_DB)return res(_DB); try{ const r=indexedDB.open('caredesk',2); r.onupgradeneeded=e=>{const db=e.target.result; if(!db.objectStoreNames.contains('grab'))db.createObjectStore('grab',{keyPath:'id'}); if(!db.objectStoreNames.contains('cfg'))db.createObjectStore('cfg',{keyPath:'k'});}; r.onsuccess=e=>{_DB=e.target.result;res(_DB);}; r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); }
 function idbPut(o){ return idbOpen().then(db=>new Promise((res,rej)=>{const tx=db.transaction('grab','readwrite');tx.objectStore('grab').put(o);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);})).catch(()=>{}); }
 function idbAll(){ return idbOpen().then(db=>new Promise(res=>{const out=[];const tx=db.transaction('grab','readonly');tx.objectStore('grab').openCursor().onsuccess=e=>{const c=e.target.result;if(c){out.push(c.value);c.continue();}else res(out);};tx.onerror=()=>res(out);})).catch(()=>[]); }
 function idbDel(id){ return idbOpen().then(db=>new Promise(res=>{const tx=db.transaction('grab','readwrite');tx.objectStore('grab').delete(id);tx.oncomplete=()=>res();tx.onerror=()=>res();})).catch(()=>{}); }
+/* ---- Carpeta del disco donde se copian las grabaciones (Chrome / Edge) ---- */
+let _DIR=null;                                   // FileSystemDirectoryHandle en memoria
+function carpetaSoportada(){ return typeof window.showDirectoryPicker==='function'; }
+function cfgPut(k,v){ return idbOpen().then(db=>new Promise(res=>{const tx=db.transaction('cfg','readwrite');tx.objectStore('cfg').put({k,v});tx.oncomplete=()=>res();tx.onerror=()=>res();})).catch(()=>{}); }
+function cfgGet(k){ return idbOpen().then(db=>new Promise(res=>{const tx=db.transaction('cfg','readonly');const q=tx.objectStore('cfg').get(k);q.onsuccess=()=>res(q.result?q.result.v:null);q.onerror=()=>res(null);})).catch(()=>null); }
+function cfgDel(k){ return idbOpen().then(db=>new Promise(res=>{const tx=db.transaction('cfg','readwrite');tx.objectStore('cfg').delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res();})).catch(()=>{}); }
+
+async function carpetaRecordar(){                // al arrancar, recuperar la carpeta ya elegida
+  if(!carpetaSoportada())return null;
+  try{
+    const h=await cfgGet('dirGrab'); if(!h)return null;
+    _DIR=h; return h;
+  }catch(e){ return null; }
+}
+async function carpetaPermiso(pedir){
+  if(!_DIR)return 'none';
+  try{
+    let p=await _DIR.queryPermission({mode:'readwrite'});
+    if(p!=='granted' && pedir) p=await _DIR.requestPermission({mode:'readwrite'});
+    return p;
+  }catch(e){ return 'none'; }
+}
+async function carpetaElegir(){
+  if(!carpetaSoportada())return toast('Tu navegador no permite esto. Usa Chrome o Edge, o descarga las grabaciones a mano.');
+  try{
+    const h=await window.showDirectoryPicker({mode:'readwrite',id:'caredesk-grab'});
+    _DIR=h; await cfgPut('dirGrab',h);
+    toast('Grabaciones guardadas en «'+h.name+'» a partir de ahora');
+    const n=Object.keys(state.grabaciones||{}).length;
+    if(n) setTimeout(()=>carpetaVolcarTodas(),300);
+    render();
+  }catch(e){ /* el profesor ha cancelado el diálogo */ }
+}
+async function carpetaOlvidar(){
+  _DIR=null; await cfgDel('dirGrab'); toast('Ya no se copiarán las grabaciones a ninguna carpeta'); render();
+}
+async function carpetaEscribir(id,g,blob){
+  if(!_DIR||!blob)return false;
+  if((await carpetaPermiso(false))!=='granted')return false;
+  try{
+    const fh=await _DIR.getFileHandle(nombreArchivoGrab(id,g),{create:true});
+    const w=await fh.createWritable(); await w.write(blob); await w.close();
+    return true;
+  }catch(e){ console.warn('CareDesk · no se pudo escribir en la carpeta:',e); return false; }
+}
+async function carpetaVolcarTodas(){
+  if(!_DIR)return toast('Antes elige una carpeta');
+  if((await carpetaPermiso(true))!=='granted')return toast('Sin permiso sobre esa carpeta');
+  const list=await idbAll(); let n=0;
+  for(const g of list){ if(await carpetaEscribir(g.id,g,g.blob)) n++; }
+  toast(n?('Copiadas '+n+' grabaciones a «'+_DIR.name+'»'):'No había nada que copiar');
+}
+function carpetaPanel(){
+  if(!carpetaSoportada())return '';
+  if(!_DIR) return `<button class="btn ghost sm" onclick="carpetaElegir()"><svg class="ic"><use href="#i-folder"/></svg> Elegir carpeta del equipo</button>`;
+  return `<span class="chip b"><svg class="ic"><use href="#i-folder"/></svg> ${esc(_DIR.name)}</span>
+    <button class="btn ghost sm" onclick="carpetaVolcarTodas()">Copiar todas ahí</button>
+    <button class="btn ghost sm" onclick="carpetaElegir()">Cambiar</button>
+    <button class="btn ghost sm" onclick="carpetaOlvidar()"><svg class="ic"><use href="#i-x"/></svg></button>`;
+}
+
 function guardarGrabacionProfesor(meta,blob){
   const g={id:meta.regId,alumnoId:meta.alumnoId,escenarioId:meta.escenarioId,mime:meta.mime,dur:meta.dur,ts:meta.ts,blob};
   idbPut(g);
   try{ state.grabaciones[meta.regId]={url:URL.createObjectURL(blob),alumnoId:meta.alumnoId,escenarioId:meta.escenarioId,dur:meta.dur,ts:meta.ts,mime:meta.mime}; }catch(e){}
+  carpetaEscribir(meta.regId,g,blob);            // copia automática a la carpeta del profesor
 }
 function cargarGrabaciones(){
+  carpetaRecordar();
   idbAll().then(list=>{ list.forEach(g=>{ try{ if(!state.grabaciones[g.id])state.grabaciones[g.id]={url:URL.createObjectURL(g.blob),alumnoId:g.alumnoId,escenarioId:g.escenarioId,dur:g.dur,ts:g.ts,mime:g.mime}; }catch(e){} }); if(list.length)render(); });
 }
 /* Descarga de golpe todas las grabaciones guardadas en este equipo */
@@ -3043,15 +3181,13 @@ buildDict(); setLang(state.lang||'va');
       GACC.sala=g_sala(sesUser.id);
       if(GACC.est.bloqueado) return g_pantallaBloqueado();
       await g_recargarRoster();
-      await g_cargarCatalogo();
-      await g_cargarActuaciones();
+      await g_cargarTodo();
       return g_abrirProfesor();
     } else {
       var al=await SB.from('alumnos').select('*').eq('id',sesUser.id).maybeSingle();
       if(!al.data){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta de alumno no está completa. Pide a tu profesor que te dé de alta con tu email.'}); }
       GACC.alu=al.data; GACC.sala=g_sala(al.data.profesor_id);
-      await g_cargarCatalogo();
-      await g_cargarActuaciones();
+      await g_cargarTodo();
       return g_abrirAlumno();
     }
   }
@@ -3081,6 +3217,11 @@ buildDict(); setLang(state.lang||'va');
   function g_sanearCatalogo(){
     if(!state.usuarios||!state.usuarios.length) return;
     var fb=state.usuarios[0].id;
+    /* Un dueño que ya no está en la clase se deja sin asignar, para que la ficha
+       no arrastre ids de un curso anterior ni del catálogo de ejemplo. */
+    (state.usuarios||[]).forEach(function(u){
+      if(u.dueno && !alumno(u.dueno)) u.dueno='';
+    });
     (state.escenarios||[]).forEach(function(e){
       if(!e.usuarioId||!usuario(e.usuarioId)) e.usuarioId=fb;
       if(e.objetivo===undefined) e.objetivo=e.tipo;
@@ -3092,7 +3233,8 @@ buildDict(); setLang(state.lang||'va');
   /* La primera vez que entra un profesor, su catálogo de ejemplo pasa a ser suyo */
   async function g_sembrarCatalogo(){
     var us=(state.usuarios||[]).map(function(u){return {profesor_id:GACC.uid,id:u.id,datos:u};});
-    var es=(state.escenarios||[]).map(function(e){return {profesor_id:GACC.uid,id:e.id,datos:e};});
+    var es=(state.escenarios||[]).filter(function(e){return !e._oculto;})
+                                  .map(function(e){return {profesor_id:GACC.uid,id:e.id,datos:e};});
     try{
       if(us.length) await SB.from('usuarios_ficticios').upsert(us,{onConflict:'profesor_id,id'});
       if(es.length) await SB.from('escenarios').upsert(es,{onConflict:'profesor_id,id'});
@@ -3116,6 +3258,50 @@ buildDict(); setLang(state.lang||'va');
     if(us.length) state.usuarios  = us.map(function(r){ return Object.assign({},r.datos,{id:r.id}); });
     if(es.length) state.escenarios = es.map(function(r){ return Object.assign({},r.datos,{id:r.id}); });
     g_sanearCatalogo();
+  }
+
+  /* Carga de datos de la cuenta. Si una parte falla (tabla que aún no existe,
+     internet flojo…) se avisa por consola pero NUNCA se impide entrar. */
+  async function g_cargarTodo(){
+    var pasos=[['catálogo',g_cargarCatalogo],['exámenes',g_cargarExamenes],['actuaciones',g_cargarActuaciones]];
+    for(var i=0;i<pasos.length;i++){
+      try{ await pasos[i][1](); }
+      catch(e){ console.warn('CareDesk · no se pudo cargar '+pasos[i][0]+':',e&&e.message||e); }
+    }
+  }
+
+  /* ============ EXÁMENES → Supabase ============ */
+  async function g_guardarExamenesAhora(){
+    if(!SB||!g_esProfesor()||!state.examenes) return;
+    var X=state.examenes;
+    var r=await SB.from('examenes_config').upsert({
+      profesor_id:GACC.uid,
+      datos:{modulos:X.modulos,preguntas:X.preguntas,examenes:X.examenes,rubricas:X.rubricas},
+      actualizado:new Date().toISOString()
+    },{onConflict:'profesor_id'});
+    if(r&&r.error) console.warn('CareDesk · no se pudieron guardar los exámenes:',r.error.message);
+  }
+  async function g_cargarExamenes(){
+    var pid=g_profCatalogo(); if(!SB||!pid) return;
+    try{ ensureExamenes(); }catch(e){ return; }
+    var res=await Promise.all([
+      SB.from('examenes_config').select('datos').eq('profesor_id',pid).maybeSingle(),
+      SB.from('resultados_examen').select('datos').eq('profesor_id',pid)
+    ]);
+    if(res[0].error||res[1].error){
+      console.warn('CareDesk · no se pudieron leer los exámenes:',(res[0].error||res[1].error).message);
+    }
+    var cfg=res[0].data&&res[0].data.datos;
+    if(cfg){
+      if(cfg.modulos)   state.examenes.modulos=cfg.modulos;
+      if(cfg.preguntas) state.examenes.preguntas=cfg.preguntas;
+      if(cfg.examenes)  state.examenes.examenes=cfg.examenes;
+      if(cfg.rubricas)  state.examenes.rubricas=cfg.rubricas;
+    } else if(g_esProfesor()){
+      await g_guardarExamenesAhora();          // primera vez: el banco de ejemplo pasa a ser suyo
+    }
+    var rs=(res[1].data||[]).map(function(x){return x.datos;}).filter(Boolean);
+    state.examenes.resultados=rs;
   }
 
   /* ============ ACTUACIONES Y EVALUACIONES → Supabase ============ */
@@ -3154,6 +3340,37 @@ buildDict(); setLang(state.lang||'va');
       if(!SB||!g_esProfesor()||!u||!u.id) return;
       SB.from('usuarios_ficticios').upsert({profesor_id:GACC.uid,id:u.id,datos:u,actualizado:new Date().toISOString()},{onConflict:'profesor_id,id'})
         .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo guardar la ficha:',r.error.message); });
+    },
+    borrarEscenario:function(id){
+      if(!SB||!g_esProfesor()||!id) return;
+      SB.from('escenarios').delete().eq('profesor_id',GACC.uid).eq('id',id)
+        .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo borrar el escenario:',r.error.message); });
+    },
+    borrarUsuario:function(id){
+      if(!SB||!g_esProfesor()||!id) return;
+      SB.from('usuarios_ficticios').delete().eq('profesor_id',GACC.uid).eq('id',id)
+        .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo borrar la ficha:',r.error.message); });
+    },
+    /* Configuración de exámenes: se guarda entera en una fila del profesor */
+    guardarExamenes:function(){
+      if(!SB||!g_esProfesor()||!state.examenes) return;
+      clearTimeout(CD_DB._tEx);
+      CD_DB._tEx=setTimeout(function(){ g_guardarExamenesAhora(); },600);   // agrupa cambios seguidos
+    },
+    /* Un resultado de examen (teórico del alumno o práctico del profesor) */
+    guardarResultado:function(res){
+      if(!SB||!GACC.uid||!res||!res.id) return;
+      var pid=g_profCatalogo(); if(!pid) return;
+      var al=null;
+      try{ al=(state.alumnos||[]).filter(function(a){return a.id===res.alumnoId;})[0]||null; }catch(e){}
+      SB.from('resultados_examen').upsert({
+        profesor_id:pid, id:res.id,
+        alumno_id:(!g_esProfesor()?GACC.uid:null),
+        alumno_email:((al&&al.email)||(!g_esProfesor()?GACC.email:'')||'').toLowerCase(),
+        datos:res
+      },{onConflict:'profesor_id,id'}).then(function(r){
+        if(r.error) console.warn('CareDesk · no se pudo guardar el resultado:',r.error.message);
+      });
     },
     /* El alumno guarda su actuación al colgar */
     guardarActuacion:function(reg){
@@ -3241,6 +3458,7 @@ buildDict(); setLang(state.lang||'va');
     state.rol=null; state.alumnoActivo=null; state.llamada=null;
     state.registros=[]; state.presencia={};
     g_restaurarCatalogo();
+    state.examenes=null;                       // se vuelve a sembrar con ensureExamenes()
     var a=document.getElementById('app'); if(a)a.classList.add('hidden');
     try{ closeModal(); }catch(e){}
     GACC={}; window.GACC=GACC; sesUser=null;
@@ -3262,38 +3480,72 @@ buildDict(); setLang(state.lang||'va');
     if(r.error){ var t=r.error.message; if(/LIMITE_30/.test(t))t='Has llegado al máximo de 30 alumnos de tu licencia.'; else if(/duplicate|already exists/i.test(t))t='Ya existe un alumno con ese email.'; return toast(t); }
     await g_recargarRoster(); toast('Alumno dado de alta'); render();
   };
-  borrarAlumno=async function(id){
+  /* Llama a la Edge Function que sí puede tocar cuentas de acceso.
+     Si no está desplegada, lo dice con un mensaje entendible. */
+  async function g_gestionAlumno(cuerpo){
+    try{
+      var r=await SB.functions.invoke('gestion-alumnos',{body:cuerpo});
+      if(r.error){
+        var det=''; try{ det=(await r.error.context.json()).error||''; }catch(e){}
+        return {error: det || 'No se pudo completar (¿está desplegada la función “gestion-alumnos”?)'};
+      }
+      if(r.data&&r.data.error) return {error:r.data.error};
+      return r.data||{ok:true};
+    }catch(e){ return {error:'No se pudo contactar con el servidor: '+(e&&e.message||e)}; }
+  }
+
+  borrarAlumno=function(id){
     var a=state.alumnos.find(function(x){return x.id===id;});
     if(!a)return;
-    var r=await SB.from('invitaciones').delete().eq('email',a.email);
-    if(r.error) return toast('No se pudo eliminar: '+r.error.message);
-    // limpiar cola local de ese alumno
-    state.cola=(state.cola||[]).filter(function(c){return c.alumnoId!==id;});
-    await g_recargarRoster(); toast(a.usada?'Alumno retirado de tu lista':'Alumno eliminado'); render();
+    var aviso=a.usada
+      ? 'Se eliminará de tu lista y también su cuenta de acceso, así que no podrá volver a entrar. Sus actuaciones y notas ya registradas se conservan.'
+      : 'Todavía no ha creado su contraseña, así que solo se retira la invitación.';
+    confirmar('¿Eliminar a “'+esc(a.nombre)+'”?', aviso, async function(){
+      var r=await g_gestionAlumno({accion:'eliminar',email:a.email});
+      if(r.error) return toast(r.error);
+      state.cola=(state.cola||[]).filter(function(c){return c.alumnoId!==id;});
+      await g_recargarRoster();
+      toast(r.cuentaBorrada?'Alumno y cuenta eliminados':'Alumno eliminado');
+      render();
+    });
   };
   editarAlumno=function(id){
     var a=state.alumnos.find(function(x){return x.id===id;}); if(!a)return;
     openModal('<h3 style="margin-top:0">Editar alumno</h3>'+
       '<label class="f">Nombre</label><input id="edNom" value="'+esc(a.nombre)+'">'+
-      '<label class="f mt">Email</label><input id="edEmail" type="email" value="'+esc(a.email||'')+'" disabled style="opacity:.7">'+
-      '<p class="muted" style="font-size:12px;margin:6px 0 0">El email no se puede cambiar aquí (identifica la cuenta del alumno). Para cambiarlo, elimina y vuelve a dar de alta.</p>'+
+      '<label class="f mt">Email</label><input id="edEmail" type="email" value="'+esc(a.email||'')+'">'+
+      '<p class="muted" style="font-size:12px;margin:6px 0 0">'+
+        (a.usada
+          ? 'Si cambias el email, cambiará también el usuario con el que entra. Avísale, porque su contraseña sigue siendo la misma pero el email de acceso será el nuevo.'
+          : 'Todavía no ha creado su contraseña. Puedes corregir el email sin problema.')+
+      '</p>'+
       '<div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarAlumno(\''+id+'\')">Guardar</button></div>',true);
   };
   guardarAlumno=async function(id){
     var a=state.alumnos.find(function(x){return x.id===id;}); if(!a)return;
     var v=(document.getElementById('edNom').value||'').trim();
+    var em=(document.getElementById('edEmail').value||'').trim().toLowerCase();
     if(!v)return toast('Escribe un nombre');
+    if(!g_emailOk(em))return toast('Escribe un email válido');
+    var cambiaEmail = em!==(a.email||'').toLowerCase();
+    if(cambiaEmail && state.alumnos.some(function(x){return x.id!==id && (x.email||'').toLowerCase()===em;}))
+      return toast('Ya hay otro alumno con ese email');
+
     if(a.usada){
-      // alumno ya registrado: actualizar su ficha (permitido por RLS al profesor)
       var r=await SB.from('alumnos').update({nombre:v}).eq('email',a.email);
       if(r.error) return toast('No se pudo actualizar: '+r.error.message);
     } else {
-      // pendiente: no hay UPDATE en invitaciones → borrar y volver a crear con el nuevo nombre
       await SB.from('invitaciones').delete().eq('email',a.email);
       var r2=await SB.from('invitaciones').insert({email:a.email,profesor_id:GACC.uid,nombre:v});
       if(r2.error) return toast('No se pudo actualizar: '+r2.error.message);
     }
-    await g_recargarRoster(); toast('Alumno actualizado'); closeModal(); render();
+    if(cambiaEmail){
+      var re=await g_gestionAlumno({accion:'cambiar-email',email:a.email,nuevoEmail:em});
+      if(re.error){ await g_recargarRoster(); render(); return toast(re.error); }
+    }
+    await g_recargarRoster();
+    toast(cambiaEmail?'Alumno actualizado · email de acceso cambiado':'Alumno actualizado');
+    closeModal(); render();
   };
   // en modo cuenta hay un solo profesor (el titular): estos botones informan
   addProf=function(){ toast('Cada cuenta tiene un profesor titular. Para más profesores, usa una licencia por profesor.'); };
