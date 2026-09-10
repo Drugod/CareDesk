@@ -11,7 +11,8 @@
 <style>
   :root{
     --bg:#f3f6f5; --panel:#ffffff; --panel2:#eef3f2; --line:#dce6e4;
-    --ink:#16242a; --muted:#5f727a; --accent:#0e8c8c; --accent2:#0b7275; --accent-ink:#ffffff;
+    --ink:#16242a; --muted:#4d5f66; --accent:#0b7275; --accent2:#0a6265; --accent-ink:#ffffff;
+    --link:#0a6265;   /* texto de enlace: siempre sobre fondo claro, ratio > 4.5 */
     --ok:#2e9e6b; --warn:#c0851d; --danger:#d14b3c; --danger2:#b93f31;
     --chip:#eef3f2; --radius:16px; --shadow:0 14px 34px -20px rgba(20,55,58,.30);
     --sans:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -122,8 +123,8 @@
 
   .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);
     padding:3px 10px;border-radius:999px;font-size:12px;color:var(--muted)}
-  .chip.g{color:#1c7a4e;background:#e3f4ec;border-color:#bfe6d2} .chip.y{color:#8a6410;background:#f7edd6;border-color:#e6d3a3}
-  .chip.r{color:#b23a2c;background:#fbe6e2;border-color:#f0c4bc} .chip.b{color:#0e6f86;background:#e2f1f5;border-color:#bfe0e8}
+  .chip.g{color:#15633f;background:#e3f4ec;border-color:#bfe6d2} .chip.y{color:#75540c;background:#f7edd6;border-color:#e6d3a3}
+  .chip.r{color:#992f23;background:#fbe6e2;border-color:#f0c4bc} .chip.b{color:#0b5a6e;background:#e2f1f5;border-color:#bfe0e8}
 
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -169,11 +170,11 @@
   .call-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 
   .badge{padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
-  .b-caida{background:#fbeadb;color:#9a5a1c}
-  .b-sanitaria{background:#fbe1e1;color:#b23a3a}
-  .b-soledad{background:#e2eefb;color:#2f6ea6}
-  .b-tecnica{background:#ece7fb;color:#5a48a6}
-  .b-falsa{background:#e6f3e2;color:#4a8a3f}
+  .b-caida{background:#fbeadb;color:#7d4712}
+  .b-sanitaria{background:#fbe1e1;color:#992d2d}
+  .b-soledad{background:#e2eefb;color:#255a87}
+  .b-tecnica{background:#ece7fb;color:#4a3a8c}
+  .b-falsa{background:#e6f3e2;color:#35682c}
 
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
     background:var(--panel2);border:1px solid var(--accent);padding:12px 18px;border-radius:12px;
@@ -243,6 +244,55 @@
   .note-amber{background:#f9efd6;border:1px solid #e6d29e;border-radius:10px;padding:12px}
   .note-amber b{color:#9a6a12}
   .note-info{background:#eef4f8;border:1px solid #cfe0ea;border-radius:12px;padding:12px}
+
+  /* ---------- Accesibilidad ---------- */
+  /* Foco siempre visible al navegar con teclado */
+  :where(a,button,input,select,textarea,[tabindex]):focus-visible{
+    outline:3px solid var(--accent2); outline-offset:2px; border-radius:6px;
+  }
+  /* Texto solo para lectores de pantalla */
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  /* Salto al contenido, aparece al tabular */
+  .skip{position:absolute;left:-9999px;top:0;z-index:200;background:var(--accent2);color:#fff;
+    padding:10px 16px;border-radius:0 0 10px 0;font-weight:700}
+  .skip:focus{left:0}
+
+  /* Tamaño de texto: escala toda la interfaz */
+  html{font-size:100%}
+  body[data-txt="g"]  {font-size:112.5%}
+  body[data-txt="xg"] {font-size:125%}
+  body[data-txt="g"] .btn, body[data-txt="xg"] .btn{padding-top:12px;padding-bottom:12px}
+
+  /* Alto contraste */
+  body[data-ac="1"]{
+    --bg:#ffffff; --panel:#ffffff; --panel2:#f2f2f2; --line:#1a1a1a;
+    --ink:#000000; --muted:#26333a; --accent:#004d4d; --accent2:#003a3d; --link:#003a3d;
+    --chip:#f2f2f2; --shadow:none;
+  }
+  body[data-ac="1"] .card,body[data-ac="1"] .chip,body[data-ac="1"] .btn{border:2px solid var(--line)}
+  body[data-ac="1"] .btn.primary,body[data-ac="1"] .btn.ok{background:#004d4d;color:#fff}
+  body[data-ac="1"] :where(a,button,input,select,textarea):focus-visible{outline:4px solid #000;outline-offset:2px}
+
+  /* Reducir movimiento */
+  body[data-mov="0"] *,body[data-mov="0"] *::before,body[data-mov="0"] *::after{
+    animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important; scroll-behavior:auto !important;
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
+
+  /* Marca visual del estado, además del color (daltonismo) */
+  .chip .mk{font-weight:700;margin-right:4px;font-family:var(--sans)}
+
+  /* ---------- Videoasistencia ---------- */
+  .vidgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 4px}
+  .vidgrid:has(.vidbox:only-child){grid-template-columns:1fr}
+  .vidbox{position:relative;background:#0d1b1f;border-radius:10px;overflow:hidden;aspect-ratio:4/3}
+  .vidbox video{width:100%;height:100%;object-fit:cover;display:block;background:#0d1b1f}
+  .vidbox span{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.66);color:#fff;
+    font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px}
   .note-warn{background:#fdf4e3;border:1px solid #ecd8a8;border-radius:12px;padding:12px}
   .legal h4{margin:16px 0 4px;font-size:14px;color:var(--accent2)}
   .legal p,.legal li{font-size:13.5px;line-height:1.55;margin:6px 0}
@@ -284,8 +334,10 @@
 #gate .g-btn.sec{background:transparent;border:1px solid var(--line);color:var(--ink);margin-top:8px}
 #gate .g-btn.sm{width:auto;padding:8px 12px;font-size:13px;margin:0}
 #gate .g-links{margin-top:16px;display:flex;flex-direction:column;gap:8px;text-align:center}
-#gate .g-links a{color:var(--accent);font-size:14px;cursor:pointer;text-decoration:none}
+#gate .g-links a{color:var(--link);font-size:14px;cursor:pointer;text-decoration:underline}
+#gate .g-links a:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
 #gate .g-tabs{display:flex;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px;margin:2px 0 16px}
+#gate .g-tabs button{color:var(--ink)}
 #gate .g-tabs button{flex:1;border:none;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:14.5px;padding:9px;border-radius:9px;cursor:pointer}
 #gate .g-tabs button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(20,55,58,.14)}
 #gate .g-msg{border-radius:10px;padding:10px 12px;font-size:13.5px;margin:12px 0 0}
@@ -309,8 +361,9 @@
     <div class="g-brand"><div><div class="g-nm">CareDesk</div><div class="g-sb">Acceso a la plataforma</div></div></div>
     <div id="gateView" class="g-card"><p class="g-sub">Cargando…</p></div>
     <p class="g-tiny">Un solo acceso para profesores y alumnos. Tras iniciar sesión entrarás al simulador.<br>
-      <a href="#" onclick="verLegal('privacidad');return false" style="color:var(--accent2)">Política de privacidad</a> ·
-      <a href="#" onclick="verLegal('aviso');return false" style="color:var(--accent2)">Aviso legal</a></p>
+      <a href="#" onclick="verLegal('privacidad');return false" style="color:var(--link);text-decoration:underline">Política de privacidad</a> ·
+      <a href="#" onclick="verLegal('aviso');return false" style="color:var(--link);text-decoration:underline">Aviso legal</a> ·
+      <a href="#" onclick="verLegal('accesibilidad');return false" style="color:var(--link);text-decoration:underline">Accesibilidad</a></p>
   </div>
 </section>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -388,21 +441,26 @@
 
 <!-- ============ APP ============ -->
 <div id="app" class="hidden">
+  <a href="#view" class="skip">Saltar al contenido</a>
   <header class="top">
     <div class="brand"><div>CareDesk<small id="topSub">Central de teleasistencia</small></div></div>
     <div class="spacer"></div>
-    <div class="langsw"><button data-lang="va" onclick="setLang('va')">VA</button><button data-lang="es" onclick="setLang('es')">ES</button></div>
-    <button class="btn ghost sm" onclick="verNotificaciones()" title="Notificaciones"><svg class="ic"><use href="#i-bell"/></svg></button>
+    <div class="langsw" role="group" aria-label="Idioma"><button data-lang="va" onclick="setLang('va')" aria-label="Valencià">VA</button><button data-lang="es" onclick="setLang('es')" aria-label="Castellano">ES</button></div>
+    <button class="btn ghost sm" onclick="abrirAjustesA11y()" title="Ajustes y accesibilidad" aria-label="Ajustes y accesibilidad"><svg class="ic"><use href="#i-eye"/></svg></button>
+    <button class="btn ghost sm" onclick="verNotificaciones()" title="Notificaciones" aria-label="Notificaciones"><svg class="ic"><use href="#i-bell"/></svg></button>
     <div class="role-pill">Sesión: <b id="whoLabel">—</b></div>
     <button class="btn ghost sm" onclick="salir()" title="Cerrar sesión">Cerrar sesión</button>
   </header>
   <main>
     <nav class="tabs" id="tabs"></nav>
-    <div id="view"></div>
+    <div id="view" role="tabpanel" tabindex="-1"></div>
   </main>
 </div>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<!-- Regiones de anuncio para lectores de pantalla -->
+<div id="srAviso"  class="sr-only" role="status" aria-live="polite"></div>
+<div id="srAlerta" class="sr-only" role="alert"  aria-live="assertive"></div>
 <div id="rtcWidget" class="rtcw hidden"></div>
 <div id="simWidget"></div>
 <div id="modalRoot"></div>
@@ -921,7 +979,7 @@ const I18N = {
   'Mi perfil':'El meu perfil','Cambiar contraseña':'Canviar contrasenya','Preguntas frecuentes':'Preguntes freqüents','Contraseña actual':'Contrasenya actual','Nueva contraseña':'Nova contrasenya','Repetir nueva':'Repetir nova',
   // --- Llamadas ---
   'Llamadas reales':'Telefonades reals','Sala':'Sala','Llamada real':'Telefonada real','Llamada entrante':'Telefonada entrant','Llamando…':'Telefonant…','Conectando…':'Connectant…','En llamada':'En telefonada',
-  'Persona dependiente':'Persona dependent','Teleoperador':'Teleoperador','Profesor / Oyente':'Professor / Oclient','Simulación en grupo · 3 roles':'Simulació en grup · 3 rols',
+  'Persona dependiente':'Persona dependent','Teleoperador':'Teleoperador','Profesor / Oyente':'Professor / Oient','Simulación en grupo · 3 roles':'Simulació en grup · 3 rols',
   'Participantes':'Participants','micro activo':'micròfon actiu','micro silenciado':'micròfon silenciat','conectado':'connectat','conectando…':'connectant…','esperando a que entre':'esperant que entre',
   'Salir':'Eixir','Profesor':'Professor',
   // --- Genéricos ---
@@ -934,6 +992,16 @@ const I18N = {
   'simulación a 2':'simulació a 2','asignando teleoperador y persona dependiente.':'assignant teleoperador i persona dependent.',
   'Lanzar caso':'Llançar cas','Lanzar un caso':'Llançar un cas','Teléfonos en cola':'Telèfons en cua',
   'Alumnos conectados':'Alumnes connectats',
+  'sin conectar':'sense connectar','conectando…':'connectant…','conectado':'connectat',
+  'micro en silencio':'micro en silenci','micro activo':'micro actiu',
+  'Consejo: usad auriculares para evitar eco.':'Consell: useu auriculars per a evitar eco.',
+  'Silenciar':'Silenciar','Activar':'Activar','Salir':'Eixir',
+  'Ajustes y accesibilidad':'Ajustos i accessibilitat','Cámara en las simulaciones':'Càmera en les simulacions',
+  'Con vídeo':'Amb vídeo','Cámara encendida':'Càmera encesa','Cámara apagada':'Càmera apagada',
+  'Vídeo activado':'Vídeo activat','Solo voz':'Només veu','Tú':'Tu','Compañero':'Company',
+  'Vídeo activado. Se aplicará en la próxima llamada.':'Vídeo activat. S\'aplicarà en la pròxima telefonada.',
+  'Vídeo desactivado. Solo voz.':'Vídeo desactivat. Només veu.',
+  'No se ha podido usar la cámara. La simulación sigue solo con voz.':'No s\'ha pogut usar la càmera. La simulació continua només amb veu.',
   'Alumno actualizado · email de acceso cambiado':'Alumne actualitzat · email d\'accés canviat',
   'Alumno actualizado':'Alumne actualitzat','Alumno y cuenta eliminados':'Alumne i compte eliminats',
   'Alumno eliminado':'Alumne eliminat','Alumno dado de alta':'Alumne donat d\'alta',
@@ -953,7 +1021,7 @@ const I18N = {
   'pendiente prof.':'pendent prof.',
   'El profesor ha evaluado tu actuación':'El professor ha avaluat la teua actuació',
   'Todavía no has dado de alta a ningún alumno.':'Encara no has donat d\'alta cap alumne.',
-  'Se marcan en verde los alumnos que tienen la central abierta en esta misma sala.':'Es marquen en verd els alumnes que tenen la central oberta en esta mateixa sala.',
+  'El círculo relleno indica los alumnos que tienen la central abierta en esta misma sala.':'El cercle omplit indica els alumnes que tenen la central oberta en esta mateixa sala.',
   'No hay teléfonos en cola. Lanza un caso desde “Acciones rápidas”.':'No hi ha telèfons en cua. Llança un cas des d\'“Accions ràpides”.',
   'Elige el caso que quieres poner en marcha. Después asignarás a quién se lo lanzas.':'Tria el cas que vols posar en marxa. Després assignaràs a qui li ho llances.',
   'Caso':'Cas','Continuar':'Continuar',
@@ -1043,7 +1111,7 @@ function aplicarIdioma(root){
   root.querySelectorAll('[placeholder]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__po===undefined)e.__po=e.getAttribute('placeholder'); e.setAttribute('placeholder',state.lang==='va'?trad(e.__po):e.__po); });
   root.querySelectorAll('[title]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__to===undefined)e.__to=e.getAttribute('title'); e.setAttribute('title',state.lang==='va'?trad(e.__to):e.__to); });
 }
-function setLang(l){ state.lang=l; aplicarIdioma(document.body); document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-lang')===l)); }
+function setLang(l){ state.lang=l; try{document.documentElement.lang = (l==='va'?'ca-ES-valencia':'es');}catch(e){} aplicarIdioma(document.body); document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-lang')===l)); }
 function prioridadDe(e){return ({critica:'Alta',alta:'Alta',media:'Media',baja:'Baja'})[e.gravedad]||'Media'}
 function categoriaDe(e){return ({caida:'Emergencias',sanitaria:'Emergencias',soledad:'Bienestar / Apoyo',tecnica:'Incidencias técnicas',falsa:'Incidencias técnicas'})[e.tipo]||'Seguimiento'}
 function prioColor(p){return p==='Alta'?'r':p==='Media'?'y':'g'}
@@ -1146,9 +1214,13 @@ function renderTabs(){
   const pend = state.rol==='alumno' ? colaDe(state.alumnoActivo).length : 0;
   document.getElementById('tabs').innerHTML = tabs.map(t=>{
     const badge = (t.k==='central' && pend) ? `<span class="pill-count">${pend}</span>` : '';
-    return `<button class="${t.k===currentTab?'active':''}" onclick="go('${t.k}')">${t.t}${badge}</button>`;
+    const sel=t.k===currentTab;
+    return `<button role="tab" id="tab-${t.k}" aria-selected="${sel}" aria-controls="view" class="${sel?'active':''}" onclick="go('${t.k}')">${t.t}${badge}</button>`;
   }).join('');
-  aplicarIdioma(document.getElementById('tabs'));
+  const cont=document.getElementById('tabs');
+  cont.setAttribute('role','tablist');
+  cont.setAttribute('aria-label','Secciones');
+  aplicarIdioma(cont); a11yPass(cont);
   render();
 }
 function go(k){
@@ -1167,6 +1239,7 @@ function render(){
   })[currentTab];
   v.innerHTML = fn?fn():'';
   aplicarIdioma(v);
+  a11yPass(v);
 }
 
 /* ---------- helpers cola/eval ---------- */
@@ -1515,7 +1588,7 @@ function vEscenarios(){
     const u=usuario(e.usuarioId)||{nombre:'—',edad:'',dispositivo:''};
     return `<div class="card">
       <div class="between"><h3 style="margin:0"><span class="badge ${badgeClass(e.tipo)}">${tipoTxt(e.tipo)}</span> ${esc(e.titulo)}</h3>
-      <span class="chip ${prioColor(prioridadDe(e))}">Prioridad ${prioridadDe(e)}</span></div>
+      <span class="chip ${prioColor(prioridadDe(e))}"><span class="mk" aria-hidden="true">${({Alta:'▲',Media:'■',Baja:'▼'})[prioridadDe(e)]||''}</span>Prioridad ${prioridadDe(e)}</span></div>
       <div class="flex" style="margin:8px 0 6px"><span class="chip b"><svg class="ic"><use href="#i-folder"/></svg> ${categoriaDe(e)}</span><span class="chip">${e.protocolo.length} pasos</span></div>
       <p class="muted" style="font-size:13.5px;margin:6px 0"><svg class="ic"><use href="#i-user"/></svg> ${esc(u.nombre)}, ${u.edad} años · ${esc(u.dispositivo)}</p>
       <p class="quote">${esc(e.guion)}</p>
@@ -1539,7 +1612,7 @@ function colaPanelProfesor(){
     const e=escenario(c.escenarioId)||{titulo:'—'}; const u=e.usuarioId?usuario(e.usuarioId):null;
     if(c.modo==='pareja'){
       const op=alumno(c.opId)||{nombre:'—'}, pd=alumno(c.pdId)||{nombre:'—'};
-      const est=c.estado==='finalizada'?'<span class="chip g">Finalizada</span>':((c.opIn||c.pdIn)?'<span class="chip y">En curso</span>':'<span class="chip r">Sonando…</span>');
+      const est=c.estado==='finalizada'?'<span class="chip g"><span class="mk" aria-hidden="true">✓</span>Finalizada</span>':((c.opIn||c.pdIn)?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>':'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>');
       const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:`<button class="btn ok sm" onclick="profesorEscuchar('${c.id}')"><svg class="ic"><use href="#i-headset"/></svg> Unirse a escuchar</button>`;
       return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
         <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br>
@@ -1547,7 +1620,7 @@ function colaPanelProfesor(){
         <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
     }
     const dest=c.alumnoId==='*'?'Toda la clase':((alumno(c.alumnoId)||{}).nombre||'—');
-    const est=c.estado==='finalizada'?'<span class="chip g">Finalizada</span>':(c.estado==='en_curso'?'<span class="chip y">En curso</span>':'<span class="chip r">Sonando…</span>');
+    const est=c.estado==='finalizada'?'<span class="chip g"><span class="mk" aria-hidden="true">✓</span>Finalizada</span>':(c.estado==='en_curso'?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>':'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>');
     const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:'';
     return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
       <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br><span class="chip b">${esc(dest)}</span> ${est}</div>
@@ -1930,9 +2003,9 @@ function vEvaluacion(){
     return `<tr>
       <td><b>${esc(al?al.nombre:'—')}</b></td>
       <td>${esc(e.titulo)}<br><span class="muted" style="font-size:12px">${esc(u.nombre)}</span></td>
-      <td><span class="chip ${acierto?'g':'r'}">${tipoTxt(r.tipoElegido)}</span></td>
+      <td><span class="chip ${acierto?'g':'r'}"><span class="mk" aria-hidden="true">${acierto?'✓':'✗'}</span>${tipoTxt(r.tipoElegido)}<span class="sr-only"> · ${acierto?'clasificación correcta':'clasificación incorrecta'}</span></span></td>
       <td>${r.tiempo}s</td>
-      <td>${nota!=null?`<b>${nota}/100</b> <span style="color:#f2c94c">${estrellas(nota)}</span>`:'<span class="chip y">sin evaluar</span>'}</td>
+      <td>${nota!=null?`<b>${nota}/100</b> <span style="color:#f2c94c" aria-hidden="true">${estrellas(nota)}</span>`:'<span class="chip y">sin evaluar</span>'}</td>
       <td><button class="btn primary sm" onclick="abrirEval('${r.id}')">${r.eval?'Revisar':'Evaluar'}</button></td>
     </tr>`;
   }).join('');
@@ -1968,7 +2041,7 @@ function abrirEval(rid){
     <div class="between"><h3 style="margin:0">Evaluación práctica · ${esc(al?al.nombre:'')}</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
     <p class="muted" style="margin:4px 0 12px">${esc(e.titulo)} — ${esc(u.nombre)} · ${categoriaDe(e)} · atendida en ${r.tiempo}s</p>
     <div class="card note-info" style="margin-bottom:12px">
-      <div class="flex"><span class="chip ${acierto?'g':'r'}">Clasificó: ${tipoTxt(r.tipoElegido)}</span>
+      <div class="flex"><span class="chip ${acierto?'g':'r'}"><span class="mk" aria-hidden="true">${acierto?'✓':'✗'}</span>Clasificó: ${tipoTxt(r.tipoElegido)}<span class="sr-only"> · ${acierto?'correcto':'incorrecto'}</span></span>
       <span class="chip b">Correcto: ${tipoTxt(e.objetivo)}</span></div>
       <div class="mt" style="font-size:13.5px"><b>Recursos activados:</b> ${r.recursos.length?r.recursos.map(recursoTxt).join(', '):'—'}</div>
       <div class="mt" style="font-size:13.5px"><b>Pasos de protocolo marcados:</b> ${r.pasos}/${e.protocolo.length}</div>
@@ -2243,8 +2316,8 @@ function vMis(){
   if(!regs.length) return `<h2 class="section">Mis actuaciones</h2><div class="card list-empty">Aún no has atendido ninguna llamada. Ve a la pestaña “Central”.</div>`;
   const filas=regs.map(r=>{const e=escenario(r.escenarioId),u=usuario(e.usuarioId);const nota=notaGlobal(r);const ac=r.tipoElegido===e.objetivo;
     return `<tr><td><b>${esc(e.titulo)}</b><br><span class="muted" style="font-size:12px">${esc(u.nombre)}</span></td>
-      <td><span class="chip ${ac?'g':'r'}">${tipoTxt(r.tipoElegido)}</span></td><td>${r.tiempo}s</td>
-      <td>${nota!=null?`<b>${nota}/100</b> <span style="color:#f2c94c">${estrellas(nota)}</span>`:'<span class="chip y">pendiente prof.</span>'}</td></tr>`;
+      <td><span class="chip ${ac?'g':'r'}"><span class="mk" aria-hidden="true">${ac?'✓':'✗'}</span>${tipoTxt(r.tipoElegido)}<span class="sr-only"> · ${ac?'correcto':'incorrecto'}</span></span></td><td>${r.tiempo}s</td>
+      <td>${nota!=null?`<b>${nota}/100</b> <span style="color:#f2c94c" aria-hidden="true">${estrellas(nota)}</span>`:'<span class="chip y">pendiente prof.</span>'}</td></tr>`;
   }).join('');
   return `<h2 class="section">Mis actuaciones</h2><div class="card"><table><thead><tr><th>Caso</th><th>Clasifiqué</th><th>Tiempo</th><th>Nota</th></tr></thead><tbody>${filas}</tbody></table></div>`;
 }
@@ -2254,15 +2327,32 @@ function vMis(){
    Rellena estos datos una sola vez: se usan en todos los textos.
    ========================================================= */
 const LEGAL = {
-  prestador:  '[NOMBRE O RAZÓN SOCIAL DEL PRESTADOR]',
-  nif:        '[NIF / CIF]',
-  domicilio:  '[DOMICILIO COMPLETO]',
-  email:      '[EMAIL DE CONTACTO]',
-  web:        '[DIRECCIÓN WEB DE CAREDESK]',
-  region:     '[REGIÓN DEL PROYECTO SUPABASE — compruébala en Settings → General]',
-  version:    '1.0',
+  /* 'piloto'   → se cede a centros para probar, todavía sin cobrar.
+     'producto' → ya se licencia y se factura: rellena prestador, nif y domicilio.
+                  La LSSI obliga a publicar nombre/razón social, NIF y domicilio
+                  en cuanto haya actividad económica. */
+  modo:       'piloto',
+
+  autor:      'Antonio González Aguilar',     // quien desarrolla y mantiene la herramienta
+  email:      'info@caredesk.me',
+  web:        'https://caredesk.me',
+  region:     'Irlanda (Unión Europea)',      // Supabase eu-west-1
+
+  /* Solo se usan cuando modo = 'producto' */
+  prestador:  '',
+  nif:        '',
+  domicilio:  '',
+
+  version:    '1.1',
   fecha:      'septiembre de 2026'
 };
+/* Cómo se identifica al que mantiene la herramienta, según el modo */
+function legalTitular(){
+  const L=LEGAL;
+  return L.modo==='producto'
+    ? `${esc(L.prestador)} (NIF ${esc(L.nif)}, ${esc(L.domicilio)})`
+    : esc(L.autor);
+}
 
 /* Curso escolar: empieza el 1 de septiembre. Devuelve el año de inicio. */
 function cursoDe(ts){ const d=new Date(ts||Date.now()); return d.getMonth()>=8 ? d.getFullYear() : d.getFullYear()-1; }
@@ -2302,10 +2392,17 @@ function legalHtml(seccion){
 
     <h4>Quién trata tus datos</h4>
     <p>CareDesk es una herramienta de simulación que el <b>centro educativo</b> utiliza dentro de su actividad docente.
-    El <b>centro es el responsable del tratamiento</b> de los datos del alumnado y del profesorado.
-    ${esc(L.prestador)} (NIF ${esc(L.nif)}, ${esc(L.domicilio)}) presta el servicio y actúa como
-    <b>encargado del tratamiento</b>: solo trata los datos siguiendo las instrucciones del centro,
-    según el contrato de encargo firmado entre ambos (artículo 28 del RGPD).</p>
+    El <b>centro es el responsable del tratamiento</b> de los datos del alumnado y del profesorado.</p>
+    ${L.modo==='producto' ? `
+    <p>${legalTitular()} presta el servicio y actúa como <b>encargado del tratamiento</b>: solo trata los datos
+    siguiendo las instrucciones del centro, según el contrato de encargo firmado entre ambos (artículo 28 del RGPD).</p>`
+    : `
+    <p>La herramienta la desarrolla y mantiene <b>${legalTitular()}</b>, ajeno al centro, y la infraestructura
+    técnica donde se guardan las cuentas y la actividad formativa está bajo su administración. Actúa, por tanto,
+    como <b>encargado del tratamiento</b> por cuenta del centro, conforme al artículo 28 del RGPD.</p>
+    <p class="muted" style="font-size:12.5px"><b>Fase de pruebas.</b> La herramienta se cede al centro para su
+    evaluación, sin contraprestación económica. El contrato de encargo del tratamiento entre el centro y quien
+    la mantiene se formaliza igualmente.</p>`}
 
     <h4>Qué datos se tratan</h4>
     <ul>
@@ -2328,7 +2425,9 @@ function legalHtml(seccion){
     del navegador de ese equipo y, si el profesorado lo configura, en una carpeta de ese mismo ordenador.
     No se suben a ningún servidor ni a internet.</p>
     <p>El resto de la información (cuentas, listas de clase, casos, actuaciones y calificaciones) se guarda en
-    <b>Supabase</b>, que actúa como subencargado del tratamiento, en la región ${esc(L.region)}.
+    <b>Supabase</b>, que actúa como subencargado del tratamiento, en servidores situados en
+    <b>${esc(L.region)}</b>. Los datos <b>no salen del Espacio Económico Europeo</b>, por lo que no se
+    realizan transferencias internacionales.
     La voz de las llamadas viaja <b>directamente entre los navegadores</b> del alumnado, cifrada;
     solo cuando la red del centro impide la conexión directa se retransmite por un servidor intermedio,
     que no la almacena.</p>
@@ -2351,7 +2450,7 @@ function legalHtml(seccion){
     <p>Puedes solicitar acceder a tus datos, rectificarlos, suprimirlos, limitar u oponerte a su tratamiento y
     solicitar su portabilidad. Como el <b>responsable es el centro educativo</b>, dirige tu solicitud a la
     secretaría o a la persona delegada de protección de datos del centro. También puedes escribir a
-    ${esc(L.email)} y tu petición se trasladará al centro.</p>
+    <b>${esc(L.email)}</b> y tu petición se trasladará al centro.</p>
     <p>Si consideras que tus datos no se han tratado correctamente, puedes reclamar ante la
     <b>Agencia Española de Protección de Datos</b> (www.aepd.es).</p>
 
@@ -2365,8 +2464,13 @@ function legalHtml(seccion){
     <p class="muted" style="font-size:12px">Versión ${esc(L.version)} · ${esc(L.fecha)}</p>
 
     <h4>Titularidad</h4>
-    <p>Este servicio es titularidad de ${esc(L.prestador)}, NIF ${esc(L.nif)}, con domicilio en ${esc(L.domicilio)}.
-    Contacto: ${esc(L.email)}. Dirección web: ${esc(L.web)}.</p>
+    ${L.modo==='producto' ? `
+    <p>Este servicio es titularidad de ${legalTitular()}.
+    Contacto: <b>${esc(L.email)}</b>. Dirección web: ${esc(L.web)}.</p>`
+    : `
+    <p>Esta herramienta la desarrolla y mantiene <b>${legalTitular()}</b>, y se cede a los centros
+    <b>en fase de pruebas, sin contraprestación económica</b>.
+    Contacto: <b>${esc(L.email)}</b>. Dirección web: ${esc(L.web)}.</p>`}
 
     <h4>Qué es CareDesk</h4>
     <p>CareDesk es un <b>simulador con fines educativos</b> de una central de teleasistencia, pensado para la
@@ -2375,7 +2479,7 @@ function legalHtml(seccion){
     Ante una emergencia real hay que llamar al 112.</p>
 
     <h4>Uso permitido</h4>
-    <p>El acceso está reservado al profesorado y alumnado de los centros con licencia en vigor. Las credenciales
+    <p>El acceso está reservado al profesorado y alumnado de los centros autorizados. Las credenciales
     son personales e intransferibles. No está permitido difundir, publicar ni compartir fuera del entorno docente
     las grabaciones ni las actuaciones del alumnado.</p>
 
@@ -2400,6 +2504,65 @@ function legalHtml(seccion){
       <li>Puedes pedir acceder a tus datos, corregirlos o suprimirlos en la secretaría del centro.</li>
     </ul>`;
 
+  const accesibilidad=`
+    <h3 style="margin-top:0">Declaración de accesibilidad</h3>
+    <p class="muted" style="font-size:12px">Elaborada el ${esc(L.fecha)} · Revisión anual</p>
+
+    <p>${legalTitular()} se compromete a hacer accesible el sitio web y la aplicación
+    <b>${esc(L.web)}</b>, de conformidad con el <b>Real Decreto 1112/2018</b>, de 7 de septiembre,
+    sobre accesibilidad de los sitios web y aplicaciones para dispositivos móviles del sector público.</p>
+
+    <h4>Situación de cumplimiento</h4>
+    <p>Esta aplicación es <b>parcialmente conforme</b> con la norma <b>UNE-EN 301 549</b>
+    (nivel AA de las WCAG 2.1), debido a la falta de conformidad de los aspectos que se indican
+    a continuación.</p>
+
+    <h4>Contenido no accesible</h4>
+    <p><b>a) Falta de conformidad.</b></p>
+    <ul>
+      <li>Está pendiente la <b>revisión manual con lectores de pantalla</b> (NVDA y JAWS) del puesto
+      de atención del alumnado, que es la pantalla de mayor complejidad. La revisión automatizada
+      no detecta incidencias, pero no sustituye a la prueba con productos de apoyo reales.</li>
+      <li>Las <b>grabaciones de audio</b> de las prácticas no disponen de transcripción. Son
+      grabaciones generadas por el propio alumnado con la única finalidad de que el profesorado
+      las evalúe, y no constituyen contenido publicado por el sitio.</li>
+    </ul>
+    <p><b>b) Carga desproporcionada.</b> No se alega.</p>
+    <p><b>c) Contenido fuera del ámbito de aplicación.</b> Los archivos de audio generados por las
+    personas usuarias durante las prácticas, conforme al artículo 3.4 del Real Decreto 1112/2018.</p>
+
+    <h4>Preparación de esta declaración</h4>
+    <p>Declaración preparada el <b>${esc(L.fecha)}</b>. El método empleado ha sido una
+    <b>autoevaluación</b> llevada a cabo por quien desarrolla la aplicación, mediante análisis
+    automatizado con la herramienta axe-core sobre los criterios WCAG 2.1 A y AA, y revisión manual
+    de la navegación por teclado, la gestión del foco, el nombre accesible de los controles y el
+    uso del color. Última revisión del contenido: ${esc(L.fecha)}.</p>
+
+    <h4>Observaciones y datos de contacto</h4>
+    <p>Puedes comunicar cualquier dificultad de acceso, solicitar información que no te resulte
+    accesible o presentar una queja escribiendo a <b>${esc(L.email)}</b>, indicando la página o la
+    función afectada y, si es posible, el producto de apoyo que utilizas.</p>
+    <p>Las comunicaciones se responderán en el <b>plazo de veinte días hábiles</b>. Si transcurrido
+    ese plazo no obtienes respuesta, o no la consideras satisfactoria, puedes dirigirte al centro
+    educativo, que es el responsable del tratamiento y el sujeto obligado a efectos del Real Decreto,
+    y en su caso presentar reclamación conforme al procedimiento previsto en su artículo 13.</p>
+
+    <h4>Qué se ha hecho para que sea accesible</h4>
+    <ul>
+      <li>Toda la aplicación se maneja <b>con el teclado</b>, con el foco siempre visible; los
+      diálogos retienen el foco, se cierran con Escape y lo devuelven al punto de partida.</li>
+      <li>Las <b>llamadas entrantes se anuncian</b> por voz al lector de pantalla, indicando la
+      persona usuaria y el caso.</li>
+      <li><b>Ningún dato depende únicamente del color</b>: los estados llevan además icono y texto.</li>
+      <li>Contraste de texto conforme al nivel AA, y un <b>modo de alto contraste</b> adicional.</li>
+      <li><b>Tamaño de texto ajustable</b> en tres niveles y opción de reducir las animaciones,
+      que se recuerdan en el equipo.</li>
+      <li>Los campos de formulario tienen etiqueta asociada y los botones con icono, nombre accesible.</li>
+    </ul>
+    <p class="muted" style="font-size:12.5px">Estas opciones están en el botón de accesibilidad
+    de la cabecera, junto al selector de idioma.</p>`;
+
+  if(seccion==='accesibilidad') return accesibilidad;
   return seccion==='aviso'?avisoLegal:(seccion==='resumen'?proteccion:privacidad);
 }
 function verLegal(seccion){
@@ -2408,16 +2571,156 @@ function verLegal(seccion){
       <button class="btn ${seccion==='resumen'?'primary':'ghost'} sm" onclick="verLegal('resumen')">Resumen</button>
       <button class="btn ${(!seccion||seccion==='privacidad')?'primary':'ghost'} sm" onclick="verLegal('privacidad')">Privacidad</button>
       <button class="btn ${seccion==='aviso'?'primary':'ghost'} sm" onclick="verLegal('aviso')">Aviso legal</button>
+      <button class="btn ${seccion==='accesibilidad'?'primary':'ghost'} sm" onclick="verLegal('accesibilidad')">Accesibilidad</button>
     </div>
     <div class="no-i18n legal" style="max-height:60vh;overflow:auto">${legalHtml(seccion)}</div>
     <p class="muted no-i18n" style="font-size:11.5px;margin:10px 0 0">Estos textos se muestran siempre en castellano para evitar traducciones automáticas en un documento legal.</p>`,true);
 }
 
+/* =========================================================
+   ACCESIBILIDAD · pasada automática sobre lo que se pinta
+   ========================================================= */
+/* Nombre accesible para los botones que solo llevan icono */
+const ICONO_ETIQUETA={
+  'i-x':'Cerrar','i-trash':'Eliminar','i-download':'Descargar','i-pencil':'Editar',
+  'i-plus':'Añadir','i-bell':'Notificaciones','i-phone':'Llamar','i-mic':'Micrófono',
+  'i-mic-off':'Silenciar micrófono','i-headset':'Escuchar','i-play':'Reproducir',
+  'i-eye':'Ver','i-shuffle':'Mezclar','i-check':'Confirmar','i-folder':'Carpeta'
+};
+let _a11yN=0;
+function a11yPass(root){
+  root=root||document.body; if(!root||!root.querySelectorAll)return;
+
+  /* 1. Los iconos son decorativos: que el lector de pantalla no los lea */
+  root.querySelectorAll('svg.ic').forEach(sv=>{ sv.setAttribute('aria-hidden','true'); sv.setAttribute('focusable','false'); });
+
+  /* 2. Cada etiqueta, unida a su campo (el marcado no usaba for/id) */
+  root.querySelectorAll('label:not([for])').forEach(lb=>{
+    if(lb.querySelector('input,select,textarea'))return;          // ya lo envuelve
+    let c=lb.nextElementSibling;
+    while(c && !/^(INPUT|SELECT|TEXTAREA)$/.test(c.tagName)){
+      const dentro=c.querySelector&&c.querySelector('input,select,textarea');
+      if(dentro){c=dentro;break;}
+      c=c.nextElementSibling;
+    }
+    if(!c||!/^(INPUT|SELECT|TEXTAREA)$/.test(c.tagName))return;
+    if(!c.id)c.id='f'+(++_a11yN);
+    lb.setAttribute('for',c.id);
+  });
+
+  /* 3. Campos que se quedaron sin etiqueta: al menos un nombre accesible */
+  root.querySelectorAll('input,select,textarea').forEach(c=>{
+    if(c.type==='hidden')return;
+    const tieneLabel=c.id && root.querySelector('label[for="'+CSS.escape(c.id)+'"]');
+    if(tieneLabel||c.getAttribute('aria-label')||c.closest('label'))return;
+    const t=c.getAttribute('placeholder')||c.getAttribute('title')||'';
+    if(t)c.setAttribute('aria-label',t);
+  });
+
+  /* 4. Botones que solo llevan icono: nombre a partir del icono */
+  root.querySelectorAll('button,a.btn').forEach(bt=>{
+    if(bt.getAttribute('aria-label')||bt.textContent.trim())return;
+    const u=bt.querySelector('use'); if(!u)return;
+    const id=(u.getAttribute('href')||u.getAttribute('xlink:href')||'').replace('#','');
+    bt.setAttribute('aria-label', ICONO_ETIQUETA[id]||'Acción');
+  });
+
+  /* 5. Los <select> sin nombre visible (filtros) toman el del texto anterior */
+  root.querySelectorAll('select:not([aria-label])').forEach(sel=>{
+    if(sel.id && root.querySelector('label[for="'+CSS.escape(sel.id)+'"]'))return;
+    const prev=sel.previousElementSibling;
+    if(prev && /^(LABEL|SPAN|B)$/.test(prev.tagName) && prev.textContent.trim())
+      sel.setAttribute('aria-label',prev.textContent.trim());
+  });
+}
+
+/* ---------- Ajustes de accesibilidad (se recuerdan en este equipo) ---------- */
+const A11Y_DEF={txt:'n',ac:'0',mov:'1'};
+let A11Y=Object.assign({},A11Y_DEF);
+function a11yCargar(){
+  try{ A11Y=Object.assign({},A11Y_DEF,JSON.parse(localStorage.getItem('caredesk-a11y')||'{}')); }catch(e){}
+  a11yAplicar();
+}
+function a11yAplicar(){
+  const b=document.body; if(!b)return;
+  b.setAttribute('data-txt',A11Y.txt);
+  b.setAttribute('data-ac',A11Y.ac);
+  b.setAttribute('data-mov',A11Y.mov);
+  try{ localStorage.setItem('caredesk-a11y',JSON.stringify(A11Y)); }catch(e){}
+}
+function a11ySet(k,v){ A11Y[k]=v; a11yAplicar(); abrirAjustesA11y(); }
+function abrirAjustesA11y(){
+  const op=(k,v,t)=>`<button class="btn ${A11Y[k]===v?'primary':'ghost'} sm" aria-pressed="${A11Y[k]===v}" onclick="a11ySet('${k}','${v}')">${t}</button>`;
+  openModal(`<div class="between"><h3 style="margin:0">Ajustes y accesibilidad</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <p class="muted mt" style="font-size:13px">Estos ajustes se guardan en este equipo y se aplican a toda la aplicación.</p>
+    <div class="mt"><b style="font-size:14px">Tamaño del texto</b>
+      <div class="flex mt" style="gap:6px" role="group" aria-label="Tamaño del texto">
+        ${op('txt','n','Normal')}${op('txt','g','Grande')}${op('txt','xg','Muy grande')}</div></div>
+    <div class="mt"><b style="font-size:14px">Contraste</b>
+      <div class="flex mt" style="gap:6px" role="group" aria-label="Contraste">
+        ${op('ac','0','Normal')}${op('ac','1','Alto contraste')}</div>
+      <p class="muted" style="font-size:12.5px;margin:6px 0 0">Blanco y negro con bordes marcados. Útil con baja visión y con mucha luz ambiental.</p></div>
+    <div class="mt"><b style="font-size:14px">Animaciones</b>
+      <div class="flex mt" style="gap:6px" role="group" aria-label="Animaciones">
+        ${op('mov','1','Normales')}${op('mov','0','Reducidas')}</div></div>
+    <div class="mt"><b style="font-size:14px">Cámara en las simulaciones</b>
+      <div class="flex mt" style="gap:6px" role="group" aria-label="Cámara">
+        <button class="btn ${!VIDEO_ON?'primary':'ghost'} sm" aria-pressed="${!VIDEO_ON}" onclick="if(VIDEO_ON)videoAlternar();abrirAjustesA11y()">Solo voz</button>
+        <button class="btn ${VIDEO_ON?'primary':'ghost'} sm" aria-pressed="${VIDEO_ON}" onclick="if(!VIDEO_ON)videoAlternar();abrirAjustesA11y()">Con vídeo</button></div>
+      <p class="muted" style="font-size:12.5px;margin:6px 0 0">Con vídeo se ve la cara del compañero durante la simulación, como en una videoasistencia real.
+      <b>Las grabaciones siguen siendo solo de audio</b>: la imagen no se guarda en ningún sitio.</p></div>
+    <div class="card mt note-teal"><b style="font-size:13.5px">Con lector de pantalla</b>
+      <p class="muted" style="font-size:13px;margin:4px 0 0">Toda la aplicación se maneja con el teclado. Usa el tabulador para moverte,
+      Intro o Espacio para activar, y Escape para cerrar las ventanas. Las llamadas entrantes se anuncian solas.</p></div>
+    <div class="between mt"><button class="btn ghost sm" onclick="A11Y=Object.assign({},A11Y_DEF);a11yAplicar();abrirAjustesA11y()">Restablecer</button>
+      <button class="btn primary" onclick="closeModal()">Listo</button></div>`,true);
+}
+
+/* Anuncios para lector de pantalla (llamada entrante, cambios importantes) */
+function anunciar(txt,urgente){
+  const el=document.getElementById(urgente?'srAlerta':'srAviso');
+  if(!el)return;
+  el.textContent='';                       // forzar que se relea aunque repita
+  setTimeout(()=>{ el.textContent=txt; },60);
+}
+
 /* ---------- util UI ---------- */
 let toastT=null;
 function toast(msg,ms){const el=document.getElementById('toast');el.innerHTML=msg;aplicarIdioma(el);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),ms||2200);}
-function openModal(html,persistente){const cerrar=persistente?'':'onclick="if(event.target===this)closeModal()"';const mr=document.getElementById('modalRoot');mr.innerHTML=`<div class="modal-bg" ${cerrar}><div class="modal">${html}</div></div>`;aplicarIdioma(mr);}
-function closeModal(){document.getElementById('modalRoot').innerHTML='';}
+let _focoPrevio=null;
+function openModal(html,persistente){
+  const cerrar=persistente?'':'onclick="if(event.target===this)closeModal()"';
+  const mr=document.getElementById('modalRoot');
+  _focoPrevio=document.activeElement;
+  mr.innerHTML=`<div class="modal-bg" ${cerrar}><div class="modal" role="dialog" aria-modal="true" tabindex="-1">${html}</div></div>`;
+  aplicarIdioma(mr); a11yPass(mr);
+  const caja=mr.querySelector('.modal');
+  if(caja){
+    /* el diálogo se nombra con su primer encabezado */
+    const h=caja.querySelector('h3,h2'); if(h){ if(!h.id)h.id='dlg'+(++_a11yN); caja.setAttribute('aria-labelledby',h.id); }
+    const f=caja.querySelector('input,select,textarea,button,a[href]');
+    (f||caja).focus({preventScroll:true});
+  }
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  document.getElementById('modalRoot').innerHTML='';
+  document.body.style.overflow='';
+  if(_focoPrevio&&document.contains(_focoPrevio)){ try{_focoPrevio.focus();}catch(e){} }
+  _focoPrevio=null;
+}
+/* Esc cierra, y el tabulador no se escapa del diálogo */
+document.addEventListener('keydown',e=>{
+  const caja=document.querySelector('#modalRoot .modal'); if(!caja)return;
+  if(e.key==='Escape'){ e.preventDefault(); closeModal(); return; }
+  if(e.key!=='Tab')return;
+  const f=[...caja.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+          .filter(x=>x.offsetParent!==null||x===document.activeElement);
+  if(!f.length)return;
+  const primero=f[0], ultimo=f[f.length-1];
+  if(e.shiftKey && document.activeElement===primero){ e.preventDefault(); ultimo.focus(); }
+  else if(!e.shiftKey && document.activeElement===ultimo){ e.preventDefault(); primero.focus(); }
+});
 /* Confirmación con dos botones (evita confirm() nativo, que bloquea la página) */
 let _confirmFn=null;
 function confirmar(titulo,texto,alConfirmar){
@@ -2642,6 +2945,40 @@ function verNotificaciones(){ensureAlertas();const pend=state.alertas.filter(a=>
 
 /* ============ SIMULACIÓN EN GRUPO (3 roles, malla como el original) ============ */
 const SIMROLES={PD:'Persona dependiente',OP:'Teleoperador',OB:'Profesor / Oyente'};
+
+/* ---------- Videoasistencia ----------
+   La cámara es opcional y se recuerda en este equipo. La GRABACIÓN SIGUE SIENDO
+   SOLO DE AUDIO: MediaRecorder graba la mezcla de WebAudio, que no lleva vídeo. */
+let VIDEO_ON=false;
+function videoCargar(){ try{ VIDEO_ON = localStorage.getItem('caredesk-video')==='1'; }catch(e){ VIDEO_ON=false; } }
+function videoGuardar(){ try{ localStorage.setItem('caredesk-video', VIDEO_ON?'1':'0'); }catch(e){} }
+function videoSoportado(){ return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia); }
+/* Restricciones modestas: en un aula con 15 parejas, la resolución alta no cabe */
+function videoConstraints(){ return VIDEO_ON ? {width:{ideal:640},height:{ideal:360},frameRate:{ideal:20,max:24},facingMode:'user'} : false; }
+async function pedirMedios(){
+  try{ return await navigator.mediaDevices.getUserMedia({audio:true,video:videoConstraints()}); }
+  catch(e){
+    if(VIDEO_ON){                                   // sin cámara o permiso denegado: seguimos con voz
+      try{ const s=await navigator.mediaDevices.getUserMedia({audio:true});
+           toast('No se ha podido usar la cámara. La simulación sigue solo con voz.',4200); return s; }catch(e2){}
+    }
+    return null;
+  }
+}
+function videoAlternar(){
+  VIDEO_ON=!VIDEO_ON; videoGuardar();
+  /* Si ya hay una simulación en marcha, aplicarlo al momento cuando se pueda */
+  let enCaliente=false;
+  try{
+    const pistas=(sim.local&&sim.local.getVideoTracks)?sim.local.getVideoTracks():[];
+    if(pistas.length){ pistas.forEach(t=>t.enabled=VIDEO_ON); enCaliente=true; }
+  }catch(e){}
+  toast(VIDEO_ON
+    ? (enCaliente?'Cámara encendida':'Vídeo activado. Se aplicará en la próxima llamada.')
+    : (enCaliente?'Cámara apagada':'Vídeo desactivado. Solo voz.'), 3600);
+  if(typeof simPanel==='function')simPanel();
+}
+function tieneVideo(st){ try{ return !!(st&&st.getVideoTracks&&st.getVideoTracks().length&&st.getVideoTracks()[0].enabled); }catch(e){ return false; } }
 const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'LIBRE'};
 function simId(r){return state.sala+'-SIM-'+(sim.caseId||'LIBRE')+'-'+r;}
 function simTargets(){return Object.keys(SIMROLES).filter(r=>r!==sim.role).map(simId);}
@@ -2656,7 +2993,7 @@ function simEntrar(role){ return simEntrarCaso('LIBRE',role); }
 async function simEntrarCaso(caseId,role){
   if(sim.peer){ if(sim.caseId===caseId){toast('Ya estás en esta simulación');return;} simSalir(); }
   sim.caseId=caseId||'LIBRE'; sim.role=role;
-  try{sim.local=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){sim.local=null;}
+  sim.local=await pedirMedios();
   if(role==='OB'&&sim.local){sim.local.getAudioTracks().forEach(t=>t.enabled=false);sim.muted=true;}
   try{sim.peer=new Peer(simId(role),rtcOpts());}catch(e){toast('No se pudo iniciar');sim.role=null;return;}
   sim.peer.on('open',()=>{simConectar();sim.int=setInterval(simConectar,2500);});
@@ -2671,7 +3008,23 @@ function simConectar(){ if(!sim.peer||!sim.peer.open)return; const now=Date.now(
 function simWire(call,pid){ if(sim.conns[pid]&&sim.conns[pid].stream){try{call.close();}catch(e){}return;} sim.conns[pid]={call,ts:Date.now(),audio:(sim.conns[pid]&&sim.conns[pid].audio)||null};
   call.on('stream',rs=>{sim.conns[pid].stream=rs;sim.conns[pid].ts=0;simPlay(pid,rs);simPanel();}); call.on('close',()=>simQuitar(pid)); call.on('error',()=>simQuitar(pid)); simPanel(); }
 function simQuitar(pid){ if(sim.conns[pid]){ if(sim.conns[pid].audio)sim.conns[pid].audio.remove(); delete sim.conns[pid]; simPanel(); } }
-function simPlay(pid,st){ let a=sim.conns[pid].audio; if(!a){a=document.createElement('audio');a.autoplay=true;a.playsInline=true;document.body.appendChild(a);sim.conns[pid].audio=a;} a.srcObject=st;a.play().catch(()=>{}); recAddStream(st,'sim-'+pid); }
+function simPlay(pid,st){
+  let a=sim.conns[pid].audio;
+  if(!a){a=document.createElement('audio');a.autoplay=true;a.playsInline=true;document.body.appendChild(a);sim.conns[pid].audio=a;}
+  a.srcObject=st;a.play().catch(()=>{});
+  recAddStream(st,'sim-'+pid);          // la grabación toma solo la pista de audio
+  simPanel();                            // repinta por si ahora hay imagen
+}
+/* Coloca cada stream en su <video> después de pintar el panel */
+function simPintarVideos(){
+  const local=document.getElementById('vidLocal');
+  if(local && sim.local){ if(local.srcObject!==sim.local){local.srcObject=sim.local; local.muted=true; local.play().catch(()=>{});} }
+  Object.keys(sim.conns).forEach(pid=>{
+    const c=sim.conns[pid]; if(!c||!c.stream)return;
+    const v=document.getElementById('vid-'+rtcSlug(pid));
+    if(v && v.srcObject!==c.stream){ v.srcObject=c.stream; v.play().catch(()=>{}); }
+  });
+}
 function simMute(){ sim.muted=!sim.muted; if(sim.local)sim.local.getAudioTracks().forEach(t=>t.enabled=!sim.muted); simPanel(); }
 function simSalir(){ clearInterval(sim.int); Object.values(sim.conns).forEach(c=>{try{c.call.close();}catch(e){} if(c.audio)c.audio.remove();}); sim.conns={}; try{sim.peer&&sim.peer.destroy();}catch(e){} sim.peer=null; sim.role=null; sim.muted=false; sim.caseId='LIBRE'; simPanel(); }
 function simPanel(){
@@ -2682,11 +3035,21 @@ function simPanel(){
     const c=sim.conns[simId(r)]; const st=c&&c.stream?'on':(c?'wait':''); const txt=c&&c.stream?'conectado':(c?'conectando…':'sin conectar');
     return `<div class="simrow"><span class="dot ${st}"></span><div style="flex:1"><b>${SIMROLES[r]}</b><br><small>${txt}</small></div></div>`;
   }).join('');
+  /* Mosaico de vídeo: solo si hay alguna imagen que enseñar */
+  const remotosConVideo=Object.keys(sim.conns).filter(pid=>tieneVideo(sim.conns[pid].stream));
+  const hayVideo = tieneVideo(sim.local) || remotosConVideo.length;
+  const vids = !hayVideo ? '' : `<div class="vidgrid">
+    ${tieneVideo(sim.local)?`<div class="vidbox"><video id="vidLocal" autoplay playsinline muted aria-label="Tu cámara"></video><span>Tú</span></div>`:''}
+    ${remotosConVideo.map(pid=>{
+      const rol=Object.keys(SIMROLES).find(r=>simId(r)===pid)||'';
+      return `<div class="vidbox"><video id="vid-${rtcSlug(pid)}" autoplay playsinline aria-label="Cámara de ${esc(SIMROLES[rol]||'compañero')}"></video><span>${esc(SIMROLES[rol]||'Compañero')}</span></div>`;
+    }).join('')}
+  </div>`;
   const cab = sim.caseId&&sim.caseId!=='LIBRE' ? '<svg class="ic"><use href="#i-headset"/></svg> Simulación del caso' : '<svg class="ic"><use href="#i-headset"/></svg> Simulación libre';
-  el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${rows}
-    <div class="rtcbtns" style="margin-top:10px"><button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button><button class="btn danger sm" onclick="simSalir()">Salir</button></div>
+  el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${vids}${rows}
+    <div class="rtcbtns" style="margin-top:10px"><button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button><button class="btn sm" onclick="videoAlternar()" aria-pressed="${VIDEO_ON}" title="${VIDEO_ON?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${VIDEO_ON?'Vídeo activado':'Solo voz'}</button><button class="btn danger sm" onclick="simSalir()">Salir</button></div>
     <p class="muted" style="font-size:11px;margin:8px 0 0">Consejo: usad auriculares para evitar eco.</p></div>`;
-  aplicarIdioma(el);
+  aplicarIdioma(el); a11yPass(el); simPintarVideos();
 }
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
@@ -2727,9 +3090,11 @@ function presenciaListaHtml(){
   if(!state.alumnos.length) return '<div class="list-empty">Todavía no has dado de alta a ningún alumno.</div>';
   return '<div class="flex" style="flex-wrap:wrap;gap:8px">'+state.alumnos.map(a=>{
     const on=presenciaOnline(a.id);
-    return `<span class="chip ${on?'g':''}" style="${on?'':'opacity:.55'}"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:${on?'var(--ok)':'var(--muted)'}"></span>${esc(a.nombre)}</span>`;
+    return `<span class="chip ${on?'g':''}">`+
+      `<span class="mk" aria-hidden="true">${on?'●':'○'}</span>${esc(a.nombre)}`+
+      `<span class="sr-only"> · ${on?'conectado':'sin conectar'}</span></span>`;
   }).join('')+'</div>'
-   + `<p class="muted" style="font-size:12.5px;margin:10px 0 0">Se marcan en verde los alumnos que tienen la central abierta en esta misma sala.</p>`;
+   + `<p class="muted" style="font-size:12.5px;margin:10px 0 0">El círculo relleno indica los alumnos que tienen la central abierta en esta misma sala.</p>`;
 }
 function pintarPresencia(){
   const card=document.getElementById('cardPresencia'); if(!card)return;
@@ -2745,7 +3110,7 @@ function rtcMiNombre(){return state.rol==='profesor'?'Profesor':(alumno(state.al
 function rtcOpts(){const q=new URLSearchParams(location.search);const o={debug:1,config:{iceServers:TURN_SERVERS_SIM}};if(q.get('host')){o.host=q.get('host');o.port=parseInt(q.get('port')||'443',10);o.path=q.get('path')||'/';o.secure=q.get('secure')!=='0';if(q.get('noturn'))o.config={iceServers:[]};}return o;}
 async function iniciarRTC(){
   if(typeof Peer==='undefined')return;
-  try{rtc.local=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){rtc.local=null;}
+  try{ rtc.local=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ rtc.local=null; }
   try{rtc.peer=new Peer(rtcMiId(),rtcOpts());}catch(e){return;}
   rtc.peer.on('call',c=>rtcEntrante(c));
   rtc.peer.on('connection',c=>rtcData(c));
@@ -2850,6 +3215,8 @@ function rtcRecibir(msg,conn){
     if(state.cola.some(c=>c.id===msg.casoId)) return;
     state.cola.push({id:msg.casoId,modo:'solo',escenarioId:msg.escenario?msg.escenario.id:msg.escenarioId,alumnoId:msg.alumnoId,estado:'sonando'});
     toast('<svg class="ic"><use href="#i-phone"/></svg> Nueva alarma en la central'); beep();
+    try{ const e0=escenario(msg.escenario?msg.escenario.id:msg.escenarioId), u0=e0&&usuario(e0.usuarioId);
+      anunciar('Llamada entrante en la central'+(u0?': '+u0.nombre:'')+(e0?'. Caso: '+e0.titulo:''),true); }catch(err){}
     renderTabs();
   } else if(msg.t==='retirar'){
     if(state.cola.some(c=>c.id===msg.casoId)){ state.cola=state.cola.filter(c=>c.id!==msg.casoId); renderTabs(); }
@@ -3205,8 +3572,8 @@ buildDict(); setLang(state.lang||'va');
     var esProf=(gLoginRol==='profesor');
     gv().innerHTML='<h1>Iniciar sesión</h1><p class="g-sub">Entra con tu email y contraseña.</p>'+
       '<div class="g-tabs"><button id="gTabAl" class="'+(esProf?'':'on')+'" onclick="g_loginTab(\'alumno\')">Alumno</button><button id="gTabPr" class="'+(esProf?'on':'')+'" onclick="g_loginTab(\'profesor\')">Profesor</button></div>'+
-      '<label>Email</label><input id="ge" type="email" value="'+esc(GCTX.email||'')+'" placeholder="tu@email.com">'+
-      '<label>Contraseña</label><input id="gp" type="password">'+
+      '<label for="ge">Email</label><input id="ge" type="email" autocomplete="username" value="'+esc(GCTX.email||'')+'" placeholder="tu@email.com">'+
+      '<label for="gp">Contraseña</label><input id="gp" type="password" autocomplete="current-password">'+
       '<div id="gm"></div>'+
       '<button class="g-btn" id="gb" onclick="g_doLogin()">Entrar</button>'+
       '<div class="g-links" id="gLoginLinks">'+g_loginLinksHtml(gLoginRol)+'</div>';
@@ -3760,6 +4127,8 @@ buildDict(); setLang(state.lang||'va');
     gv().innerHTML='<h1>No se pudo cargar</h1><p class="g-sub">No se ha podido conectar con la plataforma (revisa tu conexión a internet y recarga la página).</p>';
     return;
   }
+  try{ a11yCargar(); }catch(e){}          // ajustes de accesibilidad guardados en este equipo
+  try{ videoCargar(); }catch(e){}         // preferencia de cámara
   gLimpiarSesionesViejas();
   SB=window.supabase.createClient(SUPA_URL,SUPA_ANON,{
     auth:{
