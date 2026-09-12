@@ -812,6 +812,10 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Has abierto el archivo desde el disco. Las llamadas, el micrófono y la cámara solo funcionan en https://caredesk.me':'You opened the file from disk. Calls, microphone and camera only work at https://caredesk.me',
+  'Abre la aplicación en https://caredesk.me':'Open the app at https://caredesk.me',
+  'Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono y la cámara.':'With the file opened from disk (file:) the browser blocks calls, microphone and camera.',
+
   'Profesor en la sala':'Teacher in the room',
   'Profesor fuera de la sala':'Teacher not in the room',
   '{n} compañeros conectados':'{n} classmates online',
@@ -1346,6 +1350,10 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Has abierto el archivo desde el disco. Las llamadas, el micrófono y la cámara solo funcionan en https://caredesk.me':'Has obert l\'arxiu des del disc. Les trucades, el micròfon i la càmera només funcionen en https://caredesk.me',
+  'Abre la aplicación en https://caredesk.me':'Obri l\'aplicació en https://caredesk.me',
+  'Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono y la cámara.':'Amb l\'arxiu obert des del disc (file:) el navegador bloqueja les trucades, el micròfon i la càmera.',
+
   'Profesor en la sala':'Professor en la sala',
   'Profesor fuera de la sala':'Professor fora de la sala',
   '{n} compañeros conectados':'{n} companys connectats',
@@ -4255,8 +4263,19 @@ function rtcMsgError(tipo){
       return 'Fallo en el servicio de llamadas.';
   }
 }
+/* WebRTC y el micrófono exigen origen seguro: https, o localhost en pruebas.
+   Abrir el archivo con doble clic (file:) no sirve, y el fallo que devuelve
+   PeerJS es un 'network' genérico que despista. Lo decimos claro. */
+function rtcOrigenSeguro(){
+  if(location.protocol==='https:') return true;
+  return location.protocol==='http:' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+}
 async function iniciarRTC(){
   if(typeof Peer==='undefined'){ rtcEstado('error','No se ha podido cargar el motor de llamadas.','sin-peerjs'); return; }
+  if(!rtcOrigenSeguro()){
+    rtcEstado('error','Has abierto el archivo desde el disco. Las llamadas, el micrófono y la cámara solo funcionan en https://caredesk.me','origen-inseguro');
+    return;                                   // sin reintentos: recargando desde file: nunca va a funcionar
+  }
   clearTimeout(rtc._re);
   try{ if(rtc.peer){ rtc.peer.destroy(); } }catch(e){}
   rtcCerrarDCs();
@@ -4323,6 +4342,7 @@ function rtcDiagnostico(){
   openModal('<div class="between"><h3 style="margin:0"><svg class="ic"><use href="#i-phone"/></svg> Servicio de llamadas</h3>'
     + '<button class="btn ghost sm" onclick="closeModal()" aria-label="Cerrar">✕</button></div>'
     + '<div id="rtcDiagBody" class="mt">'+rtcDiagHtml()+'</div>'
+    + (rtcOrigenSeguro()?'':'<div class="note-warn mt"><b>Abre la aplicación en https://caredesk.me</b><p style="margin:6px 0 0;font-size:13px">Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono y la cámara.</p></div>')
     + '<p class="muted mt" style="font-size:13px">Solo puede haber una sesión abierta a la vez por cada profesor y por cada alumno: si abres la aplicación en dos equipos o en dos pestañas, la segunda no podrá llamar ni recibir llamadas.</p>'
     + '<div class="row mt"><button class="btn primary" onclick="rtcReconectarYa()">Reintentar conexión</button>'
     + '<button class="btn" onclick="closeModal()">Cerrar</button></div>');
