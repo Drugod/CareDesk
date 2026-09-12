@@ -810,6 +810,12 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Sin acceso al micrófono: la otra persona no te oirá':'No microphone access: the other person will not hear you',
+  'Sin acceso al micrófono':'No microphone access',
+  'Este navegador no da acceso al micrófono':'This browser gives no microphone access',
+  'En uso (llamada en curso)':'In use (call in progress)',
+  'Se pide solo al llamar':'Requested only when calling',
+
   'Solo puede haber una sesión abierta a la vez por cada profesor y por cada alumno: si abres la aplicación en dos equipos o en dos pestañas, la segunda no podrá llamar ni recibir llamadas.':'Only one session can be open at a time per teacher and per student: if you open the app on two devices or in two tabs, the second one will not be able to make or receive calls.',
   'Cerrar':'Close',
 
@@ -1332,6 +1338,12 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Sin acceso al micrófono: la otra persona no te oirá':'Sense accés al micròfon: l\'altra persona no et sentirà',
+  'Sin acceso al micrófono':'Sense accés al micròfon',
+  'Este navegador no da acceso al micrófono':'Este navegador no dona accés al micròfon',
+  'En uso (llamada en curso)':'En ús (trucada en curs)',
+  'Se pide solo al llamar':'Es demana només en trucar',
+
   'Solo puede haber una sesión abierta a la vez por cada profesor y por cada alumno: si abres la aplicación en dos equipos o en dos pestañas, la segunda no podrá llamar ni recibir llamadas.':'Només pot haver-hi una sessió oberta a la vegada per cada professor i per cada alumne: si obris l\'aplicació en dos equips o en dos pestanyes, la segona no podrà trucar ni rebre trucades.',
   'Cerrar':'Tancar',
 
@@ -2121,6 +2133,7 @@ function pintarCabecera(){
 }
 function salir(){
   try{ rtcAdios(); rtcLatidoParar(); }catch(e){}
+  try{ if(rtc.local){rtc.local.getTracks().forEach(t=>t.stop());rtc.local=null;} }catch(e){}
   state.presencia={};
   rtcColgar();try{rtc.peer&&rtc.peer.destroy();}catch(e){}rtc.peer=null;
   state.rol=null;state.alumnoActivo=null;state.llamada=null;
@@ -3138,9 +3151,11 @@ function barraLlamadasAlumno(){
   return `<div class="card" style="margin-bottom:14px"><div class="flex" style="gap:8px;flex-wrap:wrap;align-items:center">
     <b style="font-size:14px"><svg class="ic"><use href="#i-headset"/></svg> Central</b><span class="chip">Sala ${esc(state.sala||'')}</span>${rtcChipEstado()}</div></div>`;
 }
-function rtcEmergencia(tipo){
+async function rtcEmergencia(tipo){
   if(!rtc.peer)return toast('Llamadas no disponibles (revisa la conexión)');
   if(rtc.state!=='idle')return toast('Ya hay una llamada en curso');
+  await rtcMicOn();
+  if(rtc.state!=='idle')return;
   const c=rtc.peer.call(state.sala+'-PROF',rtcStream(),{metadata:{name:'EMERGENCIA '+tipo+' · '+rtcMiNombre(),emergencia:tipo}});
   if(!c)return toast('No se pudo iniciar la emergencia');
   rtcCall(c,'Profesor · EMERGENCIA '+tipo,'llamando');
@@ -4132,6 +4147,15 @@ function pintarPresencia(){
   const sub=card.querySelector('h3 .sub'); if(sub){ sub.textContent=t('{n} de {total}',{n:conectados().length,total:state.alumnos.length}); }
 }
 setInterval(()=>{ if(state.rol==='profesor') pintarPresencia(); }, 5000);
+/* Además de los latidos que manda cada alumno, el profesor vuelve a preguntar
+   cada 30 s a los que figuran desconectados: así, si un aviso se pierde (la
+   conexión de datos es efímera), el alumno aparece igualmente sin recargar. */
+setInterval(()=>{
+  if(state.rol!=='profesor'||!rtc.peer||!rtc.peer.open) return;
+  const fuera=state.alumnos.filter(a=>!presenciaOnline(a.id));
+  if(!fuera.length||fuera.length>40) return;
+  fuera.forEach(a=>rtcEnviarADatos(rtcIdAlumno(a),{t:'quien'}));
+}, 30000);
 
 function rtcSlug(s){return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'x';}
 function rtcMiId(){return state.rol==='profesor'?(state.sala+'-PROF'):(state.sala+'-AL-'+rtcSlug(alumno(state.alumnoActivo).nombre));}
@@ -4190,7 +4214,9 @@ async function iniciarRTC(){
   rtc.peer=null;
   rtcEstado('abriendo','');
   rtc._desde=Date.now();
-  if(!rtc.local){ try{ rtc.local=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ rtc.local=null; } }
+  /* El micrófono ya NO se pide aquí. Antes se esperaba a getUserMedia antes de
+     crear el peer: si el permiso quedaba pendiente (típico en el móvil), el canal
+     no llegaba a abrirse nunca y ni entraban llamadas ni se veía la presencia. */
   let pr; try{ pr=new Peer(rtcMiId(),rtcOpts()); }catch(e){ rtcEstado('error','No se pudo iniciar el servicio de llamadas.','excepcion'); rtcReintentar(); return; }
   rtc.peer=pr;
   pr.on('call',c=>rtcEntrante(c));
@@ -4237,7 +4263,7 @@ function rtcDiagHtml(){
     + f('Sala',state.sala||'—')
     + f('Mi identificador',rtcMiId())
     + f('Canal abierto',p&&p.open?'Sí':'No')
-    + f('Micrófono',rtc.local?'Concedido':'Sin permiso o sin micro')
+    + f('Micrófono',rtcMicVivo()?'En uso (llamada en curso)':'Se pide solo al llamar')
     + f('Conexión segura',location.protocol==='https:'?'Sí (https)':'No ('+location.protocol+')')
     + f('Navegador',navigator.userAgent.slice(0,70))
     + '</div>';
@@ -4419,14 +4445,43 @@ function rtcEnviarRegistro(reg,caseId){
   const e0=escenario(reg.escenarioId); const u0=e0?usuario(e0.usuarioId):null;
   rtcEnviarADatos(state.sala+'-PROF',{t:'registro',reg,caseId,escenario:e0||null,usuario:u0||null});
 }
+/* ---- Micrófono solo mientras dura la llamada ---- */
+function rtcMicVivo(){ return !!(rtc.local && rtc.local.getAudioTracks().some(t=>t.readyState==='live')); }
+async function rtcMicOn(){
+  if(rtcMicVivo()) return rtc.local;
+  rtc.local=null;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ toast('Este navegador no da acceso al micrófono'); return null; }
+  try{
+    rtc.local=await navigator.mediaDevices.getUserMedia({audio:true});
+    rtc.muted=false;
+    try{ recAddStream(rtc.local,'mic'); }catch(e){}   // por si ya hay una grabación en marcha
+    rtcPintarEstado();
+    return rtc.local;
+  }catch(e){
+    rtc.local=null;
+    toast('Sin acceso al micrófono: la otra persona no te oirá');
+    try{ anunciar('Sin acceso al micrófono',true); }catch(_){}
+    rtcPintarEstado();
+    return null;
+  }
+}
+function rtcMicOff(){
+  if(rtc.state!=='idle') return;                       // sigue habiendo llamada
+  try{ if(rec&&rec.active) return; }catch(e){}         // hay una grabación usando el micro
+  try{ if(typeof sim!=='undefined'&&sim&&sim.local) return; }catch(e){}  // la simulación tiene el suyo
+  if(rtc.local){ try{ rtc.local.getTracks().forEach(t=>t.stop()); }catch(e){} }
+  rtc.local=null; rtc.muted=false; rtcPintarEstado();
+}
 function rtcStream(){ if(rtc.local)return rtc.local; if(!rtc.silent){try{const a=new (window.AudioContext||window.webkitAudioContext)();const d=a.createMediaStreamDestination();const o=a.createOscillator();const g=a.createGain();g.gain.value=0;o.connect(g);g.connect(d);o.start();rtc.silent=d.stream;}catch(e){rtc.silent=null;}} return rtc.silent||undefined; }
-function rtcLlamar(a){
+async function rtcLlamar(a){
   if(!rtc.peer||!rtc.peer.open){
     toast(rtc.err||'Llamadas no disponibles todavía');
     return rtcDiagnostico();
   }
   if(rtc.state!=='idle')return toast('Ya hay una llamada en curso');
   const nombre=(typeof a==='string'?(alumno(a)||{}).nombre:a.nombre)||'Alumno';
+  await rtcMicOn();
+  if(rtc.state!=='idle')return;                       // se canceló mientras se pedía el permiso
   const c=rtc.peer.call(rtcIdAlumno(a),rtcStream(),{metadata:{name:rtcMiNombre()}});
   if(!c)return toast('No se pudo iniciar la llamada');
   rtcCall(c,nombre,'llamando');
@@ -4436,7 +4491,15 @@ function rtcEntrante(c){
   if(rtc.state!=='idle'){try{c.close();}catch(e){}return;}
   rtc.pend=c; rtc.name=(c.metadata&&c.metadata.name)||'Profesor'; rtc.state='entrante'; rtcWidget(); beep();
 }
-function rtcAceptar(){ const c=rtc.pend; if(!c)return; rtc.pend=null; try{c.answer(rtcStream());}catch(e){} rtcCall(c,rtc.name,'conectando'); rtcUnlock(); }
+async function rtcAceptar(){
+  const c=rtc.pend; if(!c)return;
+  rtc.state='conectando'; rtcWidget();              // el micro se pide justo ahora
+  await rtcMicOn();
+  if(rtc.pend!==c){ return; }                       // la llamada se cayó mientras tanto
+  rtc.pend=null;
+  try{c.answer(rtcStream());}catch(e){}
+  rtcCall(c,rtc.name,'conectando'); rtcUnlock();
+}
 function rtcRechazar(){ if(rtc.pend){try{rtc.pend.close();}catch(e){}rtc.pend=null;} rtcFin(); }
 function rtcCall(c,nombre,estado){
   rtc.call=c; rtc.name=nombre; rtc.state=estado; rtcWidget();
@@ -4446,7 +4509,7 @@ function rtcCall(c,nombre,estado){
 function rtcPlay(stream){ if(!rtc.audio){rtc.audio=document.createElement('audio');rtc.audio.autoplay=true;rtc.audio.playsInline=true;document.body.appendChild(rtc.audio);} rtc.audio.srcObject=stream; rtc.audio.play().catch(()=>{}); recAddStream(stream,'rtc'); }
 function rtcUnlock(){ if(rtc.audio){rtc.audio.play().catch(()=>{});} }
 function rtcColgar(){ clearTimeout(rtc._to); if(rtc.call){try{rtc.call.close();}catch(e){}} if(rtc.pend){try{rtc.pend.close();}catch(e){}rtc.pend=null;} rtcFin(); }
-function rtcFin(){ clearInterval(rtc.int); rtc.call=null; rtc.state='idle'; rtc.muted=false; rtc.t0=0; if(rtc.audio){rtc.audio.srcObject=null;} rtcWidget(); }
+function rtcFin(){ clearInterval(rtc.int); rtc.call=null; rtc.state='idle'; rtc.muted=false; rtc.t0=0; if(rtc.audio){rtc.audio.srcObject=null;} rtcWidget(); rtcMicOff(); }
 function rtcMute(){ rtc.muted=!rtc.muted; if(rtc.local)rtc.local.getAudioTracks().forEach(t=>t.enabled=!rtc.muted); rtcWidget(); }
 function rtcDur(){ if(!rtc.t0)return '00:00'; const s=Math.floor((Date.now()-rtc.t0)/1000); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
 function rtcWidget(){
@@ -4493,7 +4556,9 @@ function recStop(){
     try{
       rec.recorder.onstop=()=>{ let blob=null; try{ blob=new Blob(rec.chunks,{type:rec.mime||'audio/webm'}); }catch(e){}
         try{ Object.values(rec.srcs).forEach(s=>{try{s.disconnect();}catch(e){}}); rec.ctx&&rec.ctx.close(); }catch(e){}
-        rec.ctx=null; rec.dest=null; rec.recorder=null; rec.srcs={}; res(blob&&blob.size?blob:null); };
+        rec.ctx=null; rec.dest=null; rec.recorder=null; rec.srcs={};
+        try{ rtcMicOff(); }catch(e){}                 // si el micro solo estaba para grabar, se suelta
+        res(blob&&blob.size?blob:null); };
       rec.recorder.stop();
     }catch(e){ res(null); }
   });
