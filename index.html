@@ -810,6 +810,41 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Solo puede haber una sesión abierta a la vez por cada profesor y por cada alumno: si abres la aplicación en dos equipos o en dos pestañas, la segunda no podrá llamar ni recibir llamadas.':'Only one session can be open at a time per teacher and per student: if you open the app on two devices or in two tabs, the second one will not be able to make or receive calls.',
+  'Cerrar':'Close',
+
+  'Llamadas conectadas':'Calls connected',
+  'Llamadas no disponibles':'Calls unavailable',
+  'Conectando llamadas…':'Connecting calls…',
+  'Servicio de llamadas':'Call service',
+  'Reintentar conexión':'Retry connection',
+  'Reconectando…':'Reconnecting…',
+  'Llamadas no disponibles todavía':'Calls not available yet',
+  'Estado':'Status',
+  'Detalle':'Details',
+  'Código':'Code',
+  'Mi identificador':'My identifier',
+  'Canal abierto':'Channel open',
+  'Micrófono':'Microphone',
+  'Concedido':'Granted',
+  'Sin permiso o sin micro':'No permission or no microphone',
+  'Conexión segura':'Secure connection',
+  'Navegador':'Browser',
+  'Conectado':'Connected',
+  'Con error':'Error',
+  'Conectando…':'Connecting…',
+  'Ya hay otra sesión de profesor abierta en esta sala. Cierra la aplicación en el otro equipo o pestaña y pulsa Reintentar.':'Another teacher session is already open in this room. Close the app on the other device or tab and press Retry.',
+  'Ya hay otra sesión de este alumno abierta. Cierra la aplicación en el otro equipo o pestaña y pulsa Reintentar.':'Another session for this student is already open. Close the app on the other device or tab and press Retry.',
+  'No se puede conectar con el servidor de llamadas. Reintentando…':'Cannot reach the call server. Retrying…',
+  'Este navegador no admite llamadas. Prueba con Chrome, Edge o Safari actualizados.':'This browser does not support calls. Try an up-to-date Chrome, Edge or Safari.',
+  'Las llamadas necesitan una conexión segura (https).':'Calls require a secure connection (https).',
+  'El identificador de la sala no es válido.':'The room identifier is not valid.',
+  'Fallo en el servicio de llamadas.':'Call service failure.',
+  'Conexión perdida, reconectando…':'Connection lost, reconnecting…',
+  'El servicio de llamadas se ha cerrado.':'The call service has closed.',
+  'No se ha podido cargar el motor de llamadas.':'The call engine could not be loaded.',
+  'No se pudo iniciar el servicio de llamadas.':'The call service could not be started.',
+
   '"Me he caído y no puedo levantarme..."':'"I\'ve fallen and I can\'t get up..."',
   '* Nombre y apellidos obligatorios':'* First name and surname required',
   '+ Agregar':'+ Add',
@@ -1297,6 +1332,41 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Solo puede haber una sesión abierta a la vez por cada profesor y por cada alumno: si abres la aplicación en dos equipos o en dos pestañas, la segunda no podrá llamar ni recibir llamadas.':'Només pot haver-hi una sessió oberta a la vegada per cada professor i per cada alumne: si obris l\'aplicació en dos equips o en dos pestanyes, la segona no podrà trucar ni rebre trucades.',
+  'Cerrar':'Tancar',
+
+  'Llamadas conectadas':'Trucades connectades',
+  'Llamadas no disponibles':'Trucades no disponibles',
+  'Conectando llamadas…':'Connectant trucades…',
+  'Servicio de llamadas':'Servei de trucades',
+  'Reintentar conexión':'Reintentar connexió',
+  'Reconectando…':'Reconnectant…',
+  'Llamadas no disponibles todavía':'Encara no hi ha trucades disponibles',
+  'Estado':'Estat',
+  'Detalle':'Detall',
+  'Código':'Codi',
+  'Mi identificador':'El meu identificador',
+  'Canal abierto':'Canal obert',
+  'Micrófono':'Micròfon',
+  'Concedido':'Concedit',
+  'Sin permiso o sin micro':'Sense permís o sense micro',
+  'Conexión segura':'Connexió segura',
+  'Navegador':'Navegador',
+  'Conectado':'Connectat',
+  'Con error':'Amb error',
+  'Conectando…':'Connectant…',
+  'Ya hay otra sesión de profesor abierta en esta sala. Cierra la aplicación en el otro equipo o pestaña y pulsa Reintentar.':'Ja hi ha una altra sessió de professor oberta en esta sala. Tanca l\'aplicació en l\'altre equip o pestanya i polsa Reintentar.',
+  'Ya hay otra sesión de este alumno abierta. Cierra la aplicación en el otro equipo o pestaña y pulsa Reintentar.':'Ja hi ha una altra sessió d\'este alumne oberta. Tanca l\'aplicació en l\'altre equip o pestanya i polsa Reintentar.',
+  'No se puede conectar con el servidor de llamadas. Reintentando…':'No es pot connectar amb el servidor de trucades. Reintentant…',
+  'Este navegador no admite llamadas. Prueba con Chrome, Edge o Safari actualizados.':'Este navegador no admet trucades. Prova amb Chrome, Edge o Safari actualitzats.',
+  'Las llamadas necesitan una conexión segura (https).':'Les trucades necessiten una connexió segura (https).',
+  'El identificador de la sala no es válido.':'L\'identificador de la sala no és vàlid.',
+  'Fallo en el servicio de llamadas.':'Fallada en el servei de trucades.',
+  'Conexión perdida, reconectando…':'Connexió perduda, reconnectant…',
+  'El servicio de llamadas se ha cerrado.':'El servei de trucades s\'ha tancat.',
+  'No se ha podido cargar el motor de llamadas.':'No s\'ha pogut carregar el motor de trucades.',
+  'No se pudo iniciar el servicio de llamadas.':'No s\'ha pogut iniciar el servei de trucades.',
+
   'Nombre y email':'Nom i email',
   'Email del alumno':"Email de l'alumne",
   'sin email':'sense email',
@@ -2538,7 +2608,7 @@ function colaPanelProfesor(){
       <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br><span class="chip b">${esc(dest)}</span> ${est}</div>
       <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
   }).join(''):'<div class="list-empty">No hay llamadas en curso. Lanza un caso desde “Acciones”.</div>';
-  return `<div class="card mt"><h3><svg class="ic"><use href="#i-phone"/></svg> Llamadas</h3>${rows}</div>`;
+  return `<div class="card mt"><h3><svg class="ic"><use href="#i-phone"/></svg> Llamadas <span class="sub">${rtcChipEstado()}</span></h3>${rows}</div>`;
 }
 function grabacionHtml(regId){
   const g=state.grabaciones[regId]; if(!g)return '';
@@ -3066,7 +3136,7 @@ function vCentral(){
 }
 function barraLlamadasAlumno(){
   return `<div class="card" style="margin-bottom:14px"><div class="flex" style="gap:8px;flex-wrap:wrap;align-items:center">
-    <b style="font-size:14px"><svg class="ic"><use href="#i-headset"/></svg> Central</b><span class="chip">Sala ${esc(state.sala||'')}</span></div></div>`;
+    <b style="font-size:14px"><svg class="ic"><use href="#i-headset"/></svg> Central</b><span class="chip">Sala ${esc(state.sala||'')}</span>${rtcChipEstado()}</div></div>`;
 }
 function rtcEmergencia(tipo){
   if(!rtc.peer)return toast('Llamadas no disponibles (revisa la conexión)');
@@ -4013,7 +4083,8 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null};
+const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
+  conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0};
 const TURN_SERVERS_SIM=[
   {urls:'stun:stun.relay.metered.ca:80'},
   {urls:'turn:global.relay.metered.ca:80',username:'1a2d9126cbbd3f33d15a5275',credential:'GJft05EjO87B+U4q'},
@@ -4067,19 +4138,119 @@ function rtcMiId(){return state.rol==='profesor'?(state.sala+'-PROF'):(state.sal
 function rtcIdAlumno(a){const nom=(typeof a==='string'?(alumno(a)||{}).nombre:a.nombre)||'';return state.sala+'-AL-'+rtcSlug(nom);}
 function rtcMiNombre(){return state.rol==='profesor'?'Profesor':(alumno(state.alumnoActivo)||{}).nombre||'Alumno';}
 function rtcOpts(){const q=new URLSearchParams(location.search);const o={debug:1,config:{iceServers:TURN_SERVERS_SIM}};if(q.get('host')){o.host=q.get('host');o.port=parseInt(q.get('port')||'443',10);o.path=q.get('path')||'/';o.secure=q.get('secure')!=='0';if(q.get('noturn'))o.config={iceServers:[]};}return o;}
+/* ---- Estado del servicio de llamadas (visible, no silencioso) ----
+   Antes, si el servidor de señalización estaba caído o el identificador ya
+   estaba ocupado por otra pestaña, la app no decía nada y las llamadas
+   simplemente no sonaban. Ahora se ve y se puede reintentar. */
+function rtcEstado(conn,err,tipo){
+  rtc.conn=conn; rtc.err=err||''; rtc.errTipo=tipo||'';
+  rtcPintarEstado();
+}
+function rtcPintarEstado(){
+  document.querySelectorAll('[data-rtcestado]').forEach(el=>{
+    const tmp=document.createElement('div'); tmp.innerHTML=rtcChipEstado();
+    const nuevo=tmp.firstElementChild; if(!nuevo)return;
+    el.replaceWith(nuevo); aplicarIdioma(nuevo);
+  });
+  const d=document.getElementById('rtcDiagBody');
+  if(d){ d.innerHTML=rtcDiagHtml(); aplicarIdioma(d); }
+}
+function rtcChipEstado(){
+  const c=rtc.conn;
+  const cls=c==='ok'?'g':(c==='error'?'r':'y');
+  const mk =c==='ok'?'●':(c==='error'?'✕':'…');
+  const tx =c==='ok'?'Llamadas conectadas':(c==='error'?'Llamadas no disponibles':'Conectando llamadas…');
+  return '<span class="chip '+cls+'" data-rtcestado="1" onclick="rtcDiagnostico()" title="'+esc(rtc.err||tx)+'" '+
+         'role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();rtcDiagnostico();}" '+
+         'style="cursor:pointer"><span class="mk" aria-hidden="true">'+mk+'</span>'+esc(tx)+'</span>';
+}
+/* mensaje entendible para cada error de PeerJS */
+function rtcMsgError(tipo){
+  switch(tipo){
+    case 'unavailable-id':
+      return state.rol==='profesor'
+        ? 'Ya hay otra sesión de profesor abierta en esta sala. Cierra la aplicación en el otro equipo o pestaña y pulsa Reintentar.'
+        : 'Ya hay otra sesión de este alumno abierta. Cierra la aplicación en el otro equipo o pestaña y pulsa Reintentar.';
+    case 'network': case 'server-error': case 'socket-error': case 'socket-closed':
+      return 'No se puede conectar con el servidor de llamadas. Reintentando…';
+    case 'browser-incompatible':
+      return 'Este navegador no admite llamadas. Prueba con Chrome, Edge o Safari actualizados.';
+    case 'ssl-unavailable':
+      return 'Las llamadas necesitan una conexión segura (https).';
+    case 'invalid-id': case 'invalid-key':
+      return 'El identificador de la sala no es válido.';
+    default:
+      return 'Fallo en el servicio de llamadas.';
+  }
+}
 async function iniciarRTC(){
-  if(typeof Peer==='undefined')return;
-  try{ rtc.local=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ rtc.local=null; }
-  try{rtc.peer=new Peer(rtcMiId(),rtcOpts());}catch(e){return;}
-  rtc.peer.on('call',c=>rtcEntrante(c));
-  rtc.peer.on('connection',c=>rtcData(c));
-  rtc.peer.on('open',()=>{
+  if(typeof Peer==='undefined'){ rtcEstado('error','No se ha podido cargar el motor de llamadas.','sin-peerjs'); return; }
+  clearTimeout(rtc._re);
+  try{ if(rtc.peer){ rtc.peer.destroy(); } }catch(e){}
+  rtc.peer=null;
+  rtcEstado('abriendo','');
+  rtc._desde=Date.now();
+  if(!rtc.local){ try{ rtc.local=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ rtc.local=null; } }
+  let pr; try{ pr=new Peer(rtcMiId(),rtcOpts()); }catch(e){ rtcEstado('error','No se pudo iniciar el servicio de llamadas.','excepcion'); rtcReintentar(); return; }
+  rtc.peer=pr;
+  pr.on('call',c=>rtcEntrante(c));
+  pr.on('connection',c=>rtcData(c));
+  pr.on('open',()=>{
+    rtc.intentos=0; rtcEstado('ok','');
     if(state.rol==='alumno'){ rtcHello(); rtcLatidoArrancar(); }
     if(state.rol==='profesor') rtcPreguntarQuienHay();               // por si los alumnos ya estaban dentro
   });
-  rtc.peer.on('error',e=>{ if(e.type==='peer-unavailable'&&rtc.state==='llamando'){toast('El alumno no está conectado a esta sala');rtcColgar();} });
-  rtc.peer.on('disconnected',()=>{try{rtc.peer.reconnect();}catch(e){}});
+  pr.on('error',e=>{
+    const tipo=(e&&e.type)||'desconocido';
+    if(tipo==='peer-unavailable'){
+      if(rtc.state==='llamando'){ toast('El alumno no está conectado a esta sala'); rtcColgar(); }
+      return;                                   // no es un fallo del servicio
+    }
+    rtcEstado('error',rtcMsgError(tipo),tipo);
+    anunciar(rtcMsgError(tipo),true);
+    if(tipo!=='browser-incompatible'&&tipo!=='ssl-unavailable') rtcReintentar();
+  });
+  pr.on('disconnected',()=>{
+    if(rtc.conn==='ok') rtcEstado('abriendo','Conexión perdida, reconectando…','disconnected');
+    try{ pr.reconnect(); }catch(e){}
+    setTimeout(()=>{ if(rtc.peer===pr && !pr.open && !pr.destroyed) rtcReintentar(); },4000);
+  });
+  pr.on('close',()=>{ if(rtc.peer===pr){ rtcEstado('error','El servicio de llamadas se ha cerrado.','close'); rtcReintentar(); } });
 }
+/* reintento con espera creciente: 4 s, 8 s, 16 s… hasta 60 s */
+function rtcReintentar(){
+  if(!state.rol) return;
+  clearTimeout(rtc._re);
+  rtc.intentos=Math.min(rtc.intentos+1,6);
+  const espera=Math.min(4000*Math.pow(2,rtc.intentos-1),60000);
+  rtc._re=setTimeout(()=>{ if(state.rol) iniciarRTC(); },espera);
+}
+function rtcReconectarYa(){ rtc.intentos=0; toast('Reconectando…'); iniciarRTC(); }
+function rtcDiagHtml(){
+  const p=rtc.peer;
+  const f=(k,v)=>'<div class="fila"><span>'+esc(k)+'</span><span style="text-align:right">'+esc(v)+'</span></div>';
+  const estado = rtc.conn==='ok'?'Conectado':(rtc.conn==='error'?'Con error':'Conectando…');
+  return '<div class="ficha">'
+    + f('Estado',estado)
+    + (rtc.err?f('Detalle',rtc.err):'')
+    + (rtc.errTipo?f('Código',rtc.errTipo):'')
+    + f('Sala',state.sala||'—')
+    + f('Mi identificador',rtcMiId())
+    + f('Canal abierto',p&&p.open?'Sí':'No')
+    + f('Micrófono',rtc.local?'Concedido':'Sin permiso o sin micro')
+    + f('Conexión segura',location.protocol==='https:'?'Sí (https)':'No ('+location.protocol+')')
+    + f('Navegador',navigator.userAgent.slice(0,70))
+    + '</div>';
+}
+function rtcDiagnostico(){
+  openModal('<div class="between"><h3 style="margin:0"><svg class="ic"><use href="#i-phone"/></svg> Servicio de llamadas</h3>'
+    + '<button class="btn ghost sm" onclick="closeModal()" aria-label="Cerrar">✕</button></div>'
+    + '<div id="rtcDiagBody" class="mt">'+rtcDiagHtml()+'</div>'
+    + '<p class="muted mt" style="font-size:13px">Solo puede haber una sesión abierta a la vez por cada profesor y por cada alumno: si abres la aplicación en dos equipos o en dos pestañas, la segunda no podrá llamar ni recibir llamadas.</p>'
+    + '<div class="row mt"><button class="btn primary" onclick="rtcReconectarYa()">Reintentar conexión</button>'
+    + '<button class="btn" onclick="closeModal()">Cerrar</button></div>');
+}
+window.rtcDiagnostico=rtcDiagnostico; window.rtcReconectarYa=rtcReconectarYa;
 /* El alumno avisa al profesor de que ya está en la sala (para recibir casos ya lanzados) */
 function rtcHello(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sala+'-PROF',{t:'hello',alumnoId:state.alumnoActivo}); }
 /* El alumno manda un latido cada pocos segundos para que el profesor sepa que sigue conectado */
@@ -4250,7 +4421,10 @@ function rtcEnviarRegistro(reg,caseId){
 }
 function rtcStream(){ if(rtc.local)return rtc.local; if(!rtc.silent){try{const a=new (window.AudioContext||window.webkitAudioContext)();const d=a.createMediaStreamDestination();const o=a.createOscillator();const g=a.createGain();g.gain.value=0;o.connect(g);g.connect(d);o.start();rtc.silent=d.stream;}catch(e){rtc.silent=null;}} return rtc.silent||undefined; }
 function rtcLlamar(a){
-  if(!rtc.peer)return toast('Llamadas no disponibles (revisa la conexión)');
+  if(!rtc.peer||!rtc.peer.open){
+    toast(rtc.err||'Llamadas no disponibles todavía');
+    return rtcDiagnostico();
+  }
   if(rtc.state!=='idle')return toast('Ya hay una llamada en curso');
   const nombre=(typeof a==='string'?(alumno(a)||{}).nombre:a.nombre)||'Alumno';
   const c=rtc.peer.call(rtcIdAlumno(a),rtcStream(),{metadata:{name:rtcMiNombre()}});
