@@ -812,6 +812,10 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  '¿Funcionan las conexiones en tiempo real en este equipo?':'Do real-time connections work on this computer?',
+  'Este equipo no abre conexiones en tiempo real con ningún servidor. Lo está bloqueando el propio equipo: antivirus corporativo, VPN, proxy de la empresa o una extensión del navegador. Prueba en otro equipo o en una ventana de invitado sin extensiones.':'This computer opens no real-time connections to any server. The computer itself is blocking them: corporate antivirus, VPN, company proxy or a browser extension. Try another computer, or a guest window with no extensions.',
+  'Las conexiones en tiempo real funcionan en este equipo, pero no contra este servidor en concreto: o está saturado o hay un filtro que lo bloquea por dominio.':'Real-time connections work on this computer, but not against this particular server: it is either overloaded or blocked by a domain filter.',
+
   'Servidor de llamadas':'Call server',
   'Versión de CareDesk':'CareDesk version',
   'Probar servidor':'Test server',
@@ -1365,6 +1369,10 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  '¿Funcionan las conexiones en tiempo real en este equipo?':'Funcionen les connexions en temps real en este equip?',
+  'Este equipo no abre conexiones en tiempo real con ningún servidor. Lo está bloqueando el propio equipo: antivirus corporativo, VPN, proxy de la empresa o una extensión del navegador. Prueba en otro equipo o en una ventana de invitado sin extensiones.':'Este equip no obri connexions en temps real amb cap servidor. Ho està bloquejant el propi equip: antivirus corporatiu, VPN, proxy de l\'empresa o una extensió del navegador. Prova en un altre equip o en una finestra de convidat sense extensions.',
+  'Las conexiones en tiempo real funcionan en este equipo, pero no contra este servidor en concreto: o está saturado o hay un filtro que lo bloquea por dominio.':'Les connexions en temps real funcionen en este equip, però no contra este servidor en concret: o està saturat o hi ha un filtre que el bloqueja per domini.',
+
   'Servidor de llamadas':'Servidor de trucades',
   'Versión de CareDesk':'Versió de CareDesk',
   'Probar servidor':'Provar servidor',
@@ -4151,7 +4159,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-12 · r8';
+const CD_VERSION='2026-09-12 · r9';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
@@ -4430,6 +4438,17 @@ async function rtcProbarServidor(){
     await fetch('https://'+host+'/',{mode:'no-cors',cache:'no-store',signal:ctrl.signal});
     clearTimeout(to); alcanzable=true;
   }catch(e){ detalle=(e&&e.name)||''; }
+  /* ¿Funcionan los WebSockets en este equipo, con cualquier servidor? Si tampoco
+     va contra un servicio ajeno, lo que bloquea es el equipo o su red, no PeerJS. */
+  let wsGeneral='no probado';
+  await new Promise(res=>{
+    let w=null, hecho=false;
+    const fin=v=>{ if(hecho)return; hecho=true; wsGeneral=v; try{w&&w.close();}catch(e){} res(); };
+    try{ w=new WebSocket('wss://echo.websocket.events'); }catch(e){ return fin('no'); }
+    w.onopen=()=>fin('sí');
+    w.onerror=()=>fin('no');
+    setTimeout(()=>fin('no (sin respuesta)'),8000);
+  });
   let socket='no probado';
   await new Promise(res=>{
     let p2=null, hecho=false;
@@ -4440,16 +4459,18 @@ async function rtcProbarServidor(){
     setTimeout(()=>fin('no (sin respuesta)'),9000);
   });
   const ok = socket==='sí';
+  const wsOk = wsGeneral==='sí';
+  let veredicto;
+  if(ok) veredicto=t('El servidor funciona. Si aun así fallan las llamadas, vuelve a pulsar Reintentar conexión.');
+  else if(!alcanzable) veredicto=t('No se llega al servidor: o está caído o la red lo bloquea. Prueba desde otra red (por ejemplo, compartiendo datos del móvil).');
+  else if(!wsOk) veredicto=t('Este equipo no abre conexiones en tiempo real con ningún servidor. Lo está bloqueando el propio equipo: antivirus corporativo, VPN, proxy de la empresa o una extensión del navegador. Prueba en otro equipo o en una ventana de invitado sin extensiones.');
+  else veredicto=t('Las conexiones en tiempo real funcionan en este equipo, pero no contra este servidor en concreto: o está saturado o hay un filtro que lo bloquea por dominio.');
   caja.innerHTML='<div class="'+(ok?'note-teal':'note-warn')+'">'
     + '<b>'+esc(host)+'</b>'
     + '<p style="margin:6px 0 0;font-size:13px">'+esc(t('¿Responde la web del servidor?'))+' '+(alcanzable?'sí':'no'+(detalle?' ('+detalle+')':''))+'<br>'
-    + esc(t('¿Se abre el canal de llamadas?'))+' '+esc(socket)+'</p>'
-    + '<p style="margin:6px 0 0;font-size:13px">'+esc(ok
-        ? t('El servidor funciona. Si aun así fallan las llamadas, vuelve a pulsar Reintentar conexión.')
-        : (alcanzable
-           ? t('El servidor responde pero no deja abrir el canal: casi siempre es la red (cortafuegos del centro o del trabajo) bloqueando las conexiones en tiempo real.')
-           : t('No se llega al servidor: o está caído o la red lo bloquea. Prueba desde otra red (por ejemplo, compartiendo datos del móvil).')))
-    + '</p></div>';
+    + esc(t('¿Se abre el canal de llamadas?'))+' '+esc(socket)+'<br>'
+    + esc(t('¿Funcionan las conexiones en tiempo real en este equipo?'))+' '+esc(wsGeneral)+'</p>'
+    + '<p style="margin:6px 0 0;font-size:13px">'+esc(veredicto)+'</p></div>';
 }
 window.rtcDiagnostico=rtcDiagnostico; window.rtcReconectarYa=rtcReconectarYa;
 window.rtcProbarServidor=rtcProbarServidor; window.rtcGuardarServidor=rtcGuardarServidor;
