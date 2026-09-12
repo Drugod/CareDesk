@@ -812,6 +812,8 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Sin micrófono: no se grabará tu voz':'No microphone: your voice will not be recorded',
+
   '¿Funcionan las conexiones en tiempo real en este equipo?':'Do real-time connections work on this computer?',
   'Este equipo no abre conexiones en tiempo real con ningún servidor. Lo está bloqueando el propio equipo: antivirus corporativo, VPN, proxy de la empresa o una extensión del navegador. Prueba en otro equipo o en una ventana de invitado sin extensiones.':'This computer opens no real-time connections to any server. The computer itself is blocking them: corporate antivirus, VPN, company proxy or a browser extension. Try another computer, or a guest window with no extensions.',
   'Las conexiones en tiempo real funcionan en este equipo, pero no contra este servidor en concreto: o está saturado o hay un filtro que lo bloquea por dominio.':'Real-time connections work on this computer, but not against this particular server: it is either overloaded or blocked by a domain filter.',
@@ -1369,6 +1371,8 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Sin micrófono: no se grabará tu voz':'Sense micròfon: no es gravarà la teua veu',
+
   '¿Funcionan las conexiones en tiempo real en este equipo?':'Funcionen les connexions en temps real en este equip?',
   'Este equipo no abre conexiones en tiempo real con ningún servidor. Lo está bloqueando el propio equipo: antivirus corporativo, VPN, proxy de la empresa o una extensión del navegador. Prueba en otro equipo o en una ventana de invitado sin extensiones.':'Este equip no obri connexions en temps real amb cap servidor. Ho està bloquejant el propi equip: antivirus corporatiu, VPN, proxy de l\'empresa o una extensió del navegador. Prova en un altre equip o en una finestra de convidat sense extensions.',
   'Las conexiones en tiempo real funcionan en este equipo, pero no contra este servidor en concreto: o está saturado o hay un filtro que lo bloquea por dominio.':'Les connexions en temps real funcionen en este equip, però no contra este servidor en concret: o està saturat o hi ha un filtre que el bloqueja per domini.',
@@ -4159,7 +4163,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-12 · r9';
+const CD_VERSION='2026-09-12 · r10';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
@@ -4809,13 +4813,22 @@ function recAddStream(stream,key){
   try{ if(!rec.active||!rec.ctx||!stream)return; if(rec.srcs[key])return; if(!stream.getAudioTracks||!stream.getAudioTracks().length)return;
     const s=rec.ctx.createMediaStreamSource(stream); s.connect(rec.dest); rec.srcs[key]=s; }catch(e){}
 }
-function recStart(){
+async function recStart(){
   try{
     if(rec.active)return; if(!window.MediaRecorder)return;
-    const mic=(typeof sim!=='undefined'&&sim.local)||(rtc&&rtc.local)||null;
+    /* El micrófono ya no está tomado desde el inicio de la sesión: si esta
+       grabación no tiene ninguno a mano (caso del alumno que atiende una alarma,
+       sin llamada real de por medio), se pide aquí. Sin esto la grabación salía
+       muda. */
+    let mic=(typeof sim!=='undefined'&&sim.local)||(rtc&&rtc.local)||null;
+    if(!mic||!mic.getAudioTracks().some(t=>t.readyState==='live')) mic=await rtcMicOn();
+    if(rec.active)return;                       // otra grabación arrancó mientras se pedía el permiso
+    if(!mic) toast('Sin micrófono: no se grabará tu voz');
     rec.ctx=new (window.AudioContext||window.webkitAudioContext)();
+    try{ if(rec.ctx.state==='suspended') rec.ctx.resume(); }catch(e){}
     rec.dest=rec.ctx.createMediaStreamDestination(); rec.srcs={}; rec.chunks=[]; rec.active=true;
     if(mic)recAddStream(mic,'mic');
+    if(rtc.call&&rtc.audio&&rtc.audio.srcObject)recAddStream(rtc.audio.srcObject,'rtc');   // llamada ya en curso
     // añadir compañeros ya conectados en la simulación
     try{ Object.entries(sim.conns||{}).forEach(([k,c])=>{ if(c&&c.stream)recAddStream(c.stream,'sim-'+k); }); }catch(e){}
     const mime=recMime(); rec.mime=mime||'audio/webm';
