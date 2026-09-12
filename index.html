@@ -4143,17 +4143,20 @@ function presenciaFuera(alumnoId){
 function rtcSalaMsg(){
   return {t:'sala',prof:1,on:state.alumnos.filter(a=>presenciaOnline(a.id)).map(a=>a.id),ts:Date.now()};
 }
-function rtcSalaDifundir(todos){
+function rtcSalaDifundir(){
   if(state.rol!=='profesor'||!rtc.peer||!rtc.peer.open) return;
   const msg=rtcSalaMsg();
-  const destinos = todos ? state.alumnos : state.alumnos.filter(a=>presenciaOnline(a.id));
-  destinos.forEach(a=>rtcEnviarADatos(rtcIdAlumno(a),msg));
+  /* Solo a quien ya tiene canal abierto. El profesor NUNCA abre conexiones en
+     bloque: con 30 alumnos eso eran decenas de negociaciones a la vez y el
+     servidor de señalización tiraba su socket (error 'network'). */
+  state.alumnos.filter(a=>presenciaOnline(a.id))
+    .forEach(a=>rtcEnviarADatos(rtcIdAlumno(a),msg,true));
 }
 /* agrupa varios cambios seguidos en un solo envío */
 function rtcSalaPronto(){
   if(state.rol!=='profesor') return;
   clearTimeout(rtc._salaT);
-  rtc._salaT=setTimeout(()=>rtcSalaDifundir(false),600);
+  rtc._salaT=setTimeout(()=>rtcSalaDifundir(),600);
 }
 function profOnline(){ return !!state.profTs && (Date.now()-state.profTs)<PRESENCIA_MARGEN; }
 function companerosEnSala(){
@@ -4200,7 +4203,7 @@ setInterval(()=>{
   else if(state.rol==='alumno') pintarSalaAlumno();     // el profesor caduca si deja de latir
 }, 5000);
 /* Latido del profesor hacia la sala, con la lista de quién está dentro. */
-setInterval(()=>{ rtcSalaDifundir(false); }, PRESENCIA_LATIDO);
+setInterval(()=>{ rtcSalaDifundir(); }, PRESENCIA_LATIDO);
 
 function rtcSlug(s){return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'x';}
 function rtcMiId(){return state.rol==='profesor'?(state.sala+'-PROF'):(state.sala+'-AL-'+rtcSlug(alumno(state.alumnoActivo).nombre));}
@@ -4270,10 +4273,9 @@ async function iniciarRTC(){
   pr.on('open',()=>{
     rtc.intentos=0; rtcEstado('ok','');
     if(state.rol==='alumno'){ rtcHello(); rtcLatidoArrancar(); }
-    if(state.rol==='profesor'){
-      rtcPreguntarQuienHay();                                        // por si los alumnos ya estaban dentro
-      rtcSalaDifundir(true);                                         // y para que sepan que el profesor ha llegado
-    }
+    /* El profesor ya no sale a buscar a nadie: son los alumnos los que saludan
+       al entrar y laten cada 15 s, y él contesta por ese mismo canal. Así, entre
+       en el orden que entre cada uno, la sala se sincroniza sola. */
   });
   pr.on('error',e=>{
     const tipo=(e&&e.type)||'desconocido';
@@ -4339,10 +4341,9 @@ function rtcAdios(){
     .forEach(a=>rtcEnviarADatos(rtcIdAlumno(a),{t:'prof-bye'}));
 }
 /* El profesor, al entrar, pregunta a la lista quién está dentro */
-function rtcPreguntarQuienHay(){
-  if(state.rol!=='profesor'||!rtc.peer) return;
-  state.alumnos.forEach(a=>rtcEnviarADatos(rtcIdAlumno(a),{t:'quien'}));
-}
+/* (Retirado) El profesor sondeaba a toda la lista al entrar. Con 30 alumnos eran
+   30 conexiones a la vez y el servidor de señalización cortaba: ahora el
+   descubrimiento lo hacen los alumnos, que saludan al entrar y laten cada 15 s. */
 window.addEventListener('beforeunload',()=>{ try{ rtcAdios(); }catch(e){} });
 /* ---- Canal de datos: el profesor "empuja" el caso lanzado al navegador del alumno ---- */
 function rtcData(conn){ conn.on('data',msg=>rtcRecibir(msg,conn)); }
@@ -4355,11 +4356,14 @@ function rtcRecibir(msg,conn){
   /* ===== Mensajes que procesa el PROFESOR ===== */
   if(state.rol==='profesor'){
     if(msg.alumnoId) presenciaVisto(msg.alumnoId);
-    if(msg.t==='ping') return;                     // latido: solo sirve para marcarlo como conectado
+    if(msg.t==='ping'){                            // latido del alumno: le devolvemos el estado de la sala
+      rtcResponder(conn,msg.alumnoId&&rtcIdAlumno(msg.alumnoId),rtcSalaMsg());
+      return;
+    }
     if(msg.t==='bye'){ presenciaFuera(msg.alumnoId); return; }
     if(msg.t==='hello'){                           // reenvía casos/parejas pendientes al alumno que acaba de entrar
       const pid=rtcIdAlumno(msg.alumnoId);
-      rtcEnviarADatos(pid,rtcSalaMsg());           // "estoy aquí, y esto es quién hay en la sala"
+      rtcResponder(conn,pid,rtcSalaMsg());         // "estoy aquí, y esto es quién hay en la sala"
       rtcEnviarEvalsPendientes(msg.alumnoId);      // y las notas que se le hayan puesto mientras no estaba
       state.cola.forEach(c=>{
         if(c.estado==='finalizada') return;
@@ -4485,13 +4489,14 @@ function rtcRegistrarDC(conn){
   conn.on('error',()=>rtcOlvidarDC(conn));
   rtcData(conn);
 }
-function rtcEnviarADatos(peerId,payload){
+function rtcEnviarADatos(peerId,payload,soloAbierto){
   if(!rtc.peer||!rtc.peer.open||!peerId) return;
   const l=rtc.dc[peerId]||[];
   const abierta=l.filter(c=>c.open).pop();
   if(abierta){ try{ abierta.send(payload); return; }catch(e){ rtcOlvidarDC(abierta); } }
   const negociando=l.filter(c=>!c.open).pop();
-  if(negociando){ (negociando._cola=negociando._cola||[]).push(payload); return; }
+  if(negociando){ if(!soloAbierto)(negociando._cola=negociando._cola||[]).push(payload); return; }
+  if(soloAbierto) return;                 // los latidos nunca abren conexiones nuevas
   let conn; try{ conn=rtc.peer.connect(peerId,{reliable:true}); }catch(e){ return; }
   if(!conn) return;
   conn._cola=[payload];
@@ -4499,6 +4504,24 @@ function rtcEnviarADatos(peerId,payload){
   conn.on('open',()=>{ const q=conn._cola||[]; conn._cola=[]; q.forEach(m=>{try{conn.send(m);}catch(e){}}); });
   // si el otro extremo no existe, la conexión nunca abre: no la dejamos ocupando el hueco
   setTimeout(()=>{ if(!conn.open) rtcOlvidarDC(conn); },12000);
+}
+/* Envío a varios destinatarios sin ráfagas: por los canales ya abiertos va al
+   momento; los que haya que abrir se escalonan (una conexión cada 250 ms), que
+   es lo que el servidor de señalización gratuito aguanta sin cortar. */
+function rtcEnviarAVarios(peerIds,payload){
+  const nuevos=[];
+  (peerIds||[]).forEach(pid=>{
+    if(!pid) return;
+    const l=rtc.dc[pid]||[];
+    if(l.some(c=>c.open)||l.length) rtcEnviarADatos(pid,payload);
+    else nuevos.push(pid);
+  });
+  nuevos.forEach((pid,i)=>setTimeout(()=>rtcEnviarADatos(pid,payload),250*i));
+}
+/* responde por el canal por el que llegó el mensaje; si ya se cerró, por el suyo */
+function rtcResponder(conn,peerId,payload){
+  if(conn&&conn.open){ try{ conn.send(payload); return; }catch(e){} }
+  if(peerId) rtcEnviarADatos(peerId,payload);
 }
 function rtcCerrarDCs(){
   try{ Object.values(rtc.dc).forEach(l=>l.forEach(c=>{try{c.close();}catch(e){}})); }catch(e){}
@@ -4509,12 +4532,14 @@ function rtcEnviarCaso(escId,alId,casoId){
   const esc0=escenario(escId); if(!esc0) return;
   const usu0=usuario(esc0.usuarioId)||null;
   const payload={t:'caso',casoId,alumnoId:alId,escenario:esc0,usuario:usu0};
-  const destinos = alId==='*' ? state.alumnos.map(a=>rtcIdAlumno(a)) : [rtcIdAlumno(alId)];
-  destinos.forEach(pid=>rtcEnviarADatos(pid,payload));
+  const destinos = alId==='*'
+    ? state.alumnos.filter(a=>presenciaOnline(a.id)).map(a=>rtcIdAlumno(a))   // al resto le llega al entrar
+    : [rtcIdAlumno(alId)];
+  rtcEnviarAVarios(destinos,payload);
 }
 function rtcRetirarCaso(casoId){
   if(state.rol!=='profesor'||!rtc.peer) return;
-  state.alumnos.map(a=>rtcIdAlumno(a)).forEach(pid=>rtcEnviarADatos(pid,{t:'retirar',casoId}));
+  rtcEnviarAVarios(state.alumnos.filter(a=>presenciaOnline(a.id)).map(a=>rtcIdAlumno(a)),{t:'retirar',casoId});
 }
 /* --- Simulación lanzada por el profesor (pareja teleoperador + persona dependiente) --- */
 function rtcInvitarPareja(escId,opId,pdId,caseId){
