@@ -611,6 +611,8 @@
 const state = {
   rol:null, alumnoActivo:null,
   presencia:{},            // alumnoId -> timestamp del último latido (solo en el profesor)
+  profTs:0,                // último latido recibido del profesor (solo en el alumno)
+  salaOn:[],               // ids de los alumnos que el profesor ve en la sala (solo en el alumno)
   profesores:[{id:'p1',nombre:'Prof. Antuan'}],
   alumnos:[
     {id:'a1',nombre:'Lucía Fernández',email:'lucia@example.com'},
@@ -810,6 +812,12 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Profesor en la sala':'Teacher in the room',
+  'Profesor fuera de la sala':'Teacher not in the room',
+  '{n} compañeros conectados':'{n} classmates online',
+  'El profesor está en la sala':'The teacher is in the room',
+  'El profesor ha salido de la sala':'The teacher has left the room',
+
   'Sin acceso al micrófono: la otra persona no te oirá':'No microphone access: the other person will not hear you',
   'Sin acceso al micrófono':'No microphone access',
   'Este navegador no da acceso al micrófono':'This browser gives no microphone access',
@@ -1338,6 +1346,12 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Profesor en la sala':'Professor en la sala',
+  'Profesor fuera de la sala':'Professor fora de la sala',
+  '{n} compañeros conectados':'{n} companys connectats',
+  'El profesor está en la sala':'El professor està en la sala',
+  'El profesor ha salido de la sala':'El professor ha eixit de la sala',
+
   'Sin acceso al micrófono: la otra persona no te oirá':'Sense accés al micròfon: l\'altra persona no et sentirà',
   'Sin acceso al micrófono':'Sense accés al micròfon',
   'Este navegador no da acceso al micrófono':'Este navegador no dona accés al micròfon',
@@ -2135,7 +2149,8 @@ function salir(){
   try{ rtcAdios(); rtcLatidoParar(); }catch(e){}
   try{ if(rtc.local){rtc.local.getTracks().forEach(t=>t.stop());rtc.local=null;} }catch(e){}
   state.presencia={};
-  rtcColgar();try{rtc.peer&&rtc.peer.destroy();}catch(e){}rtc.peer=null;
+  rtcColgar();try{rtcCerrarDCs();}catch(e){}try{rtc.peer&&rtc.peer.destroy();}catch(e){}rtc.peer=null;
+  state.profTs=0; state.salaOn=[];
   state.rol=null;state.alumnoActivo=null;state.llamada=null;
   document.getElementById('app').classList.add('hidden');
   document.getElementById('splash').classList.remove('hidden');
@@ -3149,7 +3164,7 @@ function vCentral(){
 }
 function barraLlamadasAlumno(){
   return `<div class="card" style="margin-bottom:14px"><div class="flex" style="gap:8px;flex-wrap:wrap;align-items:center">
-    <b style="font-size:14px"><svg class="ic"><use href="#i-headset"/></svg> Central</b><span class="chip">Sala ${esc(state.sala||'')}</span>${rtcChipEstado()}</div></div>`;
+    <b style="font-size:14px"><svg class="ic"><use href="#i-headset"/></svg> Central</b><span class="chip">Sala ${esc(state.sala||'')}</span>${rtcChipEstado()}<span id="salaAlumno" class="flex" style="gap:8px;flex-wrap:wrap">${salaAlumnoHtml()}</span></div></div>`;
 }
 async function rtcEmergencia(tipo){
   if(!rtc.peer)return toast('Llamadas no disponibles (revisa la conexión)');
@@ -4099,7 +4114,7 @@ document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
-  conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0};
+  conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
   {urls:'stun:stun.relay.metered.ca:80'},
   {urls:'turn:global.relay.metered.ca:80',username:'1a2d9126cbbd3f33d15a5275',credential:'GJft05EjO87B+U4q'},
@@ -4114,12 +4129,46 @@ function presenciaVisto(alumnoId){
   if(!alumnoId) return;
   const nuevo = !presenciaOnline(alumnoId);
   state.presencia[alumnoId]=Date.now();
-  if(nuevo) pintarPresencia();
+  if(nuevo){ pintarPresencia(); rtcSalaPronto(); }
 }
 function presenciaFuera(alumnoId){
   if(!alumnoId) return;
   delete state.presencia[alumnoId];
-  pintarPresencia();
+  pintarPresencia(); rtcSalaPronto();
+}
+/* ---- Quién hay en la sala: el profesor lo difunde, el alumno lo recibe ----
+   El alumno también necesita saber si el profesor está dentro, y quién más hay.
+   El profesor manda su propio latido con la lista de la sala; el alumno lo da
+   por ausente si pasan PRESENCIA_MARGEN sin recibirlo. */
+function rtcSalaMsg(){
+  return {t:'sala',prof:1,on:state.alumnos.filter(a=>presenciaOnline(a.id)).map(a=>a.id),ts:Date.now()};
+}
+function rtcSalaDifundir(todos){
+  if(state.rol!=='profesor'||!rtc.peer||!rtc.peer.open) return;
+  const msg=rtcSalaMsg();
+  const destinos = todos ? state.alumnos : state.alumnos.filter(a=>presenciaOnline(a.id));
+  destinos.forEach(a=>rtcEnviarADatos(rtcIdAlumno(a),msg));
+}
+/* agrupa varios cambios seguidos en un solo envío */
+function rtcSalaPronto(){
+  if(state.rol!=='profesor') return;
+  clearTimeout(rtc._salaT);
+  rtc._salaT=setTimeout(()=>rtcSalaDifundir(false),600);
+}
+function profOnline(){ return !!state.profTs && (Date.now()-state.profTs)<PRESENCIA_MARGEN; }
+function companerosEnSala(){
+  return state.alumnos.filter(a=>a.id!==state.alumnoActivo && state.salaOn.indexOf(a.id)>=0);
+}
+function salaAlumnoHtml(){
+  const on=profOnline();
+  const comp=companerosEnSala().length;
+  return `<span class="chip ${on?'g':'y'}" id="chipProf"><span class="mk" aria-hidden="true">${on?'●':'○'}</span>${
+      esc(on?t('Profesor en la sala'):t('Profesor fuera de la sala'))}</span>`+
+    (comp?`<span class="chip b" id="chipComp"><svg class="ic"><use href="#i-users"/></svg> ${esc(t('{n} compañeros conectados',{n:comp}))}</span>`:'');
+}
+function pintarSalaAlumno(){
+  const cont=document.getElementById('salaAlumno'); if(!cont)return;
+  cont.innerHTML=salaAlumnoHtml(); aplicarIdioma(cont);
 }
 function presenciaOnline(alumnoId){
   const t=state.presencia[alumnoId];
@@ -4146,16 +4195,12 @@ function pintarPresencia(){
   const lista=document.getElementById('presenciaLista'); if(lista){ lista.innerHTML=presenciaListaHtml(); aplicarIdioma(lista); }
   const sub=card.querySelector('h3 .sub'); if(sub){ sub.textContent=t('{n} de {total}',{n:conectados().length,total:state.alumnos.length}); }
 }
-setInterval(()=>{ if(state.rol==='profesor') pintarPresencia(); }, 5000);
-/* Además de los latidos que manda cada alumno, el profesor vuelve a preguntar
-   cada 30 s a los que figuran desconectados: así, si un aviso se pierde (la
-   conexión de datos es efímera), el alumno aparece igualmente sin recargar. */
 setInterval(()=>{
-  if(state.rol!=='profesor'||!rtc.peer||!rtc.peer.open) return;
-  const fuera=state.alumnos.filter(a=>!presenciaOnline(a.id));
-  if(!fuera.length||fuera.length>40) return;
-  fuera.forEach(a=>rtcEnviarADatos(rtcIdAlumno(a),{t:'quien'}));
-}, 30000);
+  if(state.rol==='profesor') pintarPresencia();
+  else if(state.rol==='alumno') pintarSalaAlumno();     // el profesor caduca si deja de latir
+}, 5000);
+/* Latido del profesor hacia la sala, con la lista de quién está dentro. */
+setInterval(()=>{ rtcSalaDifundir(false); }, PRESENCIA_LATIDO);
 
 function rtcSlug(s){return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'x';}
 function rtcMiId(){return state.rol==='profesor'?(state.sala+'-PROF'):(state.sala+'-AL-'+rtcSlug(alumno(state.alumnoActivo).nombre));}
@@ -4211,6 +4256,7 @@ async function iniciarRTC(){
   if(typeof Peer==='undefined'){ rtcEstado('error','No se ha podido cargar el motor de llamadas.','sin-peerjs'); return; }
   clearTimeout(rtc._re);
   try{ if(rtc.peer){ rtc.peer.destroy(); } }catch(e){}
+  rtcCerrarDCs();
   rtc.peer=null;
   rtcEstado('abriendo','');
   rtc._desde=Date.now();
@@ -4220,11 +4266,14 @@ async function iniciarRTC(){
   let pr; try{ pr=new Peer(rtcMiId(),rtcOpts()); }catch(e){ rtcEstado('error','No se pudo iniciar el servicio de llamadas.','excepcion'); rtcReintentar(); return; }
   rtc.peer=pr;
   pr.on('call',c=>rtcEntrante(c));
-  pr.on('connection',c=>rtcData(c));
+  pr.on('connection',c=>rtcRegistrarDC(c));
   pr.on('open',()=>{
     rtc.intentos=0; rtcEstado('ok','');
     if(state.rol==='alumno'){ rtcHello(); rtcLatidoArrancar(); }
-    if(state.rol==='profesor') rtcPreguntarQuienHay();               // por si los alumnos ya estaban dentro
+    if(state.rol==='profesor'){
+      rtcPreguntarQuienHay();                                        // por si los alumnos ya estaban dentro
+      rtcSalaDifundir(true);                                         // y para que sepan que el profesor ha llegado
+    }
   });
   pr.on('error',e=>{
     const tipo=(e&&e.type)||'desconocido';
@@ -4283,7 +4332,12 @@ function rtcHello(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sa
 function rtcLatido(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sala+'-PROF',{t:'ping',alumnoId:state.alumnoActivo}); }
 function rtcLatidoArrancar(){ if(rtc._lat) clearInterval(rtc._lat); rtcLatido(); rtc._lat=setInterval(rtcLatido,PRESENCIA_LATIDO); }
 function rtcLatidoParar(){ if(rtc._lat){clearInterval(rtc._lat);rtc._lat=null;} }
-function rtcAdios(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sala+'-PROF',{t:'bye',alumnoId:state.alumnoActivo}); }
+function rtcAdios(){
+  if(!rtc.peer) return;
+  if(state.rol==='alumno') rtcEnviarADatos(state.sala+'-PROF',{t:'bye',alumnoId:state.alumnoActivo});
+  if(state.rol==='profesor') state.alumnos.filter(a=>presenciaOnline(a.id))
+    .forEach(a=>rtcEnviarADatos(rtcIdAlumno(a),{t:'prof-bye'}));
+}
 /* El profesor, al entrar, pregunta a la lista quién está dentro */
 function rtcPreguntarQuienHay(){
   if(state.rol!=='profesor'||!rtc.peer) return;
@@ -4305,6 +4359,7 @@ function rtcRecibir(msg,conn){
     if(msg.t==='bye'){ presenciaFuera(msg.alumnoId); return; }
     if(msg.t==='hello'){                           // reenvía casos/parejas pendientes al alumno que acaba de entrar
       const pid=rtcIdAlumno(msg.alumnoId);
+      rtcEnviarADatos(pid,rtcSalaMsg());           // "estoy aquí, y esto es quién hay en la sala"
       rtcEnviarEvalsPendientes(msg.alumnoId);      // y las notas que se le hayan puesto mientras no estaba
       state.cola.forEach(c=>{
         if(c.estado==='finalizada') return;
@@ -4354,6 +4409,20 @@ function rtcRecibir(msg,conn){
   /* ===== Mensajes que procesa el ALUMNO ===== */
   if(state.rol!=='alumno') return;
   if(msg.t==='quien'){ rtcLatido(); return; }      // el profesor pregunta quién está dentro
+  if(msg.t==='sala'){                              // latido del profesor + lista de la sala
+    const antes=profOnline();
+    state.profTs=Date.now();
+    state.salaOn=Array.isArray(msg.on)?msg.on:[];
+    if(!antes){ toast('<svg class="ic"><use href="#i-cap"/></svg> El profesor está en la sala'); anunciar('El profesor está en la sala'); }
+    pintarSalaAlumno();
+    return;
+  }
+  if(msg.t==='prof-bye'){
+    state.profTs=0; state.salaOn=[];
+    toast('El profesor ha salido de la sala'); anunciar('El profesor ha salido de la sala');
+    pintarSalaAlumno();
+    return;
+  }
   if(msg.t==='eval'){                              // el profesor ha evaluado una actuación mía
     const r=state.registros.find(x=>x.id===msg.regId);
     if(r && msg.eval){
@@ -4392,13 +4461,48 @@ function rtcRecibir(msg,conn){
   }
 }
 /* Envía un mensaje a uno o varios alumnos abriendo una conexión de datos efímera */
+/* ---- Canales de datos que se quedan abiertos ----
+   Antes cada mensaje abría una conexión WebRTC nueva y la cerraba a 1,5 s. Con
+   latidos en los dos sentidos eso sería negociar decenas de conexiones por
+   minuto; además, si una se perdía, el aviso se perdía con ella. Ahora la
+   conexión con cada interlocutor se guarda y se reutiliza. */
+/* Por cada interlocutor puede haber más de un canal: si los dos extremos se
+   conectan a la vez, cada uno tiene el suyo. No cerramos ninguno (cerrar el
+   "duplicado" tiraría el canal que el otro está usando): se guardan y se envía
+   por el primero que esté abierto. */
+function rtcOlvidarDC(conn){
+  if(!conn||!conn.peer) return;
+  const l=rtc.dc[conn.peer]; if(!l) return;
+  const i=l.indexOf(conn); if(i>=0) l.splice(i,1);
+  if(!l.length) delete rtc.dc[conn.peer];
+}
+function rtcRegistrarDC(conn){
+  if(!conn||!conn.peer) return;
+  const l=rtc.dc[conn.peer]=rtc.dc[conn.peer]||[];
+  if(l.indexOf(conn)<0) l.push(conn);
+  while(l.length>3){ const v=l.shift(); try{v.close();}catch(e){} }
+  conn.on('close',()=>rtcOlvidarDC(conn));
+  conn.on('error',()=>rtcOlvidarDC(conn));
+  rtcData(conn);
+}
 function rtcEnviarADatos(peerId,payload){
-  if(!rtc.peer) return;
+  if(!rtc.peer||!rtc.peer.open||!peerId) return;
+  const l=rtc.dc[peerId]||[];
+  const abierta=l.filter(c=>c.open).pop();
+  if(abierta){ try{ abierta.send(payload); return; }catch(e){ rtcOlvidarDC(abierta); } }
+  const negociando=l.filter(c=>!c.open).pop();
+  if(negociando){ (negociando._cola=negociando._cola||[]).push(payload); return; }
   let conn; try{ conn=rtc.peer.connect(peerId,{reliable:true}); }catch(e){ return; }
   if(!conn) return;
-  const cerrar=setTimeout(()=>{try{conn.close();}catch(e){}},8000);
-  conn.on('open',()=>{ try{conn.send(payload);}catch(e){} setTimeout(()=>{clearTimeout(cerrar);try{conn.close();}catch(e){}},1500); });
-  conn.on('error',()=>{clearTimeout(cerrar);});
+  conn._cola=[payload];
+  rtcRegistrarDC(conn);
+  conn.on('open',()=>{ const q=conn._cola||[]; conn._cola=[]; q.forEach(m=>{try{conn.send(m);}catch(e){}}); });
+  // si el otro extremo no existe, la conexión nunca abre: no la dejamos ocupando el hueco
+  setTimeout(()=>{ if(!conn.open) rtcOlvidarDC(conn); },12000);
+}
+function rtcCerrarDCs(){
+  try{ Object.values(rtc.dc).forEach(l=>l.forEach(c=>{try{c.close();}catch(e){}})); }catch(e){}
+  rtc.dc={};
 }
 function rtcEnviarCaso(escId,alId,casoId){
   if(state.rol!=='profesor'||!rtc.peer) return;
