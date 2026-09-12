@@ -127,6 +127,7 @@
   .chip.r{color:#992f23;background:#fbe6e2;border-color:#f0c4bc} .chip.b{color:#0b5a6e;background:#e2f1f5;border-color:#bfe0e8}
 
   table{width:100%;border-collapse:collapse;font-size:14px}
+  .tlab{display:none}   /* etiqueta de celda: solo se muestra en el diseño de móvil */
   th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
   th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
   tr:hover td{background:rgba(14,140,140,.045)}
@@ -312,6 +313,122 @@
   .step .dot{color:#fff}
   .step .dot .ic{width:26px;height:26px;stroke-width:1.7}
   .logo .ic{color:var(--accent-ink);width:20px;height:20px}
+
+  /* ================= Móvil: la interfaz se reordena en una sola columna =================
+     Todo vive dentro de esta media query: por encima de 760px el diseño de escritorio
+     queda exactamente igual que antes. */
+  @media (max-width:760px){
+
+    /* --- Cabecera: la marca ocupa su propia línea y los controles bajan debajo --- */
+    header.top{flex-wrap:wrap;gap:8px;padding:10px 12px}
+    header.top .spacer{display:none}
+    header.top .brand{flex:1 1 100%;min-width:0}
+    header.top .brand small{font-size:10.5px;line-height:1.3}
+    header.top{position:static}
+    header.top .role-pill{font-size:12px;padding:5px 10px;min-width:0;max-width:58vw;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    header.top .role-pill .rp-et{display:none}
+    header.top .langsw button{padding:7px 9px;font-size:11.5px}
+    header.top .btn{min-height:38px;padding:8px 11px;font-size:13px}
+    header.top .btn.sm{min-width:38px}
+
+    /* --- Pestañas: una sola línea que se desliza con el dedo --- */
+    nav.tabs{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+      -webkit-overflow-scrolling:touch;margin-bottom:16px}
+    nav.tabs::-webkit-scrollbar{display:none}
+    .subnav{display:flex;max-width:100%;flex-wrap:nowrap !important;
+      overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .subnav::-webkit-scrollbar{display:none}
+    .subnav button{flex:none;white-space:nowrap}
+    nav.tabs button{flex:none;white-space:nowrap;padding:10px 12px}
+
+    main{padding:16px 12px 56px}
+    h2.section{font-size:18px}
+    .card{padding:14px;border-radius:14px}
+    /* las cabeceras de dos piezas pasan a dos lineas; en el dialogo no,
+       para que el titulo y la X no se separen */
+    .between{flex-wrap:wrap}
+    .modal>.between{flex-wrap:nowrap}
+    .between>:first-child{min-width:0;overflow-wrap:anywhere}
+    .between>.btn,.between>button{flex:none}
+    .badge{white-space:nowrap}
+    .stat .n{font-size:24px}
+
+    /* --- Formularios: un campo por línea y 16px para que iOS no haga zoom --- */
+    .row{gap:10px}
+    .row>div:has(input,select,textarea){min-width:100% !important;flex-basis:100% !important}
+    input,select,textarea{font-size:16px}
+    .btn{min-height:42px}
+    .btn.sm{min-height:38px}
+    /* las acciones principales, a todo el ancho: mas facil de pulsar */
+    .acciones .btn{flex:1 1 100%}
+
+    /* --- Tablas: cada fila se convierte en una ficha con su etiqueta delante --- */
+    table{display:block;width:100%}
+    /* la cabecera desaparece a la vista pero sigue en el árbol de accesibilidad */
+    table thead{display:block;position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+      border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+    table thead tr{display:block;border:0;padding:0;margin:0;background:none}
+    table thead th{display:block;padding:0;border:0}
+    table tbody{display:block}
+    table tr{display:block;background:var(--panel2);border:1px solid var(--line);
+      border-radius:12px;padding:8px 12px;margin-bottom:10px}
+    table tr:hover td{background:transparent}
+    table td{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;
+      gap:6px 10px;border:none;padding:5px 0;text-align:right;overflow-wrap:anywhere}
+    table td+td{border-top:1px dashed var(--line)}
+    .tlab{display:block;margin-right:auto;text-align:left;flex:none;max-width:48%;
+      color:var(--muted);font-size:11px;font-weight:700;
+      text-transform:uppercase;letter-spacing:.4px;line-height:1.35}
+    table td:empty{display:none}
+    table td[colspan]{justify-content:center;text-align:center}
+
+    /* --- Diálogos a pantalla casi completa --- */
+    .modal-bg{padding:10px}
+    .modal,.modal.wide{max-width:100%;padding:16px;border-radius:14px;max-height:94vh}
+    .rubric-row{grid-template-columns:1fr;gap:8px}
+    .scoreset button{width:40px;height:40px}
+
+    /* --- Ficha del usuario en la llamada: etiqueta encima del dato --- */
+    .fila{display:flex;flex-direction:column;align-items:stretch;gap:2px}
+    .fila>span:first-child{white-space:normal;font-size:12px}
+    /* el marcado trae text-align:right en linea para la vista de escritorio */
+    .fila>span:last-child,.fila>b:last-child{text-align:left !important}
+
+    /* --- Pantalla de central --- */
+    .central-idle{padding:26px 10px}
+    .pulse{width:92px;height:92px;font-size:34px}
+    .incoming{padding:16px}
+
+    /* --- Widgets flotantes: barra inferior a lo ancho --- */
+    .rtcw,.simw{left:10px;right:10px;bottom:10px;width:auto}
+    .toast{left:10px;right:10px;bottom:12px;transform:none}
+    .toast.show{transform:translateY(-4px)}
+
+    /* --- Agenda --- */
+    .agsem{grid-template-columns:1fr}
+    .agcol{min-height:0}
+    .agdows,.aggrid{gap:3px}
+    .agcell{min-height:62px;padding:4px;border-radius:8px}
+    .agnum{font-size:11px;margin-bottom:2px}
+    .agchip{font-size:10px;padding:2px 4px}
+    .agdow{font-size:10px}
+
+    /* --- Portada --- */
+    .splash{margin:3vh auto;padding:0 14px}
+    .splash h1{font-size:28px}
+    .splash p.lead{font-size:16px}
+  }
+
+  /* Pantallas muy estrechas (≤ 380 px) */
+  @media (max-width:380px){
+    header.top{padding:8px 10px}
+    main{padding:14px 10px 52px}
+    .card{padding:12px}
+    nav.tabs button{font-size:13.5px;padding:9px 10px}
+    .scoreset{gap:4px}
+    .scoreset button{width:36px;height:36px}
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -351,6 +468,16 @@
 #gate .g-pill.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
 #gate .g-pill.err{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
 #gate .g-tiny{font-size:12px;color:var(--muted);text-align:center;margin-top:14px}
+
+/* ---- Móvil ---- */
+@media (max-width:760px){
+  #gate .g-shell{margin:18px auto;padding:0 14px 44px}
+  #gate .g-card{padding:18px;border-radius:14px}
+  #gate h1{font-size:21px}
+  #gate .g-tabs button{font-size:14px;padding:10px 6px}
+  #gate input{font-size:16px}
+  #gate .g-btn{padding:13px}
+}
 </style>
 </head>
 <body>
@@ -445,10 +572,10 @@
   <header class="top">
     <div class="brand"><div>CareDesk<small id="topSub">Central de teleasistencia</small></div></div>
     <div class="spacer"></div>
-    <div class="langsw" role="group" aria-label="Idioma"><button data-lang="va" onclick="setLang('va')" aria-label="Valencià">VA</button><button data-lang="es" onclick="setLang('es')" aria-label="Castellano">ES</button></div>
+    <div class="langsw" role="group" aria-label="Idioma"><button data-lang="va" onclick="setLang('va')" aria-label="Valencià" title="Valencià">VA</button><button data-lang="es" onclick="setLang('es')" aria-label="Castellano" title="Castellano">ES</button><button data-lang="en" onclick="setLang('en')" aria-label="English" title="English">EN</button></div>
     <button class="btn ghost sm" onclick="abrirAjustesA11y()" title="Ajustes y accesibilidad" aria-label="Ajustes y accesibilidad"><svg class="ic"><use href="#i-eye"/></svg></button>
     <button class="btn ghost sm" onclick="verNotificaciones()" title="Notificaciones" aria-label="Notificaciones"><svg class="ic"><use href="#i-bell"/></svg></button>
-    <div class="role-pill">Sesión: <b id="whoLabel">—</b></div>
+    <div class="role-pill"><span class="rp-et">Sesión:</span> <b id="whoLabel">—</b></div>
     <button class="btn ghost sm" onclick="salir()" title="Cerrar sesión">Cerrar sesión</button>
   </header>
   <main>
@@ -679,6 +806,496 @@ function esc(s){return (s==null?'':(''+s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<
 
 /* ================= i18n · Valencià (per defecte) / Castellà ================= */
 state.lang = state.lang || 'va';
+try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch(e){}
+/* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
+   es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
+const I18N_EN = {
+  '"Me he caído y no puedo levantarme..."':'"I\'ve fallen and I can\'t get up..."',
+  '* Nombre y apellidos obligatorios':'* First name and surname required',
+  '+ Agregar':'+ Add',
+  '+ Añadir criterio':'+ Add criterion',
+  '+ Crear examen':'+ Create exam',
+  '+ Nueva pregunta':'+ New question',
+  '+ Nuevo usuario':'+ New service user',
+  '+ Registrar práctico':'+ Record practical',
+  ': la imagen no se guarda en ningún sitio.':': the image is not stored anywhere.',
+  'ALARMA ENTRANTE':'INCOMING ALARM',
+  'Accesibilidad':'Accessibility',
+  'Acceso':'Access',
+  'Acciones':'Actions',
+  'Acelerar la llamada':'Rush the call',
+  'Aciertos':'Correct answers',
+  'Activa los recursos adecuados (112 si procede)':'Activates the right resources (112 where appropriate)',
+  'Activa recursos y resuelve':'Activate resources and resolve',
+  'Activar 112 / emergencias':'Activate 112 / emergency services',
+  'Activar el 112 de inmediato':'Call 112 immediately',
+  'Activar encuesta de fin de curso':'Enable end-of-course survey',
+  'Actividad por alumno':'Activity by student',
+  'Activo':'Active',
+  'Actuaciones':'Call handlings',
+  'Actúa con la prioridad correcta y a tiempo':'Acts with the right priority and in good time',
+  'Ajustes y accesibilidad':'Settings and accessibility',
+  'Al alumno no le llega el caso o la llamada':'The student is not receiving the case or the call',
+  'Al recibir una alarma, ¿cuál es el primer paso?':'When an alarm comes in, what is the first step?',
+  'Alarma simulada basada en casos reales':'Simulated alarm based on real cases',
+  'Alergias':'Allergies',
+  'Alergias (se resalta al operador durante la llamada)':'Allergies (highlighted to the operator during the call)',
+  'Alta':'High',
+  'Alto contraste':'High contrast',
+  'Alumno':'Student',
+  'Alumnos':'Students',
+  'Alumnos conectados':'Students online',
+  'Alumnos y profesores':'Students and teachers',
+  'Ambos niveles':'Both levels',
+  'Amigo/a':'Friend',
+  'Andador':'Walking frame',
+  'Animaciones':'Animations',
+  'Ante dolor torácico con disnea, ¿qué recurso se prioriza?':'With chest pain and breathlessness, which resource takes priority?',
+  'Apellidos':'Surname',
+  'Apellidos *':'Surname *',
+  'Aplica el protocolo':'Follow the protocol',
+  'Ascensor':'Lift',
+  'Asigna los dos papeles. A ambos alumnos les entrará la llamada para unirse.':'Assign the two roles. Both students will receive the call to join.',
+  'Asignación':'Assignment',
+  'Atender llamada':'Answer call',
+  'Atiende la llamada':'Handle the call',
+  'Audífono':'Hearing aid',
+  'Autónomo':'Self-employed',
+  'Avanzado':'Advanced',
+  'Avería':'Fault',
+  'Avisar al 112 sin más':'Just call 112',
+  'Aviso a familiar / contacto':'Notify a relative / contact',
+  'Aviso legal':'Legal notice',
+  'Ayuda':'Help',
+  'Ayudas técnicas':'Assistive equipment',
+  'Añadir':'Add',
+  'Añadir observación':'Add note',
+  'Añadir paso':'Add step',
+  'Baja':'Low',
+  'Banco de preguntas':'Question bank',
+  'Bastón':'Walking stick',
+  'Bienestar / Apoyo':'Wellbeing / Support',
+  'Blanco y negro con bordes marcados. Útil con baja visión y con mucha luz ambiental.':'Black and white with strong borders. Useful with low vision and in bright light.',
+  'Borrar':'Delete',
+  'Buscar':'Search',
+  'Básico':'Basic',
+  'CP / Ciudad':'Postcode / Town',
+  'Calificación media':'Average grade',
+  'Calle':'Street',
+  'Cama articulada':'Adjustable bed',
+  'Cambiar contraseña':'Change password',
+  'Cancelar':'Cancel',
+  'Casa':'House',
+  'Caso':'Case',
+  'Castellano':'Spanish',
+  'Caída':'Fall',
+  'Central':'Control room',
+  'Central de teleasistencia':'Telecare control room',
+  'Centro médico':'Health centre',
+  'Cerrar sesión':'Sign out',
+  'Cierra o programa el seguimiento correctamente':'Closes or schedules follow-up correctly',
+  'Ciudad':'Town',
+  'Clasifica correctamente el tipo de incidencia':'Classifies the type of incident correctly',
+  'Clasificó como':'Classified as',
+  'Clasificó:':'Classified:',
+  'Clasifiqué':'I classified',
+  'Colgante DECT':'DECT pendant',
+  'Colgar':'Hang up',
+  'Colgar rápido':'Hang up quickly',
+  'Comparte el código de tu centro':'Share your centre code',
+  'Comprobación técnica':'Technical check',
+  'Comprobación técnica del equipo':'Technical check of the equipment',
+  'Comprueba la identidad del usuario':'Verifies the service user\'s identity',
+  'Con el email, el alumno podrá entrar a la plataforma (creará su contraseña la primera vez). Límite de 30 alumnos por licencia.':'With their email address the student can sign in to the platform (they will create a password the first time). Limit of 30 students per licence.',
+  'Con lector de pantalla':'With a screen reader',
+  'Con vídeo':'With video',
+  'Con vídeo se ve la cara del compañero durante la simulación, como en una videoasistencia real.':'With video you see your partner\'s face during the simulation, as in real video-assisted care.',
+  'Confirma el motivo de la llamada':'Confirms the reason for the call',
+  'Confirmar la toma y posibles efectos':'Confirm the dose taken and any side effects',
+  'Consulta del expediente':'Checking the record',
+  'Consulta la ficha del usuario':'Checks the service user\'s profile',
+  'Contacto':'Contact',
+  'Contactos de emergencia':'Emergency contacts',
+  'Continuar':'Continue',
+  'Contraseña actual':'Current password',
+  'Contraste':'Contrast',
+  'Convivientes':'People living together',
+  'Correcta':'Correct',
+  'Correcto:':'Correct:',
+  'Crea o edita los casos: ficha, guion, protocolo y solución. Los casos se lanzan desde la pestaña':'Create or edit cases: profile, script, protocol and solution. Cases are launched from the tab',
+  'Crítica':'Critical',
+  'Cuando el profesor lance un caso, la alarma sonará aquí. También puedes practicar un caso por tu cuenta o con un compañero.':'When the teacher launches a case, the alarm will ring here. You can also practise a case on your own or with a classmate.',
+  'Cuidador':'Carer',
+  'Cuidador/a':'Carer',
+  'Custodia de llaves':'Key holding',
+  'Cámara':'Camera',
+  'Cámara en las simulaciones':'Camera in simulations',
+  'Código postal':'Postcode',
+  'Cónyuge':'Spouse',
+  'DNI':'National ID',
+  'Dar de alta':'Add',
+  'Dar de alta alumno':'Add a student',
+  'Datos de ejemplo precargados · Funciona sin conexión · Uso educativo (recreación inspirada en simuladores de teleasistencia)':'Sample data preloaded · Works offline · Educational use (a recreation inspired by telecare simulators)',
+  'De baja':'Inactive',
+  'Del primer contacto con el usuario hasta la evaluación final del docente.':'From the first contact with the service user to the teacher\'s final assessment.',
+  'Dependencia':'Dependency level',
+  'Desactivados':'Disabled',
+  'Desactivar':'Disable',
+  'Descargar':'Download',
+  'Descargar PDF':'Download PDF',
+  'Descargar todas las grabaciones':'Download all recordings',
+  'Desempleado':'Unemployed',
+  'Dirección':'Address',
+  'Dispositivo':'Device',
+  'Documenta y programa seguimientos':'Document and schedule follow-ups',
+  'Documento':'ID document',
+  'Dueño':'Assigned to',
+  'Dueño (alumno)':'Assigned to (student)',
+  'Dueño:':'Assigned to:',
+  'Edad':'Age',
+  'Editar':'Edit',
+  'Editar alumno':'Edit student',
+  'Editar escenario':'Edit scenario',
+  'Editar usuario ficticio':'Edit fictional service user',
+  'El alumno atiende el caso él solo en su central.':'The student handles the case alone at their own workstation.',
+  'El contenido fue relevante y útil':'The content was relevant and useful',
+  'El círculo relleno indica los alumnos que tienen la central abierta en esta misma sala.':'A filled circle marks the students who have the control room open in this same room.',
+  'El formador demostró dominio de los temas':'The trainer showed command of the subject',
+  'El profesor puntúa cada actuación':'The teacher scores each call handling',
+  'Elegir carpeta del equipo':'Choose a folder on this computer',
+  'Elige el caso que quieres poner en marcha. Después asignarás a quién se lo lanzas.':'Choose the case you want to run. You will assign who receives it next.',
+  'Eliminar':'Delete',
+  'Email':'Email',
+  'Email del alumno':'Student email',
+  'Emergencia sanitaria':'Medical emergency',
+  'Emergencias':'Emergencies',
+  'En alta':'Active',
+  'En espera de llamadas':'Waiting for calls',
+  'En llamada':'On a call',
+  'En una llamada saliente de seguimiento de medicación conviene...':'On an outbound medication follow-up call you should...',
+  'En “Inicio” ves los teléfonos en cola y puedes unirte a escuchar. Cada actuación se graba, y en “Avaluació” la evalúas con la rúbrica sobre 100.':'On “Home” you see the calls in the queue and can join to listen. Every call handling is recorded, and on “Assessment” you score it with the rubric out of 100.',
+  'En “Inicio”, dentro de “Acciones rápidas”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno, a toda la clase o como simulación a 2 (teleoperador + persona dependiente).':'On “Home”, under “Quick actions”, press “Launch a case”, choose the case and decide where it goes: to one student, to the whole class, or as a paired simulation (operator + service user).',
+  'Encuestas':'Surveys',
+  'Encuestas de fin de curso':'End-of-course surveys',
+  'English':'English',
+  'Entorno de simulación para el módulo de Teleasistencia. Recibe alarmas, atiende al usuario siguiendo el protocolo, moviliza recursos y registra la actuación. El profesor lanza los casos y evalúa.':'A simulation environment for the Telecare module. Receive alarms, attend to the service user following the protocol, mobilise resources and record what you did. The teacher launches the cases and assesses them.',
+  'Entra como profesor: la app te da un código de 4 dígitos (o escribe el tuyo). Compártelo con tus alumnos; ellos entran como alumno, escriben ese código y eligen su nombre.':'Sign in as a teacher: the app gives you a 4-digit code (or type your own). Share it with your students; they sign in as students, enter that code and pick their name.',
+  'Entrar como Alumno':'Sign in as a student',
+  'Entrar como Profesor':'Sign in as a teacher',
+  'Enunciado':'Question',
+  'Enviar a':'Send to',
+  'Es la única alarma en cola':'It is the only alarm in the queue',
+  'Escenarios disponibles':'Scenarios available',
+  'Escenarios y casos':'Scenarios and cases',
+  'Escenarios y usuarios':'Scenarios and service users',
+  'Escribe un idioma y pulsa Enter':'Type a language and press Enter',
+  'Escucha activa':'Active listening',
+  'Escucha activa / contención':'Active listening / reassurance',
+  'Escucha activa, tono cordial y tranquilizador':'Active listening, warm and reassuring tone',
+  'Escucha e identifica la situación':'Listen and identify the situation',
+  'Escucha, graba y evalúa':'Listen, record and assess',
+  'Ese caso está ahora mismo en la cola. Retíralo antes de eliminarlo.':'That case is currently in the queue. Remove it before deleting it.',
+  'Estado':'Status',
+  'Estado disp.':'Device status',
+  'Estado dispositivo':'Device status',
+  'Estadísticas':'Statistics',
+  'Estos ajustes se guardan en este equipo y se aplican a toda la aplicación.':'These settings are saved on this computer and apply to the whole app.',
+  'Estrellas':'Stars',
+  'Evaluación':'Assessment',
+  'Evaluación del docente':'Teacher assessment',
+  'Evaluación práctica':'Practical assessment',
+  'Evaluar':'Assess',
+  'Evaluar actuaciones':'Assess call handlings',
+  'Eventos de agenda':'Scheduled events',
+  'Exámenes':'Exams',
+  'Exámenes teóricos':'Written exams',
+  'Falsa alarma':'False alarm',
+  'Fecha':'Date',
+  'Fecha de nacimiento':'Date of birth',
+  'Fecha nac.':'Date of birth',
+  'Finalizar evaluación':'Finish assessment',
+  'Gestiona alumnos, lanza llamadas y emergencias a la central, revisa la agenda de seguimiento y evalúa con rúbrica.':'Manage students, launch calls and emergencies to the room, review the follow-up schedule and assess with a rubric.',
+  'Gestiona la incidencia':'Handle the incident',
+  'Gestión de la incidencia / Emergencia y 112':'Handling the incident / Emergency and 112',
+  'Gestión posterior y registro':'Follow-up and recording',
+  'Grabación de la llamada':'Call recording',
+  'Grande':'Large',
+  'Gravedad':'Severity',
+  'Grúa':'Hoist',
+  'Guardar':'Save',
+  'Guardar escenario':'Save scenario',
+  'Guardar observación':'Save note',
+  'Guardar rúbrica':'Save rubric',
+  'Guion (lo que interpreta la persona dependiente)':'Script (what the service user acts out)',
+  'Guía de uso de la plataforma.':'Guide to using the platform.',
+  'Guía rápida':'Quick guide',
+  'Hablar de uno mismo':'Talk about yourself',
+  'Hablar deprisa':'Speak quickly',
+  'He alcanzado los objetivos de aprendizaje esperados':'I achieved the expected learning outcomes',
+  'Hermano/a':'Sibling',
+  'Herramientas y habilidades':'Tools and skills',
+  'Hija':'Daughter',
+  'Hijo':'Son',
+  'Hijo/a':'Son/daughter',
+  'Historial de progreso del alumnado':'Student progress history',
+  'Hombre':'Male',
+  'I. Contenido del curso':'I. Course content',
+  'II. Metodología y formador/a':'II. Method and trainer',
+  'III. Logística y plataforma':'III. Logistics and platform',
+  'IV. Valoración general':'IV. Overall rating',
+  'Identificar al usuario y confirmar sus datos':'Identify the service user and confirm their details',
+  'Idioma':'Language',
+  'Idiomas':'Languages',
+  'Ignorarla':'Ignore it',
+  'Inactivo':'Inactive',
+  'Incapacidad':'Incapacity benefit',
+  'Incidencias técnicas':'Technical incidents',
+  'Individual':'Individual',
+  'Información adicional, preferencias, medicación…':'Additional information, preferences, medication…',
+  'Información legal':'Legal information',
+  'Informe final':'Final report',
+  'Inicio':'Home',
+  'Inicio de la llamada':'Start of the call',
+  'Institucionalizada':'In residential care',
+  'Instrucciones de acceso':'Access instructions',
+  'Interrumpir al usuario':'Interrupt the service user',
+  'Jubilada':'Retired',
+  'Jubilado':'Retired',
+  'La escucha activa consiste en...':'Active listening means...',
+  'La plataforma fue intuitiva y fácil de utilizar':'The platform was intuitive and easy to use',
+  'Lanza un caso':'Launch a case',
+  'Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.':'Launch a case to one student or to the whole class. It will appear as an incoming alarm at their workstation.',
+  'Lanzado por el profesor':'Launched by the teacher',
+  'Lanzar':'Launch',
+  'Lanzar un caso':'Launch a case',
+  'Las explicaciones fueron claras y fáciles de seguir':'The explanations were clear and easy to follow',
+  'Las grabaciones siguen siendo solo de audio':'Recordings remain audio only',
+  'Las personas simuladas que atienden los alumnos. Cuanto más completa la ficha, más realista es la práctica.':'The simulated people the students attend to. The fuller the profile, the more realistic the practice.',
+  'Listo':'Done',
+  'Llamadas entrantes':'Inbound calls',
+  'Llamadas salientes':'Outbound calls',
+  'Llamar':'Call',
+  'Los objetivos estaban claramente definidos':'The objectives were clearly defined',
+  'Lugar de nacimiento':'Place of birth',
+  'Lugar nac.':'Place of birth',
+  'Manual del profesor':'Teacher handbook',
+  'Mascotas':'Pets',
+  'Media':'Medium',
+  'Media global':'Overall average',
+  'Media por pregunta':'Average per question',
+  'Mi perfil':'My profile',
+  'Mis actuaciones':'My call handlings',
+  'Mujer':'Female',
+  'Muletas':'Crutches',
+  'Muy grande':'Very large',
+  'Módulo':'Module',
+  'Móvil':'Mobile',
+  'NIE':'Foreigner ID',
+  'Nacionalidad':'Nationality',
+  'Nivel':'Level',
+  'No':'No',
+  'No hay exámenes publicados todavía.':'No exams published yet.',
+  'No hay llamadas en curso. Lanza un caso desde “Acciones”.':'No calls in progress. Launch a case from “Actions”.',
+  'No registrar nada':'Record nothing',
+  'Nombre':'Name',
+  'Nombre *':'First name *',
+  'Nombre completo':'Full name',
+  'Nombre del nuevo alumno':'New student name',
+  'Nombre del nuevo profesor':'New teacher name',
+  'Nombre y apellidos':'Full name',
+  'Nombre y email':'Name and email',
+  'Nombre, expediente o dueño':'Name, record or assignment',
+  'Normal':'Normal',
+  'Normales':'Normal',
+  'Nos conectamos pero no nos oímos':'We connect but cannot hear each other',
+  'Nota':'Grade',
+  'Nota (0-100)':'Grade (0-100)',
+  'Nota general (en frío)':'General note (after the call)',
+  'Notas':'Notes',
+  'Notas clínicas':'Clinical notes',
+  'Notas clínicas y observaciones':'Clinical notes and observations',
+  'Notificaciones':'Notifications',
+  'Nueva contraseña (mín. 6)':'New password (min. 6)',
+  'Nueva pregunta':'New question',
+  'Nuevo escenario':'New scenario',
+  'Nuevo usuario ficticio':'New fictional service user',
+  'Nº de convivientes':'Number of people living together',
+  'Nº de expediente':'Record number',
+  'Nº de preguntas':'Number of questions',
+  'Nº de serie':'Serial number',
+  'Nº documento':'Document number',
+  'Nº serie':'Serial no.',
+  'Número':'Number',
+  'Obs':'Notes',
+  'Observaciones':'Notes',
+  'Observaciones del alumno:':'Student\'s notes:',
+  'Observaciones registradas':'Notes recorded',
+  'Observación…':'Note…',
+  'Opción A':'Option A',
+  'Opción B':'Option B',
+  'Opción C':'Option C',
+  'Opción D':'Option D',
+  'Orientación que verá el alumno al pulsar el botón Pista':'Guidance the student sees when pressing the Hint button',
+  'Otra':'Other',
+  'Otras':'Other',
+  'Otro':'Other',
+  'PROCESO PEDAGÓGICO':'TEACHING PROCESS',
+  'Panel del profesor':'Teacher dashboard',
+  'Parcial':'Partly',
+  'Pasaporte':'Passport',
+  'Paso {n}':'Step {n}',
+  'Pasos de protocolo marcados:':'Protocol steps ticked:',
+  'Pastillero':'Pill dispenser',
+  'Patologías':'Medical conditions',
+  'Patologías / historial':'Conditions / history',
+  'Pendiente de instalar':'Awaiting installation',
+  'Pendientes':'Pending',
+  'Pendientes de evaluar':'Awaiting assessment',
+  'Persona dependiente (interpreta al usuario)':'Service user (acts out the caller)',
+  'Personal':'Personal',
+  'Pista para el alumno (opcional)':'Hint for the student (optional)',
+  'Política completa':'Full policy',
+  'Ponte a los mandos de la central: atiende las alarmas entrantes, aplica el protocolo y deja registrada tu actuación.':'Take the controls of the room: answer incoming alarms, apply the protocol and record what you did.',
+  'Portero, código…':'Entryphone, code…',
+  'Practica como en una central real':'Practise as in a real control room',
+  'Practicar caso':'Practise a case',
+  'Preferencia':'Preference',
+  'Preferencia de contacto':'Preferred contact method',
+  'Prefiere no decir':'Prefers not to say',
+  'Preguntas':'Questions',
+  'Preguntas frecuentes':'Frequently asked questions',
+  'Prestar atención plena y mostrar comprensión':'Give full attention and show understanding',
+  'Prioridad Alta':'High priority',
+  'Prioridad Baja':'Low priority',
+  'Prioridad Media':'Medium priority',
+  'Privacidad':'Privacy',
+  'Profesión':'Occupation',
+  'Profesor':'Teacher',
+  'Profesores':'Teachers',
+  'Programar llamada de seguimiento':'Schedule a follow-up call',
+  'Programar seguimiento':'Schedule follow-up',
+  'Protección de datos':'Data protection',
+  'Protocolo de actuación (pasos)':'Action protocol (steps)',
+  'Provincia':'Province',
+  'Publicar':'Publish',
+  'Puesto de la central':'Control room workstation',
+  'Pulsador de muñeca':'Wrist button',
+  'Puntuación':'Score',
+  'Puntúa cada criterio (No / Parcial / Sí). El sistema propone una puntuación de partida a partir de lo que hizo el alumno.':'Score each criterion (No / Partly / Yes). The system suggests a starting score based on what the student did.',
+  'Qué datos se tratan, dónde se guardan las grabaciones y cuánto tiempo se conservan. Comparte este resumen con tu alumnado al empezar el curso.':'What data is processed, where recordings are kept and for how long. Share this summary with your students at the start of the course.',
+  'Recaba la información relevante':'Gathers the relevant information',
+  'Rechazar':'Decline',
+  'Recibe la llamada':'Receive the call',
+  'Recursos activados:':'Resources activated:',
+  'Recursos correctos (para la autoevaluación)':'Correct resources (for self-assessment)',
+  'Recursos sociales / trabajador social':'Social services / social worker',
+  'Reducidas':'Reduced',
+  'Refiere dolor de cadera y mareo; se avisa a la hija y se moviliza recurso.':'Reports hip pain and dizziness; the daughter is notified and a resource is dispatched.',
+  'Registra la actuación':'Record what you did',
+  'Registra la actuación con claridad':'Records the call clearly',
+  'Repetir nueva':'Repeat new password',
+  'Residencia':'Care home',
+  'Respuesta correcta':'Correct answer',
+  'Respuestas':'Responses',
+  'Restablecer':'Reset',
+  'Resultados':'Results',
+  'Resumen':'Summary',
+  'Retirar':'Remove',
+  'Rol':'Role',
+  'Rúbrica práctica':'Practical rubric',
+  'Sala':'Room',
+  'Saltar al contenido':'Skip to content',
+  'Se identifica y saluda correctamente':'Identifies themselves and greets appropriately',
+  'Se toman preguntas del banco del módulo que coincidan con el nivel.':'Questions are taken from the module bank matching the level.',
+  'Secciones':'Sections',
+  'Servicio Acuda':'Mobile response service',
+  'Servicio Acuda (unidad móvil)':'Mobile response service',
+  'Sesión:':'Signed in as:',
+  'Sexo':'Sex',
+  'Sigue los pasos establecidos':'Follow the set steps',
+  'Silla de ruedas':'Wheelchair',
+  'Simulación a 2':'Paired simulation',
+  'Simulador de central de teleasistencia':'Telecare control room simulator',
+  'Sin asignar':'Unassigned',
+  'Sin contactos aún.':'No contacts yet.',
+  'Sin exámenes':'No exams',
+  'Sin resultados':'No results',
+  'Situación familiar':'Family situation',
+  'Situación laboral':'Employment status',
+  'Sobrino/a':'Nephew/niece',
+  'Social y emergencias':'Social and emergency services',
+  'Soledad / apoyo emocional':'Loneliness / emotional support',
+  'Solo voz':'Voice only',
+  'Sonando…':'Ringing…',
+  'Suma de pesos: 100':'Weights total: 100',
+  'Sí':'Yes',
+  'Tamaño del texto':'Text size',
+  'Teleoperador/a (atiende y registra)':'Operator (answers and records)',
+  'Teléfono':'Phone',
+  'Teléfono fijo':'Landline',
+  'Teléfono móvil':'Mobile',
+  'Llamadas':'Calls',
+  'Terminal fijo':'Fixed terminal',
+  'Tiempo':'Time',
+  'Tiene cuidador':'Has a carer',
+  'Tipo':'Type',
+  'Tipo / objetivo':'Type / objective',
+  'Tipo de vivienda':'Type of home',
+  'Tipo doc.':'Doc. type',
+  'Tipo vivienda':'Home type',
+  'Toda la aplicación se maneja con el teclado. Usa el tabulador para moverte,\n      Intro o Espacio para activar, y Escape para cerrar las ventanas. Las llamadas entrantes se anuncian solas.':'The whole app can be used with the keyboard. Use Tab to move, Enter or Space to activate, and Escape to close dialogs. Incoming calls are announced automatically.',
+  'Toda la clase':'The whole class',
+  'Todavía no ha creado su contraseña. Puedes corregir el email sin problema.':'They have not created a password yet. You can correct the email without any issue.',
+  'Todos':'All',
+  'Todos los dueños':'All assignments',
+  'Título':'Title',
+  'Título del caso':'Case title',
+  'Unidad móvil domiciliaria':'Mobile home-visit unit',
+  'Unirse a simulación':'Join simulation',
+  'Atiendes la llamada y registras la actuación.':'You answer the call and record what you did.',
+  'Interpretas a la persona que llama, siguiendo el guion.':'You act out the caller, following the script.',
+  'Un alumno hace de':'One student plays the','y otro de':'and another the','El profesor puede unirse a escuchar sin cortar la llamada. Cada papel solo puede ocuparlo una persona.':'The teacher can join to listen without cutting the call. Each role can only be taken by one person.',
+  'Sala de práctica':'Practice room','Elige tu papel:':'Choose your role:',
+  'Usa patologías y contactos de la ficha':'Uses conditions and contacts from the profile',
+  'Usuario (ficha que verá el teleoperador)':'Service user (profile the operator will see)',
+  'Usuario activo':'Active service user',
+  'Usuarios ficticios':'Fictional service users',
+  'Valencià':'Valencian',
+  'Valora el estado y los síntomas':'Assesses condition and symptoms',
+  'Valoración del usuario':'Assessing the service user',
+  'Vecina':'Neighbour',
+  'Vecino':'Neighbour',
+  'Vecino/a':'Neighbour',
+  'Ver ficha':'View profile',
+  'Ver observaciones':'View notes',
+  'Ver resumen':'View summary',
+  'Vive con cónyuge':'Lives with spouse',
+  'Vive con familia':'Lives with family',
+  'Vive sola':'Lives alone',
+  'Vive solo':'Lives alone',
+  'alumno@correo.com':'student@email.com',
+  'años':'years old',
+  'pendiente prof.':'awaiting teacher',
+  'sin evaluar':'not assessed',
+  '{n} de {total}':'{n} of {total}',
+  '{n} pasos':'{n} steps',
+  '· clasificación correcta':'· classified correctly',
+  '· clasificación incorrecta':'· classified incorrectly',
+  '· conectado':'· online',
+  '· correcto':'· correct',
+  '· incorrecto':'· incorrect',
+  '· sin conectar':'· offline',
+  '¿Cómo creo o edito escenarios y usuarios?':'How do I create or edit scenarios and service users?',
+  '¿Cómo empiezo una sesión con mis alumnos?':'How do I start a session with my students?',
+  '¿Cómo evalúo a un alumno?':'How do I assess a student?',
+  '¿Cómo funciona en el aula?':'How does it work in the classroom?',
+  '¿Cómo hago una llamada de voz a un alumno?':'How do I make a voice call to a student?',
+  '¿Cómo lanzo un caso a un alumno?':'How do I launch a case to a student?',
+  '¿Dónde veo y escucho las grabaciones?':'Where can I see and listen to the recordings?',
+  '¿Puedo cambiar el idioma?':'Can I change the language?',
+  '¿Qué es la simulación a 2?':'What is the paired simulation?',
+  '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
+};
 const I18N = {
   'Nombre y email':'Nom i email',
   'Email del alumno':"Email de l'alumne",
@@ -700,16 +1317,16 @@ const I18N = {
   '¿Cómo lanzo un caso a un alumno?':'Com llance un cas a un alumne?',
   'En “Inicio”, en “Acciones rápidas”, pulsa “Lanzar un caso” y elige el caso. Puedes enviarlo a un solo alumno, a toda la clase o como simulación a 2.':'En “Inici”, en “Accions ràpides”, polsa “Llançar un cas” i tria el cas. Pots enviar-lo a un sol alumne, a tota la classe o com a simulació a 2.',
   '¿Qué es la simulación a 2?':'Què és la simulació a 2?',
-  'Un alumno hace de teleoperador (atiende y registra) y otro de persona dependiente (interpreta al usuario con el guion). Hablan por voz y tú puedes unirte a escuchar sin cortar la llamada.':"Un alumne fa de teleoperador (atén i registra) i un altre de persona dependent (interpreta l'usuari amb el guió). Parlen per veu i tu pots unir-te a escoltar sense tallar la telefonada.",
+  'Un alumno hace de teleoperador (atiende y registra) y otro de persona dependiente (interpreta al usuario con el guion). Hablan por voz y tú puedes unirte a escuchar sin cortar la llamada.':"Un alumne fa de teleoperador (atén i registra) i un altre de persona dependent (interpreta l'usuari amb el guió). Parlen per veu i tu pots unir-te a escoltar sense tallar la trucada.",
   '¿Dónde veo y escucho las grabaciones?':'On veig i escolte les gravacions?',
   'Cada actuación se graba automáticamente. Las tienes en “Inicio”, en “Grabaciones de los alumnos”, y también al abrir “Ver actuación”. Se guardan en tu equipo.':'Cada actuació es grava automàticament. Les tens en “Inici”, en “Gravacions dels alumnes”, i també en obrir “Veure actuació”. Es guarden en el teu equip.',
   '¿Cómo creo o edito escenarios y usuarios?':'Com cree o edite escenaris i usuaris?',
   'Todo está en “Escenarios y usuarios”: arriba cambias entre los casos y los usuarios ficticios, y puedes crear nuevos o editar los existentes.':'Tot està en “Escenaris i usuaris”: dalt canvies entre els casos i els usuaris ficticis, i pots crear-ne de nous o editar els existents.',
   '¿Cómo evalúo a un alumno?':'Com avalue un alumne?',
   'En “Avaluació” abres la actuación del alumno y puntúas por bloques (No / Parcial / Sí) sobre 100. Ahí también tienes exámenes, estadísticas y encuestas.':"En “Avaluació” obris l'actuació de l'alumne i puntues per blocs (No / Parcial / Sí) sobre 100. Ahí també tens exàmens, estadístiques i enquestes.",
-  '¿Cómo hago una llamada de voz a un alumno?':'Com faig una telefonada de veu a un alumne?',
-  'En “Alumnos y profesores” pulsa el botón Llamar. Los dos debéis estar en el mismo código de centro y permitir el micrófono.':"En “Alumnes i professors” polsa el botó Telefonar. Els dos heu d'estar en el mateix codi de centre i permetre el micròfon.",
-  'Al alumno no le llega el caso o la llamada':"A l'alumne no li arriba el cas o la telefonada",
+  '¿Cómo hago una llamada de voz a un alumno?':'Com faig una trucada de veu a un alumne?',
+  'En “Alumnos y profesores” pulsa el botón Llamar. Los dos debéis estar en el mismo código de centro y permitir el micrófono.':"En “Alumnes i professors” polsa el botó Trucar. Els dos heu d'estar en el mateix codi de centre i permetre el micròfon.",
+  'Al alumno no le llega el caso o la llamada':"A l'alumne no li arriba el cas o la trucada",
   'Comprueba que ha entrado con el mismo código de centro (4 dígitos) y con uno de los nombres precargados, y que tiene la app abierta.':"Comprova que ha entrat amb el mateix codi de centre (4 dígits) i amb un dels noms precarregats, i que té l'app oberta.",
   'Nos conectamos pero no nos oímos':'Ens connectem però no ens sentim',
   'Revisa el permiso de micrófono del navegador. En móvil, toca una vez la pantalla para activar el sonido.':'Revisa el permís de micròfon del navegador. Al mòbil, toca una vegada la pantalla per a activar el so.',
@@ -732,8 +1349,8 @@ const I18N = {
   'Este es el ':'Este és el ',
   'código de tu centro':'codi del teu centre',
   '. Compártelo con tus alumnos para que se unan a la misma sala. Puedes usar el generado o escribir el tuyo.':". Compartix-lo amb els teus alumnes perquè s'unisquen a la mateixa sala. Pots usar el generat o escriure el teu.",
-  'Aún no has atendido ninguna llamada. Ve a la pestaña “Central”.':'Encara no has atés cap telefonada. Ves a la pestanya “Central”.',
-  'Todavía no hay observaciones registradas. Cuando un alumno atienda una llamada aparecerá aquí para evaluar sobre 100 puntos.':'Encara no hi ha observacions registrades. Quan un alumne atenga una telefonada apareixerà ací per a avaluar sobre 100 punts.',
+  'Aún no has atendido ninguna llamada. Ve a la pestaña “Central”.':'Encara no has atés cap trucada. Ves a la pestanya “Central”.',
+  'Todavía no hay observaciones registradas. Cuando un alumno atienda una llamada aparecerá aquí para evaluar sobre 100 puntos.':'Encara no hi ha observacions registrades. Quan un alumne atenga una trucada apareixerà ací per a avaluar sobre 100 punts.',
   'simulación':'simulació',
   'Simulación':'Simulació',
   '"Me he caído y no puedo levantarme..."':'"M\'he caigut i no em puc alçar..."',
@@ -750,7 +1367,7 @@ const I18N = {
   'Unidad móvil domiciliaria':'Unitat mòbil domiciliària',
   'Recursos sociales / trabajador social':'Recursos socials / treballador social',
   'Comprobación técnica del equipo':"Comprovació tècnica de l'equip",
-  'Programar llamada de seguimiento':'Programar telefonada de seguiment',
+  'Programar llamada de seguimiento':'Programar trucada de seguiment',
   'Emergencias':'Emergències',
   'Bienestar / Apoyo':'Benestar / Suport',
   'Incidencias técnicas':'Incidències tècniques',
@@ -775,7 +1392,7 @@ const I18N = {
   'Eventos':'Esdeveniments',
   'Caída en el baño':'Caiguda al bany',
   'Dolor en el pecho':'Dolor al pit',
-  'Llamada por soledad':'Telefonada per soledat',
+  'Llamada por soledad':'Trucada per soledat',
   'Prueba de dispositivo':'Prova de dispositiu',
   'Falsa alarma / pulsación involuntaria':'Falsa alarma / pulsació involuntària',
   '"Ay… me he caído en el baño, no me puedo levantar y me duele mucho la cadera…"':'"Ai… m\'he caigut al bany, no em puc alçar i em fa molt de mal el maluc…"',
@@ -795,16 +1412,16 @@ const I18N = {
   'Avisar a familiar de referencia':'Avisar el familiar de referència',
   'Dar indicaciones básicas y mantener la calma':'Donar indicacions bàsiques i mantindre la calma',
   'Registrar hora y recursos movilizados':"Registrar l'hora i els recursos mobilitzats",
-  'Identificar al usuario y acoger la llamada con calidez':"Identificar l'usuari i acollir la telefonada amb calidesa",
+  'Identificar al usuario y acoger la llamada con calidez':"Identificar l'usuari i acollir la trucada amb calidesa",
   'Escucha activa, sin prisa':'Escolta activa, sense pressa',
   'Detectar posibles necesidades (alimentación, ánimo, recursos sociales)':'Detectar possibles necessitats (alimentació, ànim, recursos socials)',
   'Ofrecer recursos sociales / acompañamiento si procede':'Oferir recursos socials / acompanyament si escau',
-  'Registrar el motivo emocional de la llamada':'Registrar el motiu emocional de la telefonada',
+  'Registrar el motivo emocional de la llamada':'Registrar el motiu emocional de la trucada',
   'Identificar al usuario':"Identificar l'usuari",
   'Confirmar que es una prueba de dispositivo':'Confirmar que és una prova de dispositiu',
   'Verificar audio, pulsador y datos de contacto':'Verificar àudio, polsador i dades de contacte',
   'Actualizar la ficha si algo ha cambiado':'Actualitzar la fitxa si algo ha canviat',
-  'Agradecer y cerrar la llamada':'Agrair i tancar la telefonada',
+  'Agradecer y cerrar la llamada':'Agrair i tancar la trucada',
   'Registrar la prueba como correcta':'Registrar la prova com a correcta',
   'Confirmar que está bien y descartar emergencia oculta':'Confirmar que està bé i descartar emergència oculta',
   'Explicar que se ha recibido una alarma':"Explicar que s'ha rebut una alarma",
@@ -816,10 +1433,10 @@ const I18N = {
   'No es emergencia: aquí lo importante es la escucha activa y programar seguimiento.':"No és emergència: ací el important és l'escolta activa i programar seguiment.",
   'Es una comprobación rutinaria: verifica el equipo y actualiza la ficha.':"És una comprovació rutinària: verifica l'equip i actualitza la fitxa.",
   'Aunque parezca falsa, confirma SIEMPRE que la persona está realmente bien.':'Encara que semble falsa, confirma SEMPRE que la persona està realment bé.',
-  '¿Cómo hago una llamada real a un alumno?':'Com faig una telefonada real a un alumne?',
+  '¿Cómo hago una llamada real a un alumno?':'Com faig una trucada real a un alumne?',
   'En “Alumnos y profesores” pulsa ':'En “Alumnes i professors” polsa ',
-  ' Llamar. Ambos debéis haber entrado con el mismo código de sala y permitir el micrófono.':" Telefonar. Ambdós heu d'haver entrat amb el mateix codi de sala i permetre el micròfon.",
-  'El alumno no recibe mi llamada':"L'alumne no rep la meua telefonada",
+  ' Llamar. Ambos debéis haber entrado con el mismo código de sala y permitir el micrófono.':" Trucar. Ambdós heu d'haver entrat amb el mateix codi de sala i permetre el micròfon.",
+  'El alumno no recibe mi llamada':"L'alumne no rep la meua trucada",
   'Comprueba que el alumno esté dentro con la misma sala y con la app abierta.':"Comprova que l'alumne estiga dins amb la mateixa sala i amb l'app oberta.",
   'Nos llamamos pero no nos oímos':'Ens telefonem però no ens sentim',
   'Revisa el permiso de micrófono del navegador y, en móvil, toca la pantalla para activar el sonido.':'Revisa el permís de micròfon del navegador i, al mòbil, toca la pantalla per a activar el so.',
@@ -839,7 +1456,7 @@ const I18N = {
   'He alcanzado los objetivos de aprendizaje esperados':"He assolit els objectius d'aprenentatge esperats",
   'Al recibir una alarma, ¿cuál es el primer paso?':'En rebre una alarma, quin és el primer pas?',
   'Ante dolor torácico con disnea, ¿qué recurso se prioriza?':'Davant dolor toràcic amb dispnea, quin recurs es prioritza?',
-  'En una llamada saliente de seguimiento de medicación conviene...':'En una telefonada eixent de seguiment de medicació convé...',
+  'En una llamada saliente de seguimiento de medicación conviene...':'En una trucada eixent de seguiment de medicació convé...',
   'La escucha activa consiste en...':"L'escolta activa consistix en...",
   'Colgar':'Penjar',
   'Identificar al usuario y confirmar sus datos':"Identificar l'usuari i confirmar les seues dades",
@@ -855,7 +1472,7 @@ const I18N = {
   'Interrumpir al usuario':"Interrompre l'usuari",
   'Prestar atención plena y mostrar comprensión':'Prestar atenció plena i mostrar comprensió',
   'Hablar de uno mismo':"Parlar d'un mateix",
-  'Acelerar la llamada':'Accelerar la telefonada',
+  'Acelerar la llamada':'Accelerar la trucada',
   'Hipertensión, artrosis, caídas previas':'Hipertensió, artrosi, caigudes prèvies',
   'Vive sola. Buena audición. Perro pequeño. Sin ascensor.':'Viu sola. Bona audició. Gos xicotet. Sense ascensor.',
   'Cardiopatía isquémica, diabetes':'Cardiopatia isquèmica, diabetis',
@@ -874,12 +1491,12 @@ const I18N = {
   'Evaluación práctica MF1423':'Avaluació pràctica MF1423',
   'Recordar medicación':'Recordar medicació',
   'Revisar seguimiento':'Revisar seguiment',
-  'Llamada de compañía':'Telefonada de companyia',
+  'Llamada de compañía':'Trucada de companyia',
   'Práctica entre alumnos':'Pràctica entre alumnes',
   'Generado por pares aleatorios':'Generat per parelles aleatòries',
   'Confirmar toma de la mañana':'Confirmar presa del matí',
   'Teléfono':'Telèfon',
-  'Llamadas entrantes':'Telefonades entrants',
+  'Llamadas entrantes':'Trucades entrants',
   'No hay exámenes publicados todavía.':'No hi ha exàmens publicats encara.',
   '¿No estás en la lista? Pídele al profesor que te dé de alta.':"No estàs en la llista? Demana-li al professor que et done d'alta.",
   '— elige —':'— tria —',
@@ -892,7 +1509,7 @@ const I18N = {
   'Panel del profesor':'Panell del professor','Puesto de la central':'Lloc de la central',
   'Central de teleasistencia':'Central de teleassistència','Sesión:':'Sessió:','Cambiar rol':'Canviar rol','Notificaciones':'Notificacions',
   'Alumnos y profesores':'Alumnes i professors','Usuarios ficticios':'Usuaris ficticis','Escenarios':'Escenaris',
-  'Lanzar llamada':'Llançar telefonada','Estadísticas':'Estadístiques','Exámenes':'Exàmens','Encuestas':'Enquestes',
+  'Lanzar llamada':'Llançar trucada','Estadísticas':'Estadístiques','Exámenes':'Exàmens','Encuestas':'Enquestes',
   'Evaluación':'Avaluació','Alertas':'Alertes','Ayuda':'Ajuda','Inicio':'Inici','Agenda':'Agenda',
   'Mis actuaciones':'Les meues actuacions','Central':'Central',
   // --- Portada ---
@@ -911,14 +1528,14 @@ const I18N = {
   'El código del centro son 4 dígitos (te lo da tu profesor)':'El codi del centre són 4 dígits (te\'l dóna el teu professor)',
   'Entorno de simulación para el módulo de Teleasistencia. Recibe alarmas, atiende al usuario siguiendo el protocolo, moviliza recursos y registra la actuación. El profesor lanza los casos y evalúa.':'Entorn de simulació per al mòdul de Teleassistència. Rep alarmes, atén l\'usuari seguint el protocol, mobilitza recursos i registra l\'actuació. El professor llança els casos i avalua.',
   'Código del centro / sala':'Codi del centre / sala',
-  'El profesor crea el centro (define este código) y lo comparte. Los alumnos escriben aquí el código de su profesor para unirse. Debe coincidir para poder llamaros.':'El professor crea el centre (definix este codi) i el compartix. Els alumnes escriuen ací el codi del seu professor per a unir-se. Ha de coincidir per a poder telefonar-vos.',
+  'El profesor crea el centro (define este código) y lo comparte. Los alumnos escriben aquí el código de su profesor para unirse. Debe coincidir para poder llamaros.':'El professor crea el centre (definix este codi) i el compartix. Els alumnes escriuen ací el codi del seu professor per a unir-se. Ha de coincidir per a poder trucar-vos.',
   'Entrar como Profesor':'Entrar com a Professor','Entrar como Alumno':'Entrar com a Alumne',
-  'Gestiona alumnos, lanza llamadas y emergencias a la central, revisa la agenda de seguimiento y evalúa con rúbrica.':'Gestiona alumnes, llança telefonades i emergències a la central, revisa l\'agenda de seguiment i avalua amb rúbrica.',
+  'Gestiona alumnos, lanza llamadas y emergencias a la central, revisa la agenda de seguimiento y evalúa con rúbrica.':'Gestiona alumnes, llança trucades i emergències a la central, revisa l\'agenda de seguiment i avalua amb rúbrica.',
   'Ponte a los mandos de la central: atiende las alarmas entrantes, aplica el protocolo y deja registrada tu actuación.':'Posa\'t als comandaments de la central: atén les alarmes entrants, aplica el protocol i deixa registrada la teua actuació.',
   'Datos de ejemplo precargados · Funciona sin conexión · Uso educativo (recreación inspirada en simuladores de teleasistencia)':'Dades d\'exemple precarregades · Funciona sense connexió · Ús educatiu (recreació inspirada en simuladors de teleassistència)',
   'PROCESO PEDAGÓGICO':'PROCÉS PEDAGÒGIC','¿Cómo funciona en el aula?':'Com funciona a l\'aula?',
   'Del primer contacto con el usuario hasta la evaluación final del docente.':'Del primer contacte amb l\'usuari fins a l\'avaluació final del docent.',
-  'Recibe la llamada':'Rep la telefonada','Atiende la llamada':'Atén la telefonada','Aplica el protocolo':'Aplica el protocol',
+  'Recibe la llamada':'Rep la trucada','Atiende la llamada':'Atén la trucada','Aplica el protocolo':'Aplica el protocol',
   'Gestiona la incidencia':'Gestiona la incidència','Registra la actuación':'Registra l\'actuació','Evaluación del docente':'Avaluació del docent','Informe final':'Informe final',
   'Alarma simulada basada en casos reales':'Alarma simulada basada en casos reals','Escucha e identifica la situación':'Escolta i identifica la situació',
   'Sigue los pasos establecidos':'Seguix els passos establits','Activa recursos y resuelve':'Activa recursos i resol',
@@ -929,16 +1546,16 @@ const I18N = {
   'Aceptar':'Acceptar','Rechazar':'Rebutjar','Colgar':'Penjar','Silenciar':'Silenciar','Activar':'Activar','Cerrar sesión':'Tancar sessió',
   'Dar de alta':'Donar d\'alta','Nueva pregunta':'Nova pregunta','Nuevo evento':'Nou esdeveniment','Nuevo usuario':'Nou usuari','Nueva alerta':'Nova alerta',
   'Buscar':'Cerca','Actualizar':'Actualitzar','Retirar':'Retirar','Finalizar':'Finalitzar','Iniciar':'Iniciar','Completar':'Completar',
-  'Lanzar caso':'Llançar cas','Llamar a compañero':'Telefonar a company','Llamar':'Telefonar','Lanzar una llamada':'Llançar una telefonada',
-  'Llamar a un alumno':'Telefonar a un alumne','Unirse a simulación':'Unir-se a simulació','Simulación en grupo':'Simulació en grup',
+  'Lanzar caso':'Llançar cas','Llamar a compañero':'Trucar a company','Llamar':'Trucar','Lanzar una llamada':'Llançar una trucada',
+  'Llamar a un alumno':'Trucar a un alumne','Unirse a simulación':'Unir-se a simulació','Simulación en grupo':'Simulació en grup',
   // --- Alumnos y profesores ---
   'Alumnos':'Alumnes','Profesores':'Professors','en la clase':'a la classe','Nombre':'Nom','Actuaciones':'Actuacions','Media':'Mitjana','Rol':'Rol',
   'Nombre del nuevo alumno':'Nom del nou alumne','Nombre del nuevo profesor':'Nom del nou professor','Nombre y apellidos':'Nom i cognoms',
   'Editar profesor':'Editar professor','Editar alumno':'Editar alumne','Nombre completo':'Nom complet',
   // --- Inicio profesor ---
   'Escenarios disponibles':'Escenaris disponibles','Observaciones registradas':'Observacions registrades','Calificación media':'Qualificació mitjana',
-  'Acciones rápidas':'Accions ràpides','Evaluar actuaciones':'Avaluar actuacions','Dar de alta alumno':'Donar d\'alta alumne',
-  'Llamadas en cola':'Telefonades en cua','esperando ser atendidas':'esperant ser ateses','No hay llamadas en cola. Lánzalas desde “Lanzar llamada”.':'No hi ha telefonades en cua. Llança-les des de “Llançar telefonada”.',
+  'Acciones':'Accions','Evaluar actuaciones':'Avaluar actuacions','Dar de alta alumno':'Donar d\'alta alumne',
+  'Llamadas en cola':'Trucades en cua','esperando ser atendidas':'esperant ser ateses','No hay llamadas en cola. Lánzalas desde “Lanzar llamada”.':'No hi ha trucades en cua. Llança-les des de “Llançar trucada”.',
   'Toda la clase':'Tota la classe',
   // --- Usuarios ficticios ---
   'Las personas simuladas que atienden los alumnos. Cuanto más completa es la ficha, más realista es la práctica.':'Les persones simulades que atenen els alumnes. Com més completa és la fitxa, més realista és la pràctica.',
@@ -952,16 +1569,16 @@ const I18N = {
   'Notas':'Notes','Añadir observación':'Afegir observació','Guardar observación':'Guardar observació','Observaciones':'Observacions',
   // --- Escenarios / central ---
   'Escenarios de simulación':'Escenaris de simulació','Prioridad':'Prioritat','Lanzar a un alumno':'Llançar a un alumne',
-  'ALARMA ENTRANTE':'ALARMA ENTRANT','Atender llamada':'Atendre telefonada','En espera de llamadas':'A l\'espera de telefonades',
+  'ALARMA ENTRANTE':'ALARMA ENTRANT','Atender llamada':'Atendre trucada','En espera de llamadas':'A l\'espera de trucades',
   'Protocolo de actuación':'Protocol d\'actuació','Tu actuación':'La teua actuació','Clasifica el tipo de incidencia':'Classifica el tipus d\'incidència',
   'Recursos que movilizas':'Recursos que mobilitzes','Registro / observaciones':'Registre / observacions','Finalizar y registrar':'Finalitzar i registrar','Pista':'Pista',
-  'Llamada en curso':'Telefonada en curs','Llamada finalizada':'Telefonada finalitzada','Practicar caso':'Practicar cas',
+  'Llamada en curso':'Trucada en curs','Llamada finalizada':'Trucada finalitzada','Practicar caso':'Practicar cas',
   // --- Agenda ---
   'Buscar evento o alumno':'Cerca esdeveniment o alumne','Todos los alumnos':'Tots els alumnes','Todos los tipos':'Tots els tipus',
-  'Activos (sin cancelados)':'Actius (sense cancel·lats)','Con llamada:':'Amb telefonada:','Pares aleatorios':'Parells aleatoris',
+  'Activos (sin cancelados)':'Actius (sense cancel·lats)','Con llamada:':'Amb trucada:','Pares aleatorios':'Parells aleatoris',
   'doble clic en un día para crear uno':'doble clic en un dia per a crear-ne un','Mes':'Mes','Semana':'Setmana','Día':'Dia','Hoy':'Hui',
   'Tipo de evento':'Tipus d\'esdeveniment','Título':'Títol','Descripción':'Descripció','Alumno':'Alumne','Compañero asignado':'Company assignat',
-  'Usuario ficticio':'Usuari fictici','Evento con llamada':'Esdeveniment amb telefonada','Todo el día':'Tot el dia','Fecha':'Data','Hora inicio':'Hora inici','Hora fin':'Hora fi',
+  'Usuario ficticio':'Usuari fictici','Evento con llamada':'Esdeveniment amb trucada','Todo el día':'Tot el dia','Fecha':'Data','Hora inicio':'Hora inici','Hora fin':'Hora fi',
   'Repetición':'Repetició','No se repite':'No es repetix','Todos los días':'Tots els dies','Días de la semana':'Dies de la setmana','Repetir hasta':'Repetir fins',
   'Recordatorio':'Recordatori','Minutos antes':'Minuts abans','Alumno iniciador':'Alumne iniciador','Cancelar evento':'Cancel·lar esdeveniment',
   // --- Evaluación / exámenes ---
@@ -978,7 +1595,7 @@ const I18N = {
   'Manual del profesor':'Manual del professor','Guía de uso de la plataforma.':'Guia d\'ús de la plataforma.','Descargar PDF':'Descarregar PDF',
   'Mi perfil':'El meu perfil','Cambiar contraseña':'Canviar contrasenya','Preguntas frecuentes':'Preguntes freqüents','Contraseña actual':'Contrasenya actual','Nueva contraseña':'Nova contrasenya','Repetir nueva':'Repetir nova',
   // --- Llamadas ---
-  'Llamadas reales':'Telefonades reals','Sala':'Sala','Llamada real':'Telefonada real','Llamada entrante':'Telefonada entrant','Llamando…':'Telefonant…','Conectando…':'Connectant…','En llamada':'En telefonada',
+  'Llamadas reales':'Trucades reals','Sala':'Sala','Llamada real':'Trucada real','Llamada entrante':'Trucada entrant','Llamando…':'Telefonant…','Conectando…':'Connectant…','En llamada':'En trucada',
   'Persona dependiente':'Persona dependent','Teleoperador':'Teleoperador','Profesor / Oyente':'Professor / Oient','Simulación en grupo · 3 roles':'Simulació en grup · 3 rols',
   'Participantes':'Participants','micro activo':'micròfon actiu','micro silenciado':'micròfon silenciat','conectado':'connectat','conectando…':'connectant…','esperando a que entre':'esperant que entre',
   'Salir':'Eixir','Profesor':'Professor',
@@ -990,7 +1607,7 @@ const I18N = {
   'Escenarios y casos':'Escenaris i casos','Nuevo escenario':'Nou escenari','Editar escenario':'Editar escenari',
   'Crea o edita los casos: ficha, guion, protocolo y solución. Los casos se lanzan desde la pestaña':'Crea o edita els casos: fitxa, guió, protocol i solució. Els casos es llancen des de la pestanya',
   'simulación a 2':'simulació a 2','asignando teleoperador y persona dependiente.':'assignant teleoperador i persona dependent.',
-  'Lanzar caso':'Llançar cas','Lanzar un caso':'Llançar un cas','Teléfonos en cola':'Telèfons en cua',
+  'Lanzar caso':'Llançar cas','Lanzar un caso':'Llançar un cas','Llamadas':'Trucades',
   'Alumnos conectados':'Alumnes connectats',
   'sin conectar':'sense connectar','conectando…':'connectant…','conectado':'connectat',
   'micro en silencio':'micro en silenci','micro activo':'micro actiu',
@@ -999,7 +1616,7 @@ const I18N = {
   'Ajustes y accesibilidad':'Ajustos i accessibilitat','Cámara en las simulaciones':'Càmera en les simulacions',
   'Con vídeo':'Amb vídeo','Cámara encendida':'Càmera encesa','Cámara apagada':'Càmera apagada',
   'Vídeo activado':'Vídeo activat','Solo voz':'Només veu','Tú':'Tu','Compañero':'Company',
-  'Vídeo activado. Se aplicará en la próxima llamada.':'Vídeo activat. S\'aplicarà en la pròxima telefonada.',
+  'Vídeo activado. Se aplicará en la próxima llamada.':'Vídeo activat. S\'aplicarà en la pròxima trucada.',
   'Vídeo desactivado. Solo voz.':'Vídeo desactivat. Només veu.',
   'No se ha podido usar la cámara. La simulación sigue solo con voz.':'No s\'ha pogut usar la càmera. La simulació continua només amb veu.',
   'Alumno actualizado · email de acceso cambiado':'Alumne actualitzat · email d\'accés canviat',
@@ -1022,7 +1639,7 @@ const I18N = {
   'El profesor ha evaluado tu actuación':'El professor ha avaluat la teua actuació',
   'Todavía no has dado de alta a ningún alumno.':'Encara no has donat d\'alta cap alumne.',
   'El círculo relleno indica los alumnos que tienen la central abierta en esta misma sala.':'El cercle omplit indica els alumnes que tenen la central oberta en esta mateixa sala.',
-  'No hay teléfonos en cola. Lanza un caso desde “Acciones rápidas”.':'No hi ha telèfons en cua. Llança un cas des d\'“Accions ràpides”.',
+  'No hay llamadas en curso. Lanza un caso desde “Acciones”.':'No hi ha trucades en curs. Llança un cas des d\'“Accions”.',
   'Elige el caso que quieres poner en marcha. Después asignarás a quién se lo lanzas.':'Tria el cas que vols posar en marxa. Després assignaràs a qui li ho llances.',
   'Caso':'Cas','Continuar':'Continuar',
   'Todavía no hay escenarios. Créalos en “Escenarios y usuarios”.':'Encara no hi ha escenaris. Crea\'ls en “Escenaris i usuaris”.',
@@ -1040,7 +1657,7 @@ const I18N = {
   'Añade al menos un paso de protocolo':'Afig almenys un pas de protocol',
   'Baja':'Baixa','Media':'Mitjana','Alta':'Alta','Crítica':'Crítica',
   'Simulación a 2':'Simulació a 2','Individual':'Individual',
-  'Asigna los dos papeles. A ambos alumnos les entrará la llamada para unirse.':'Assigna els dos papers. A ambdós alumnes els entrarà la telefonada per a unir-se.',
+  'Asigna los dos papeles. A ambos alumnos les entrará la llamada para unirse.':'Assigna els dos papers. A ambdós alumnes els entrarà la trucada per a unir-se.',
   'Teleoperador/a (atiende y registra)':'Teleoperador/a (atén i registra)',
   'Persona dependiente (interpreta al usuario)':'Persona dependent (interpreta l\'usuari)',
   'El alumno atiende el caso él solo en su central.':'L\'alumne atén el cas ell sol a la seua central.',
@@ -1053,20 +1670,24 @@ const I18N = {
   'Ya estás en la simulación':'Ja estàs en la simulació',
   // --- Invitación / pantallas de rol ---
   'SIMULACIÓN ENTRANTE':'SIMULACIÓ ENTRANT','Tu papel:':'El teu paper:',
-  'Vas a atender la llamada: verás la ficha del usuario y el protocolo.':'Atendràs la telefonada: veuràs la fitxa de l\'usuari i el protocol.',
+  'Vas a atender la llamada: verás la ficha del usuario y el protocolo.':'Atendràs la trucada: veuràs la fitxa de l\'usuari i el protocol.',
   'Vas a interpretar al usuario: verás tu guion para actuar.':'Interpretaràs l\'usuari: veuràs el teu guió per a actuar.',
-  'Unirse a la llamada':'Unir-se a la telefonada',
+  'Unirse a la llamada':'Unir-se a la trucada',
   'Teleoperador/a':'Teleoperador/a','Persona dependiente':'Persona dependent',
   'Estás en simulación · Persona dependiente':'Estàs en simulació · Persona dependent',
-  'Interpretas a esta persona hablando con el/la teleoperador/a. Cuando el teleoperador finalice, la llamada terminará.':'Interpretes esta persona parlant amb el/la teleoperador/a. Quan el teleoperador finalitze, la telefonada acabarà.',
+  'Interpretas a esta persona hablando con el/la teleoperador/a. Cuando el teleoperador finalice, la llamada terminará.':'Interpretes esta persona parlant amb el/la teleoperador/a. Quan el teleoperador finalitze, la trucada acabarà.',
   'Eres':'Eres','Situación':'Situació','Tu guion — empieza diciendo:':'El teu guió — comença dient:',
   'La conexión de voz aparece abajo a la derecha. Usa auriculares para evitar eco.':'La connexió de veu apareix baix a la dreta. Usa auriculars per a evitar eco.',
   'Salir de la simulación':'Eixir de la simulació',
   'Hablas con la persona dependiente':'Parles amb la persona dependent',
   'Un compañero interpreta al usuario en directo. Escúchale (el audio está abajo a la derecha).':'Un company interpreta l\'usuari en directe. Escolta\'l (l\'àudio està baix a la dreta).',
-  'Simulación en curso':'Simulació en curs','Llamada en curso':'Telefonada en curs',
+  'Simulación en curso':'Simulació en curs','Llamada en curso':'Trucada en curs',
   // --- Simulación libre ---
-  'Simulación libre · 3 roles':'Simulació lliure · 3 rols','Unirse a simulación libre':'Unir-se a simulació lliure',
+  'Unirse a simulación':'Unir-se a simulació',
+  'Atiendes la llamada y registras la actuación.':'Atens la trucada i registres l\'actuació.',
+  'Interpretas a la persona que llama, siguiendo el guion.':'Interpretes la persona que telefona, seguint el guió.',
+  'Un alumno hace de':'Un alumne fa de','y otro de':'i un altre de','El profesor puede unirse a escuchar sin cortar la llamada. Cada papel solo puede ocuparlo una persona.':'El professor pot unir-se a escoltar sense tallar la trucada. Cada paper només pot ocupar-lo una persona.',
+  'Sala de práctica':'Sala de pràctica','Elige tu papel:':'Tria el teu paper:',
   'Sala de práctica libre':'Sala de pràctica lliure','(sin caso asignado). Elige tu papel:':'(sense cas assignat). Tria el teu paper:',
   'Simulación del caso':'Simulació del cas','Simulación libre':'Simulació lliure',
   'Lanzar':'Llançar','Rechazar':'Rebutjar','Retirada de la cola':'Retirada de la cua',
@@ -1076,42 +1697,332 @@ const I18N = {
   'Practicar caso':'Practicar cas','Practicar un caso':'Practicar un cas','Caso':'Cas',
   'Yo solo/a':'Jo sol/a','Con un compañero':'Amb un company','Compañero/a':'Company/a',
   'Atiendes el caso tú solo/a: el guion hace de usuario. No se llama a nadie.':'Atens el cas tu sol/a: el guió fa d\'usuari. No es telefona a ningú.',
-  'Tú harás de':'Tu faràs de','y tu compañero de':'i el teu company de','. Le entrará la llamada para unirse.':'. Li entrarà la telefonada per a unir-se.',
+  'Tú harás de':'Tu faràs de','y tu compañero de':'i el teu company de','. Le entrará la llamada para unirse.':'. Li entrarà la trucada per a unir-se.',
   'Empezar práctica':'Començar pràctica','Práctica en solitario':'Pràctica en solitari',
   'Práctica iniciada con':'Pràctica iniciada amb','Práctica iniciada por':'Pràctica iniciada per',
   'Ya estás en una simulación':'Ja estàs en una simulació','Elige un compañero o practica tú solo/a':'Tria un company o practica tu sol/a',
   'Práctica de alumnos':'Pràctica d\'alumnes','Lanzado por el profesor':'Llançat pel professor',
   // --- Grabaciones ---
-  'Grabando':'Gravant','Grabación de la llamada':'Gravació de la telefonada','Descargar mi grabación':'Descarregar la meua gravació',
+  'Grabando':'Gravant','Grabación de la llamada':'Gravació de la trucada','Descargar mi grabación':'Descarregar la meua gravació',
   'Descargar':'Descarregar','Borrar':'Esborrar','Grabación borrada':'Gravació esborrada',
   'Grabaciones de los alumnos':'Gravacions dels alumnes','guardadas en este equipo':'guardades en este equip',
   'Grabación recibida de':'Gravació rebuda de',
   // --- Párrafos y fragmentos ---
   'Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.':'Llança un cas a un alumne concret o a tota la classe. El veurà aparéixer com a alarma entrant en el seu lloc de la central.',
   ' crea el centro (define este código) y lo comparte. Los ':' crea el centre (definix este codi) i el compartix. Els ',
-  ' escriben aquí el código de su profesor para unirse. Debe coincidir para poder llamaros.':' escriuen ací el codi del seu professor per a unir-se. Ha de coincidir per a poder telefonar-vos.',
+  ' escriben aquí el código de su profesor para unirse. Debe coincidir para poder llamaros.':' escriuen ací el codi del seu professor per a unir-se. Ha de coincidir per a poder trucar-vos.',
   'Cuando el profesor lance un caso, la alarma sonará aquí. Mientras tanto puedes practicar por tu cuenta.':'Quan el professor llance un cas, l\'alarma sonarà ací. Mentrestant pots practicar pel teu compte.',
   'Las emergencias entran al profesor conectado a la sala (simulación · no se avisa a servicios reales).':'Les emergències entren al professor connectat a la sala (simulació · no s\'avisa a servicis reals).',
   'Los tres habláis/escucháis a la vez en la sala':'Els tres parleu/escolteu alhora en la sala',
   'El usuario dice:':'L\'usuari diu:','El usuario dirá algo como:':'L\'usuari dirà alguna cosa com:','Empieza diciendo:':'Comença dient:','Cómo actuar:':'Com actuar:',
   // --- Palabras sueltas (cobertura en línea) ---
-  'profesor':'professor','alumnos':'alumnes','alumno':'alumne','usuarios':'usuaris','usuario':'usuari','llamadas':'telefonades','llamada':'telefonada',
+  'profesor':'professor','alumnos':'alumnes','alumno':'alumne','usuarios':'usuaris','usuario':'usuari','llamadas':'trucades','llamada':'trucada',
   'emergencia':'emergència','seguimiento':'seguiment','protocolo':'protocol','incidencia':'incidència','recursos':'recursos','actuación':'actuació',
   'Emergencia':'Emergència','Seguimiento':'Seguiment',
+  /* --- completadas por el auditor de idiomas --- */
+  '* Nombre y apellidos obligatorios':'* Nom i cognoms obligatoris',
+  '+ Agregar':'+ Agregar',
+  '+ Añadir criterio':'+ Afegir criteri',
+  '+ Crear examen':'+ Crear examen',
+  '+ Nueva pregunta':'+ Nova pregunta',
+  '+ Nuevo usuario':'+ Nou usuari',
+  '+ Registrar práctico':'+ Registrar pràctic',
+  ': la imagen no se guarda en ningún sitio.':': la imatge no es guarda enlloc.',
+  'Accesibilidad':'Accessibilitat',
+  'Acceso':'Accés',
+  'Aciertos':'Encerts',
+  'Alergias (se resalta al operador durante la llamada)':'Al·lèrgies (es ressalta a l\'operador durant la trucada)',
+  'Alto contraste':'Alt contrast',
+  'Amigo/a':'Amic/ga',
+  'Animaciones':'Animacions',
+  'Apellidos *':'Cognoms *',
+  'Asignación':'Assignació',
+  'Autónomo':'Autònom',
+  'Avanzado':'Avançat',
+  'Avería':'Avaria',
+  'Aviso legal':'Avís legal',
+  'Blanco y negro con bordes marcados. Útil con baja visión y con mucha luz ambiental.':'Blanc i negre amb vores marcades. Útil amb baixa visió i amb molta llum ambiental.',
+  'CP / Ciudad':'CP / Ciutat',
+  'Calle':'Carrer',
+  'Casa':'Casa',
+  'Castellano':'Castellà',
+  'Ciudad':'Ciutat',
+  'Clasifiqué':'He classificat',
+  'Colgante DECT':'Penjoll DECT',
+  'Con lector de pantalla':'Amb lector de pantalla',
+  'Con vídeo se ve la cara del compañero durante la simulación, como en una videoasistencia real.':'Amb vídeo es veu la cara del company durant la simulació, com en una videoassistència real.',
+  'Contraste':'Contrast',
+  'Convivientes':'Convivents',
+  'Correcta':'Correcta',
+  'Cuidador/a':'Cuidador/a',
+  'Cámara':'Càmera',
+  'Código postal':'Codi postal',
+  'Desempleado':'Desocupat',
+  'Documento':'Document',
+  'Dueño (alumno)':'Propietari (alumne)',
+  'Edad':'Edat',
+  'Email':'Email',
+  'English':'English',
+  'Enviar a':'Enviar a',
+  'Es la única alarma en cola':'És l\'única alarma en cua',
+  'Escribe un idioma y pulsa Enter':'Escriu un idioma i polsa Enter',
+  'Ese caso está ahora mismo en la cola. Retíralo antes de eliminarlo.':'Eixe cas està ara mateix en la cua. Retira\'l abans d\'eliminar-lo.',
+  'Estado disp.':'Estat disp.',
+  'Estado dispositivo':'Estat del dispositiu',
+  'Estos ajustes se guardan en este equipo y se aplican a toda la aplicación.':'Estos ajustos es guarden en este equip i s\'apliquen a tota l\'aplicació.',
+  'Estrellas':'Estreles',
+  'Fecha de nacimiento':'Data de naixement',
+  'Fecha nac.':'Data naix.',
+  'Grande':'Gran',
+  'Grúa':'Grua',
+  'Hermano/a':'Germà/na',
+  'Hijo/a':'Fill/a',
+  'Idioma':'Idioma',
+  'Inactivo':'Inactiu',
+  'Incapacidad':'Incapacitat',
+  'Información adicional, preferencias, medicación…':'Informació addicional, preferències, medicació…',
+  'Información legal':'Informació legal',
+  'Institucionalizada':'Institucionalitzada',
+  'Instrucciones de acceso':'Instruccions d\'accés',
+  'Las grabaciones siguen siendo solo de audio':'Les gravacions continuen sent només d\'àudio',
+  'Listo':'Fet',
+  'Lugar de nacimiento':'Lloc de naixement',
+  'Lugar nac.':'Lloc naix.',
+  'Muletas':'Crosses',
+  'Muy grande':'Molt gran',
+  'Módulo':'Mòdul',
+  'No':'No',
+  'Nombre *':'Nom *',
+  'Normal':'Normal',
+  'Normales':'Normals',
+  'Nota':'Nota',
+  'Nota (0-100)':'Nota (0-100)',
+  'Nota general (en frío)':'Nota general (en fred)',
+  'Notas clínicas':'Notes clíniques',
+  'Nueva contraseña (mín. 6)':'Nova contrasenya (mín. 6)',
+  'Nº de convivientes':'Nre. de convivents',
+  'Nº de preguntas':'Nre. de preguntes',
+  'Nº de serie':'Nre. de sèrie',
+  'Nº documento':'Nre. document',
+  'Nº serie':'Nre. sèrie',
+  'Número':'Número',
+  'Obs':'Obs',
+  'Observaciones del alumno:':'Observacions de l\'alumne:',
+  'Observación…':'Observació…',
+  'Opción A':'Opció A',
+  'Opción B':'Opció B',
+  'Opción C':'Opció C',
+  'Opción D':'Opció D',
+  'Otra':'Altra',
+  'Otras':'Altres',
+  'Otro':'Altre',
+  'Parcial':'Parcial',
+  'Pasaporte':'Passaport',
+  'Pasos de protocolo marcados:':'Passos de protocol marcats:',
+  'Pastillero':'Pastiller',
+  'Patologías / historial':'Patologies / historial',
+  'Pendiente de instalar':'Pendent d\'instal·lar',
+  'Política completa':'Política completa',
+  'Portero, código…':'Porter, codi…',
+  'Preferencia':'Preferència',
+  'Preferencia de contacto':'Preferència de contacte',
+  'Prefiere no decir':'Preferix no dir-ho',
+  'Preguntas':'Preguntes',
+  'Prioridad Alta':'Prioritat Alta',
+  'Prioridad Baja':'Prioritat Baixa',
+  'Prioridad Media':'Prioritat Mitjana',
+  'Privacidad':'Privacitat',
+  'Protección de datos':'Protecció de dades',
+  'Provincia':'Província',
+  'Pulsador de muñeca':'Polsador de canell',
+  'Puntúa cada criterio (No / Parcial / Sí). El sistema propone una puntuación de partida a partir de lo que hizo el alumno.':'Puntua cada criteri (No / Parcial / Sí). El sistema proposa una puntuació de partida a partir del que va fer l\'alumne.',
+  'Qué datos se tratan, dónde se guardan las grabaciones y cuánto tiempo se conservan. Comparte este resumen con tu alumnado al empezar el curso.':'Quines dades es tracten, on es guarden les gravacions i quant de temps es conserven. Compartix este resum amb el teu alumnat en començar el curs.',
+  'Recursos activados:':'Recursos activats:',
+  'Reducidas':'Reduïdes',
+  'Residencia':'Residència',
+  'Restablecer':'Restablir',
+  'Resumen':'Resum',
+  'Saltar al contenido':'Saltar al contingut',
+  'Se toman preguntas del banco del módulo que coincidan con el nivel.':'Es prenen preguntes del banc del mòdul que coincidisquen amb el nivell.',
+  'Secciones':'Seccions',
+  'Servicio Acuda':'Servici Acudix',
+  'Servicio Acuda (unidad móvil)':'Servici Acudix (unitat mòbil)',
+  'Sin contactos aún.':'Encara sense contactes.',
+  'Sin exámenes':'Sense exàmens',
+  'Sin resultados':'Sense resultats',
+  'Sobrino/a':'Nebot/da',
+  'Sí':'Sí',
+  'Tamaño del texto':'Grandària del text',
+  'Terminal fijo':'Terminal fix',
+  'Tiene cuidador':'Té cuidador',
+  'Tipo':'Tipus',
+  'Tipo de vivienda':'Tipus d\'habitatge',
+  'Tipo doc.':'Tipus doc.',
+  'Tipo vivienda':'Tipus habitatge',
+  'Todavía no ha creado su contraseña. Puedes corregir el email sin problema.':'Encara no ha creat la seua contrasenya. Pots corregir l\'email sense problema.',
+  'Usuario activo':'Usuari actiu',
+  'Valencià':'Valencià',
+  'Vecino/a':'Veí/na',
+  'Ver observaciones':'Veure observacions',
+  'Ver resumen':'Veure resum',
+  'Vive con familia':'Viu amb família',
+  '· conectado':'· connectat',
+  '· correcto':'· correcte',
+  '· incorrecto':'· incorrecte',
+  '· sin conectar':'· sense connectar',
+  '· clasificación correcta':'· classificació correcta',
+  '· clasificación incorrecta':'· classificació incorrecta',
+  'Toda la aplicación se maneja con el teclado. Usa el tabulador para moverte,\n      Intro o Espacio para activar, y Escape para cerrar las ventanas. Las llamadas entrantes se anuncian solas.':'Tota l\'aplicació es maneja amb el teclat. Usa el tabulador per a moure\'t,\n      Intro o Espai per a activar, i Escape per a tancar les finestres. Les trucades entrants s\'anuncien soles.',
+  'Refiere dolor de cadera y mareo; se avisa a la hija y se moviliza recurso.':'Refereix dolor de maluc i mareig; s\'avisa la filla i es mobilitza recurs.',
+  'Suma de pesos: 100':'Suma de pesos: 100',
+  'alumno@correo.com':'alumne@correu.com',
+  'Paso {n}':'Pas {n}',
+  '{n} pasos':'{n} passos',
+  '{n} de {total}':'{n} de {total}',
+  'Clasificó:':'Ha classificat:',
+  'Correcto:':'Correcte:',
+  /* --- completadas por el auditor de idiomas --- */
+  'Toda la aplicación se maneja con el teclado. Usa el tabulador para moverte,\n      Intro o Espacio para activar, y Escape para cerrar las ventanas. Las llamadas entrantes se anuncian solas.':'Tota l\'aplicació es maneja amb el teclat. Usa el tabulador per a moure\'t,\n      Intro o Espai per a activar, i Escape per a tancar les finestres. Les trucades entrants s\'anuncien soles.',
+  'Inicio de la llamada':'Inici de la trucada',
+  'Se identifica y saluda correctamente':'S\'identifica i saluda correctament',
+  'Comprueba la identidad del usuario':'Comprova la identitat de l\'usuari',
+  'Confirma el motivo de la llamada':'Confirma el motiu de la trucada',
+  'Valoración del usuario':'Valoració de l\'usuari',
+  'Valora el estado y los síntomas':'Valora l\'estat i els símptomes',
+  'Escucha activa, tono cordial y tranquilizador':'Escolta activa, to cordial i tranquil·litzador',
+  'Recaba la información relevante':'Recapta la informació rellevant',
+  'Consulta del expediente':'Consulta de l\'expedient',
+  'Consulta la ficha del usuario':'Consulta la fitxa de l\'usuari',
+  'Usa patologías y contactos de la ficha':'Usa patologies i contactes de la fitxa',
+  'Gestión de la incidencia / Emergencia y 112':'Gestió de la incidència / Emergència i 112',
+  'Clasifica correctamente el tipo de incidencia':'Classifica correctament el tipus d\'incidència',
+  'Activa los recursos adecuados (112 si procede)':'Activa els recursos adequats (112 si escau)',
+  'Actúa con la prioridad correcta y a tiempo':'Actua amb la prioritat correcta i a temps',
+  'Gestión posterior y registro':'Gestió posterior i registre',
+  'Registra la actuación con claridad':'Registra l\'actuació amb claredat',
+  'Cierra o programa el seguimiento correctamente':'Tanca o programa el seguiment correctament',
+  'Falsa alarma':'Falsa alarma',
+  'Activo':'Actiu',
+  'Ambos niveles':'Ambdós nivells',
+  'Básico':'Bàsic',
+  'Bastón':'Bastó',
+  'Audífono':'Audiòfon',
+  'Cama articulada':'Llit articulat',
+  'Silla de ruedas':'Cadira de rodes',
+  'DNI':'DNI',
+  'NIE':'NIE',
+  'Hombre':'Home',
+  'Mujer':'Dona',
+  'Jubilado':'Jubilat',
+  'Jubilada':'Jubilada',
+  'Cónyuge':'Cònjuge',
+  'Móvil':'Mòbil',
+  'Llamadas salientes':'Trucades eixints',
+  'Herramientas y habilidades':'Ferramentes i habilitats',
+  'Cuando el profesor lance un caso, la alarma sonará aquí. También puedes practicar un caso por tu cuenta o con un compañero.':'Quan el professor llance un cas, l\'alarma sonarà ací. També pots practicar un cas pel teu compte o amb un company.',
+  'Nº de expediente':'Nre. d\'expedient',
+  /* --- completadas por el auditor de idiomas --- */
+  'Toda la aplicación se maneja con el teclado. Usa el tabulador para moverte,\n      Intro o Espacio para activar, y Escape para cerrar las ventanas. Las llamadas entrantes se anuncian solas.':'Tota l\'aplicació es maneja amb el teclat. Usa el tabulador per a moure\'t,\n      Intro o Espai per a activar, i Escape per a tancar les finestres. Les trucades entrants s\'anuncien soles.',
+  'Vecina':'Veïna',
+  'Vecino':'Veí',
+  'Vive sola':'Viu sola',
+  'Vive solo':'Viu sol',
+  'Vive con cónyuge':'Viu amb cònjuge',
+  'años':'anys',
+  'Hija':'Filla',
+  'Hijo':'Fill',
 };
-let DICT=null;
-function buildDict(){ DICT=Object.entries(I18N).filter(([a,b])=>a&&b&&a!==b).sort((x,y)=>y[0].length-x[0].length); }
-function trad(t){ if(state.lang!=='va'||!t)return t; if(!DICT)buildDict(); let s=t; for(const [es,va] of DICT){ if(s.indexOf(es)>=0) s=s.split(es).join(va); } return s; }
+/* =========================================================
+   IDIOMAS
+   El castellano es la clave. Cada idioma es un diccionario
+   clave→traducción y la coincidencia es EXACTA sobre el texto
+   completo: nunca se sustituyen trozos, porque eso destrozaba
+   palabras ("Oyente" → "Oclient") y, peor, alteraba los datos
+   que escribe el profesorado.
+   ========================================================= */
+const IDIOMAS = {es:'Castellano', va:'Valencià', en:'English'};
+const DICCS = {va:I18N, en:(typeof I18N_EN!=='undefined'?I18N_EN:{})};
+
+/* Registro de lo que se pide y no existe: alimenta al auditor */
+const I18N_FALTAN = {va:new Set(), en:new Set()};
+const I18N_USADAS = new Set();          // qué cadenas pide la interfaz de verdad
+
+function trad(t){
+  if(!t) return t;
+  const L=state.lang;
+  if(L==='es'||!DICCS[L]) return t;
+  /* conservar los espacios de alrededor y buscar por el texto limpio */
+  const m=String(t).match(/^(\s*)([\s\S]*?)(\s*)$/);
+  const ini=m[1], nucleo=m[2], fin=m[3];
+  if(!nucleo) return t;
+  I18N_USADAS.add(nucleo);
+  const v=DICCS[L][nucleo];
+  if(v!==undefined && v!==null && v!=='') return ini+v+fin;
+  if(!/^[\d\s·—–\/%.,:;()¿?¡!+-]*$/.test(nucleo)) I18N_FALTAN[L].add(nucleo);
+  return t;
+}
+
+/* Cadenas con variables: t('clave', {n:3}) → "Hay 3 alarmas en cola" */
+function t(clave, params){
+  let s=trad(clave);
+  if(params) Object.keys(params).forEach(k=>{ s=s.split('{'+k+'}').join(params[k]); });
+  return s;
+}
+
+/* Auditor: qué queda sin traducir. Se llama desde la consola con auditarIdiomas() */
+function auditarIdiomas(){
+  const r={};
+  Object.keys(DICCS).forEach(L=>{
+    const total=Object.keys(DICCS[L]).length;
+    const faltan=[...I18N_FALTAN[L]].sort();
+    r[L]={traducidas:total, sinTraducir:faltan.length, lista:faltan};
+  });
+  console.log('%cAuditoría de idiomas','font-weight:bold');
+  Object.keys(r).forEach(L=>{
+    console.log(`  ${L}: ${r[L].traducidas} traducidas · ${r[L].sinTraducir} sin traducir`);
+    if(r[L].lista.length) console.log('   ',r[L].lista);
+  });
+  return r;
+}
+window.auditarIdiomas=auditarIdiomas;
 const ORIG=new WeakMap();
 function aplicarIdioma(root){
   root=root||document.body; if(!root)return;
   root.querySelectorAll('option:not([value])').forEach(o=>{ if(o.__v===undefined){o.__v=o.textContent;o.setAttribute('value',o.__v);} });
-  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null); const arr=[]; while(w.nextNode())arr.push(w.currentNode);
-  arr.forEach(n=>{ const t=n.nodeValue; if(!t||!t.trim())return; if(n.parentElement&&n.parentElement.closest('#gate,.no-i18n'))return; if(!ORIG.has(n))ORIG.set(n,t); const src=ORIG.get(n); const nv=state.lang==='va'?trad(src):src; if(n.nodeValue!==nv)n.nodeValue=nv; });
-  root.querySelectorAll('[placeholder]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__po===undefined)e.__po=e.getAttribute('placeholder'); e.setAttribute('placeholder',state.lang==='va'?trad(e.__po):e.__po); });
-  root.querySelectorAll('[title]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__to===undefined)e.__to=e.getAttribute('title'); e.setAttribute('title',state.lang==='va'?trad(e.__to):e.__to); });
+  /* Ojo: sin filtro, esto recorría también el código de <script> (200 KB de PeerJS)
+     y le aplicaba el diccionario entero en cada cambio de idioma. */
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+    acceptNode(n){
+      const pa=n.parentElement;
+      if(!pa) return NodeFilter.FILTER_REJECT;
+      if(/^(SCRIPT|STYLE|NOSCRIPT|SVG|TEMPLATE)$/.test(pa.tagName)) return NodeFilter.FILTER_REJECT;
+      if(pa.closest('svg,#gate,.no-i18n')) return NodeFilter.FILTER_REJECT;
+      return n.nodeValue&&n.nodeValue.trim()?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
+    }
+  });
+  const arr=[]; while(w.nextNode())arr.push(w.currentNode);
+  arr.forEach(n=>{ const t=n.nodeValue; if(!t||!t.trim())return; if(n.parentElement&&n.parentElement.closest('#gate,.no-i18n'))return; if(!ORIG.has(n))ORIG.set(n,t); const src=ORIG.get(n); const nv=trad(src); if(n.nodeValue!==nv)n.nodeValue=nv; });
+  root.querySelectorAll('[placeholder]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__po===undefined)e.__po=e.getAttribute('placeholder'); e.setAttribute('placeholder',trad(e.__po)); });
+  root.querySelectorAll('[title]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__to===undefined)e.__to=e.getAttribute('title'); e.setAttribute('title',trad(e.__to)); });
+  root.querySelectorAll('[aria-label]').forEach(e=>{ if(e.closest('#gate'))return; if(e.__al===undefined)e.__al=e.getAttribute('aria-label'); e.setAttribute('aria-label',trad(e.__al)); });
 }
-function setLang(l){ state.lang=l; try{document.documentElement.lang = (l==='va'?'ca-ES-valencia':'es');}catch(e){} aplicarIdioma(document.body); document.querySelectorAll('[data-lang]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-lang')===l)); }
+const LANG_HTML={es:'es',va:'ca-ES-valencia',en:'en'};
+function setLang(l){
+  if(!IDIOMAS[l])l='es';
+  state.lang=l;
+  try{ document.documentElement.lang=LANG_HTML[l]||'es'; }catch(e){}
+  try{ localStorage.setItem('caredesk-lang',l); }catch(e){}
+  aplicarIdioma(document.body);
+  document.querySelectorAll('[data-lang]').forEach(b=>{
+    const on=b.getAttribute('data-lang')===l;
+    b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
+  });
+  try{ if(typeof render==='function'&&state.rol){ render(); pintarCabecera(); } }catch(e){}
+}
+function langCargar(){
+  let l=null; try{ l=localStorage.getItem('caredesk-lang'); }catch(e){}
+  state.lang = IDIOMAS[l]?l:'va';
+}
 function prioridadDe(e){return ({critica:'Alta',alta:'Alta',media:'Media',baja:'Baja'})[e.gravedad]||'Media'}
 function categoriaDe(e){return ({caida:'Emergencias',sanitaria:'Emergencias',soledad:'Bienestar / Apoyo',tecnica:'Incidencias técnicas',falsa:'Incidencias técnicas'})[e.tipo]||'Seguimiento'}
 function prioColor(p){return p==='Alta'?'r':p==='Media'?'y':'g'}
@@ -1125,12 +2036,18 @@ function entrar(rol,alumnoId){
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('whoLabel').textContent =
     rol==='profesor' ? 'Profesor' : ('Alumno · '+alumno(alumnoId).nombre);
-  document.getElementById('topSub').textContent =
-    (rol==='profesor' ? 'Panel del profesor' : 'Puesto de la central')+' · Sala '+state.sala;
+  pintarCabecera();
   renderTabs();
+  setLang(state.lang);
   aplicarIdioma(document.querySelector('header.top'));
   iniciarRTC();
   if(rol==='profesor') cargarGrabaciones();
+}
+function pintarCabecera(){
+  const el=document.getElementById('topSub'); if(!el||!state.rol)return;
+  el.innerHTML='<span>'+esc(state.rol==='profesor' ? 'Panel del profesor' : 'Puesto de la central')+'</span>'+
+    '<span class="no-i18n"> · '+esc(t('Sala'))+' '+esc(state.sala||'')+'</span>';
+  aplicarIdioma(el);
 }
 function salir(){
   try{ rtcAdios(); rtcLatidoParar(); }catch(e){}
@@ -1221,6 +2138,11 @@ function renderTabs(){
   cont.setAttribute('role','tablist');
   cont.setAttribute('aria-label','Secciones');
   aplicarIdioma(cont); a11yPass(cont);
+  /* en movil la barra de pestañas se desliza: que la activa quede a la vista */
+  if(cont.scrollWidth>cont.clientWidth+4){
+    const act=cont.querySelector('button.active');
+    if(act&&act.scrollIntoView)try{act.scrollIntoView({inline:'center',block:'nearest'});}catch(e){}
+  }
   render();
 }
 function go(k){
@@ -1267,33 +2189,23 @@ function notaBloque(r,b,draft){
    VISTAS — PROFESOR
    ========================================================= */
 function vInicio(){
-  const nAl=state.alumnos.length, nEsc=escenariosVisibles().length;
-  const nReg=state.registros.length, pend=state.cola.length;
   const sinEval=state.registros.filter(r=>!r.eval).length;
-  const notas=state.registros.map(notaGlobal).filter(n=>n!=null);
-  const media=notas.length?Math.round(notas.reduce((a,b)=>a+b,0)/notas.length):null;
   return `
   <h2 class="section">Panel del profesor</h2>
-  <div class="grid g4">
-    <div class="card stat"><div class="n">${nAl}</div><div class="l">Alumnos</div></div>
-    <div class="card stat"><div class="n">${nEsc}</div><div class="l">Escenarios disponibles</div></div>
-    <div class="card stat"><div class="n">${nReg}</div><div class="l">Observaciones registradas</div></div>
-    <div class="card stat"><div class="n">${media!=null?media+'/100':'—'}</div><div class="l">Calificación media</div></div>
-  </div>
   <div class="grid mt">
     <div class="card">
-      <h3><svg class="ic"><use href="#i-zap"/></svg> Acciones rápidas</h3>
-      <div class="row">
+      <h3><svg class="ic"><use href="#i-zap"/></svg> Acciones</h3>
+      <div class="row acciones">
         <button class="btn primary" onclick="elegirCasoModal()"><svg class="ic"><use href="#i-phone"/></svg> Lanzar un caso</button>
-        <button class="btn ok" onclick="simAbrir()"><svg class="ic"><use href="#i-headset"/></svg> Unirse a simulación libre</button>
+        <button class="btn ok" onclick="simAbrir()"><svg class="ic"><use href="#i-headset"/></svg> Unirse a simulación</button>
         <button class="btn" onclick="go('evaluacion')">Evaluar actuaciones ${sinEval?`<span class="pill-count">${sinEval}</span>`:''}</button>
         <button class="btn" onclick="go('gestion')">Dar de alta alumno</button>
       </div>
       <p class="muted mt" style="font-size:13.5px">Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.</p>
     </div>
   </div>
-  ${panelPresencia()}
-  ${colaPanelProfesor()}`;
+  ${colaPanelProfesor()}
+  ${panelPresencia()}`;
   /* La grabación ya no se lista en Inicio: se escucha dentro de la evaluación
      (grabacionHtml en abrirEval). Para reactivar el listado, añadir ${panelGrabaciones()} aquí. */
 }
@@ -1589,7 +2501,7 @@ function vEscenarios(){
     return `<div class="card">
       <div class="between"><h3 style="margin:0"><span class="badge ${badgeClass(e.tipo)}">${tipoTxt(e.tipo)}</span> ${esc(e.titulo)}</h3>
       <span class="chip ${prioColor(prioridadDe(e))}"><span class="mk" aria-hidden="true">${({Alta:'▲',Media:'■',Baja:'▼'})[prioridadDe(e)]||''}</span>Prioridad ${prioridadDe(e)}</span></div>
-      <div class="flex" style="margin:8px 0 6px"><span class="chip b"><svg class="ic"><use href="#i-folder"/></svg> ${categoriaDe(e)}</span><span class="chip">${e.protocolo.length} pasos</span></div>
+      <div class="flex" style="margin:8px 0 6px"><span class="chip b"><svg class="ic"><use href="#i-folder"/></svg> ${categoriaDe(e)}</span><span class="chip">${t('{n} pasos',{n:e.protocolo.length})}</span></div>
       <p class="muted" style="font-size:13.5px;margin:6px 0"><svg class="ic"><use href="#i-user"/></svg> ${esc(u.nombre)}, ${u.edad} años · ${esc(u.dispositivo)}</p>
       <p class="quote">${esc(e.guion)}</p>
       <div class="between mt" style="gap:8px">
@@ -1625,8 +2537,8 @@ function colaPanelProfesor(){
     return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
       <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br><span class="chip b">${esc(dest)}</span> ${est}</div>
       <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
-  }).join(''):'<div class="list-empty">No hay teléfonos en cola. Lanza un caso desde “Acciones rápidas”.</div>';
-  return `<div class="card mt"><h3><svg class="ic"><use href="#i-phone"/></svg> Teléfonos en cola</h3>${rows}</div>`;
+  }).join(''):'<div class="list-empty">No hay llamadas en curso. Lanza un caso desde “Acciones”.</div>';
+  return `<div class="card mt"><h3><svg class="ic"><use href="#i-phone"/></svg> Llamadas</h3>${rows}</div>`;
 }
 function grabacionHtml(regId){
   const g=state.grabaciones[regId]; if(!g)return '';
@@ -1663,7 +2575,7 @@ function renderEscEditor(){
   const usuOpts=state.usuarios.map(u=>`<option value="${u.id}" ${d.usuarioId===u.id?'selected':''}>${esc(u.nombre)}${u.edad?` (${u.edad})`:''}</option>`).join('');
   const gravOpts=[['baja','Baja'],['media','Media'],['alta','Alta'],['critica','Crítica']].map(([v,t])=>`<option value="${v}" ${d.gravedad===v?'selected':''}>${t}</option>`).join('');
   const recChecks=state.recursos.map(r=>`<label class="proto-step" style="border:none;padding:4px 0"><input type="checkbox" ${d.recursosCorrectos.includes(r.v)?'checked':''} onchange="escToggleRec('${r.v}')"><span>${r.t}</span></label>`).join('');
-  const pasos=d.protocolo.map((p,i)=>`<div class="flex" style="gap:6px;margin-bottom:6px"><input value="${esc(p)}" oninput="state._escEdit.protocolo[${i}]=this.value" placeholder="Paso ${i+1}" style="flex:1"><button class="btn ghost sm" onclick="delProtoPaso(${i})"><svg class="ic"><use href="#i-x"/></svg></button></div>`).join('');
+  const pasos=d.protocolo.map((p,i)=>`<div class="flex" style="gap:6px;margin-bottom:6px"><input value="${esc(p)}" oninput="state._escEdit.protocolo[${i}]=this.value" placeholder="${t('Paso {n}',{n:i+1})}" style="flex:1"><button class="btn ghost sm" onclick="delProtoPaso(${i})"><svg class="ic"><use href="#i-x"/></svg></button></div>`).join('');
   body.innerHTML=`<div class="between"><h3 style="margin:0">${d.id?'Editar escenario':'Nuevo escenario'}</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
     <label class="f mt">Título del caso</label><input value="${esc(d.titulo)}" oninput="state._escEdit.titulo=this.value" placeholder="p. ej. Caída en el baño">
     <div class="row mt"><div style="flex:1"><label class="f">Tipo / objetivo</label><select onchange="state._escEdit.tipo=this.value">${tipoOpts}</select></div>
@@ -2041,8 +2953,8 @@ function abrirEval(rid){
     <div class="between"><h3 style="margin:0">Evaluación práctica · ${esc(al?al.nombre:'')}</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
     <p class="muted" style="margin:4px 0 12px">${esc(e.titulo)} — ${esc(u.nombre)} · ${categoriaDe(e)} · atendida en ${r.tiempo}s</p>
     <div class="card note-info" style="margin-bottom:12px">
-      <div class="flex"><span class="chip ${acierto?'g':'r'}"><span class="mk" aria-hidden="true">${acierto?'✓':'✗'}</span>Clasificó: ${tipoTxt(r.tipoElegido)}<span class="sr-only"> · ${acierto?'correcto':'incorrecto'}</span></span>
-      <span class="chip b">Correcto: ${tipoTxt(e.objetivo)}</span></div>
+      <div class="flex"><span class="chip ${acierto?'g':'r'}"><span class="mk" aria-hidden="true">${acierto?'✓':'✗'}</span>Clasificó: <span class="no-i18n">${tipoTxt(r.tipoElegido)}</span><span class="sr-only"> · ${acierto?'correcto':'incorrecto'}</span></span>
+      <span class="chip b">Correcto: <span class="no-i18n">${tipoTxt(e.objetivo)}</span></span></div>
       <div class="mt" style="font-size:13.5px"><b>Recursos activados:</b> ${r.recursos.length?r.recursos.map(recursoTxt).join(', '):'—'}</div>
       <div class="mt" style="font-size:13.5px"><b>Pasos de protocolo marcados:</b> ${r.pasos}/${e.protocolo.length}</div>
       <div class="mt" style="font-size:13.5px"><b>Observaciones del alumno:</b> ${esc(r.notas)||'<span class=muted>—</span>'}</div>
@@ -2625,6 +3537,32 @@ function a11yPass(root){
     bt.setAttribute('aria-label', ICONO_ETIQUETA[id]||'Acción');
   });
 
+  /* 6. Cada celda lleva el texto de su cabecera en data-l: los lectores de pantalla
+        lo ignoran (es decorativo por CSS) y en móvil la tabla se apila mostrandolo */
+  root.querySelectorAll('table').forEach(tb=>{
+    if(tb.dataset.resp==='1')return;
+    const ths=[...tb.querySelectorAll('thead th')];
+    if(!ths.length)return;
+    /* En movil la tabla se dibuja con display:block y eso borraria su estructura
+       para los lectores de pantalla: la devolvemos con roles ARIA explicitos. */
+    tb.setAttribute('role','table');
+    tb.querySelectorAll('thead,tbody,tfoot').forEach(g=>g.setAttribute('role','rowgroup'));
+    tb.querySelectorAll('tr').forEach(tr=>tr.setAttribute('role','row'));
+    ths.forEach(h=>{ h.setAttribute('role','columnheader'); if(!h.getAttribute('scope'))h.setAttribute('scope','col'); });
+    const et=ths.map(h=>h.textContent.trim());
+    tb.querySelectorAll('tbody tr').forEach(tr=>{
+      [...tr.children].forEach((td,i)=>{
+        td.setAttribute('role','cell');
+        if(td.hasAttribute('colspan')||!et[i]||!td.textContent.trim())return;
+        if(td.firstElementChild&&td.firstElementChild.classList.contains('tlab'))return;
+        const sp=document.createElement('span');
+        sp.className='tlab'; sp.setAttribute('aria-hidden','true'); sp.textContent=et[i];
+        td.insertBefore(sp,td.firstChild);
+      });
+    });
+    tb.dataset.resp='1';
+  });
+
   /* 5. Los <select> sin nombre visible (filtros) toman el del texto anterior */
   root.querySelectorAll('select:not([aria-label])').forEach(sel=>{
     if(sel.id && root.querySelector('label[for="'+CSS.escape(sel.id)+'"]'))return;
@@ -2966,7 +3904,7 @@ async function pedirMedios(){
   }
 }
 function videoAlternar(){
-  VIDEO_ON=!VIDEO_ON; videoGuardar();
+  VIDEO_ON=!camaraEncendida(); videoGuardar();
   /* Si ya hay una simulación en marcha, aplicarlo al momento cuando se pueda */
   let enCaliente=false;
   try{
@@ -2978,23 +3916,44 @@ function videoAlternar(){
     : (enCaliente?'Cámara apagada':'Vídeo desactivado. Solo voz.'), 3600);
   if(typeof simPanel==='function')simPanel();
 }
+/* ¿estoy emitiendo imagen ahora mismo? (distinto de la preferencia guardada) */
+function camaraEncendida(){
+  try{ const p=(sim.local&&sim.local.getVideoTracks)?sim.local.getVideoTracks():[];
+       if(p.length) return p.some(t=>t.enabled); }catch(e){}
+  return VIDEO_ON;
+}
 function tieneVideo(st){ try{ return !!(st&&st.getVideoTracks&&st.getVideoTracks().length&&st.getVideoTracks()[0].enabled); }catch(e){ return false; } }
 const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'LIBRE'};
 function simId(r){return state.sala+'-SIM-'+(sim.caseId||'LIBRE')+'-'+r;}
 function simTargets(){return Object.keys(SIMROLES).filter(r=>r!==sim.role).map(simId);}
 function simAbrir(){
-  const rolePref = state.rol==='profesor'?'OB':'OP';
-  const opts=Object.entries(SIMROLES).map(([k,t])=>`<button class="btn ${k===rolePref?'primary':''}" style="width:100%;text-align:left;margin-bottom:8px" onclick="closeModal();simEntrar('${k}')">${k==='PD'?'<svg class="ic"><use href="#i-home"/></svg>':k==='OP'?'<svg class="ic"><use href="#i-headset"/></svg>':'<svg class="ic"><use href="#i-eye"/></svg>'} ${t}${k==='OB'?' (entra en silencio)':''}</button>`).join('');
-  openModal(`<div class="between"><h3 style="margin:0">Simulación libre · 3 roles</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
-    <p class="muted" style="font-size:13px">Sala de práctica libre <b>${esc(state.sala||'')}</b> (sin caso asignado). Elige tu papel:</p>${opts}
-    <p class="muted" style="font-size:12px;margin-top:6px">Un alumno hace de <b>persona dependiente</b>, otro de <b>teleoperador</b>, y el <b>profesor</b> se une a escuchar/supervisar. Cada rol solo puede ocuparlo una persona.</p>`,true);
+  /* El profesor siempre entra como oyente: no tiene sentido preguntarle el papel.
+     Los roles de teleoperador y persona dependiente son de los alumnos. */
+  if(state.rol==='profesor') return simEntrar('OB');
+
+  const opts=['OP','PD'].map(k=>{
+    const icono = k==='PD' ? '<svg class="ic"><use href="#i-home"/></svg>' : '<svg class="ic"><use href="#i-headset"/></svg>';
+    const desc  = k==='PD' ? 'Interpretas a la persona que llama, siguiendo el guion.'
+                           : 'Atiendes la llamada y registras la actuación.';
+    return `<button class="btn ${k==='OP'?'primary':''}" style="width:100%;text-align:left;margin-bottom:8px" onclick="closeModal();simEntrar('${k}')">
+      ${icono} <b>${SIMROLES[k]}</b><br><span class="muted" style="font-size:12.5px">${desc}</span></button>`;
+  }).join('');
+
+  openModal(`<div class="between"><h3 style="margin:0">Unirse a simulación</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <p class="muted" style="font-size:13px">Sala de práctica <b class="no-i18n">${esc(state.sala||'')}</b>. Elige tu papel:</p>${opts}
+    <p class="muted" style="font-size:12px;margin-top:6px">Un alumno hace de <b>persona dependiente</b> y otro de <b>teleoperador</b>. El profesor puede unirse a escuchar sin cortar la llamada. Cada papel solo puede ocuparlo una persona.</p>`,true);
 }
 function simEntrar(role){ return simEntrarCaso('LIBRE',role); }
 async function simEntrarCaso(caseId,role){
   if(sim.peer){ if(sim.caseId===caseId){toast('Ya estás en esta simulación');return;} simSalir(); }
   sim.caseId=caseId||'LIBRE'; sim.role=role;
   sim.local=await pedirMedios();
-  if(role==='OB'&&sim.local){sim.local.getAudioTracks().forEach(t=>t.enabled=false);sim.muted=true;}
+  if(role==='OB'&&sim.local){
+    /* El profesor se une a escuchar: ni micro ni cámara. Si quiere aparecer,
+       puede encender la cámara a mano desde el panel. */
+    sim.local.getAudioTracks().forEach(t=>t.enabled=false); sim.muted=true;
+    sim.local.getVideoTracks().forEach(t=>t.enabled=false);
+  }
   try{sim.peer=new Peer(simId(role),rtcOpts());}catch(e){toast('No se pudo iniciar');sim.role=null;return;}
   sim.peer.on('open',()=>{simConectar();sim.int=setInterval(simConectar,2500);});
   sim.peer.on('call',c=>{ if(sim.conns[c.peer]&&sim.conns[c.peer].stream){try{c.close();}catch(e){}return;} c.answer(sim.local||rtcStream()); simWire(c,c.peer); });
@@ -3047,7 +4006,7 @@ function simPanel(){
   </div>`;
   const cab = sim.caseId&&sim.caseId!=='LIBRE' ? '<svg class="ic"><use href="#i-headset"/></svg> Simulación del caso' : '<svg class="ic"><use href="#i-headset"/></svg> Simulación libre';
   el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${vids}${rows}
-    <div class="rtcbtns" style="margin-top:10px"><button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button><button class="btn sm" onclick="videoAlternar()" aria-pressed="${VIDEO_ON}" title="${VIDEO_ON?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${VIDEO_ON?'Vídeo activado':'Solo voz'}</button><button class="btn danger sm" onclick="simSalir()">Salir</button></div>
+    <div class="rtcbtns" style="margin-top:10px"><button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button><button class="btn sm" onclick="videoAlternar()" aria-pressed="${camaraEncendida()}" title="${camaraEncendida()?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${camaraEncendida()?'Vídeo activado':'Solo voz'}</button><button class="btn danger sm" onclick="simSalir()">Salir</button></div>
     <p class="muted" style="font-size:11px;margin:8px 0 0">Consejo: usad auriculares para evitar eco.</p></div>`;
   aplicarIdioma(el); a11yPass(el); simPintarVideos();
 }
@@ -3083,7 +4042,7 @@ function presenciaOnline(alumnoId){
 function conectados(){ return state.alumnos.filter(a=>presenciaOnline(a.id)); }
 function panelPresencia(){
   const on=conectados().length, tot=state.alumnos.length;
-  return `<div class="card mt" id="cardPresencia"><h3><svg class="ic"><use href="#i-users"/></svg> Alumnos conectados <span class="sub">${on} de ${tot}</span></h3>
+  return `<div class="card mt" id="cardPresencia"><h3><svg class="ic"><use href="#i-users"/></svg> Alumnos conectados <span class="sub">${t('{n} de {total}',{n:on,total:tot})}</span></h3>
     <div id="presenciaLista">${presenciaListaHtml()}</div></div>`;
 }
 function presenciaListaHtml(){
@@ -3099,7 +4058,7 @@ function presenciaListaHtml(){
 function pintarPresencia(){
   const card=document.getElementById('cardPresencia'); if(!card)return;
   const lista=document.getElementById('presenciaLista'); if(lista){ lista.innerHTML=presenciaListaHtml(); aplicarIdioma(lista); }
-  const sub=card.querySelector('h3 .sub'); if(sub){ sub.textContent=conectados().length+' de '+state.alumnos.length; }
+  const sub=card.querySelector('h3 .sub'); if(sub){ sub.textContent=t('{n} de {total}',{n:conectados().length,total:state.alumnos.length}); }
 }
 setInterval(()=>{ if(state.rol==='profesor') pintarPresencia(); }, 5000);
 
@@ -3502,7 +4461,7 @@ function descargarTodasGrab(){
 }
 function borrarGrabacion(regId){ idbDel(regId); const g=state.grabaciones[regId]; if(g&&g.url){try{URL.revokeObjectURL(g.url);}catch(e){}} delete state.grabaciones[regId]; toast('Grabación borrada'); render(); }
 /* aplicar idioma por defecto (valencià) al cargar */
-buildDict(); setLang(state.lang||'va');
+langCargar(); setLang(state.lang);
 </script>
 
 <script>
