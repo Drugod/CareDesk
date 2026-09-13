@@ -794,7 +794,25 @@ function colorEvento(t){
   return m[t]||'#8a8f9c';
 }
 const ESTADOS_EV=['Programado','En curso','Completado','Cancelado'];
-function uid(p){return p+(seq++)}
+/* ⚠️ Los identificadores tienen que ser únicos ENTRE equipos y ENTRE sesiones.
+   Antes era `p+(seq++)` con seq arrancando en 100 en cada carga: la primera
+   actuación de cualquier alumno, en cualquier equipo, se llamaba siempre "r101".
+   Al guardarla, chocaba con la fila de otro (o con la propia de ayer): o la
+   pisaba, o RLS rechazaba la escritura por ser de otro alumno, y la actuación
+   se perdía. Solo caracteres válidos para un identificador de PeerJS. */
+function uid(p){
+  var r='';
+  /* UUID COMPLETO (122 bits de azar), no truncado: con mil millones de
+     actuaciones la probabilidad de choque sigue siendo ~1e-19. Truncarlo a 48
+     bits, como estaba, sí dejaba una posibilidad apreciable a largo plazo. */
+  try{ if(window.crypto&&crypto.randomUUID) r=crypto.randomUUID().replace(/-/g,''); }catch(e){}
+  if(!r && window.crypto && crypto.getRandomValues){
+    try{ var a=new Uint8Array(16); crypto.getRandomValues(a);
+         r=Array.prototype.map.call(a,function(b){return ('0'+b.toString(16)).slice(-2);}).join(''); }catch(e){}
+  }
+  if(!r) r=Date.now().toString(36)+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,10);
+  return p+'_'+r+(seq++);
+}
 function hoyMas(d){const x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10)}
 function fnac(id,arr,key='id'){return arr.find(o=>o[key]===id)}
 function usuario(id){return fnac(id,state.usuarios)}
@@ -814,6 +832,9 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Actuación nº {n}':'Record no. {n}',
+  'Nº':'No.',
+
   'Base de datos':'Database',
   'Error al guardar':'Save error',
   'Guardando bien':'Saving correctly',
@@ -1423,6 +1444,9 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Actuación nº {n}':'Actuació núm. {n}',
+  'Nº':'Núm.',
+
   'Base de datos':'Base de dades',
   'Error al guardar':'Error en guardar',
   'Guardando bien':'Guardant bé',
@@ -2445,9 +2469,27 @@ function renderTabs(){
   }
   render();
 }
+/* El profesor puede llevar rato dentro cuando un alumno termina. El aviso le
+   llega por el canal directo, pero si ese aviso se pierde (o el alumno estaba
+   en otra red) la actuación solo está en la base de datos: al abrir Evaluación
+   se recarga desde allí. */
+let _refrescoAct=0;
+function refrescarActuaciones(forzar){
+  if(state.rol!=='profesor'||typeof window.g_cargarActuaciones!=='function') return;
+  const ahora=Date.now();
+  if(!forzar && ahora-_refrescoAct<8000) return;
+  _refrescoAct=ahora;
+  try{
+    Promise.resolve(window.g_cargarActuaciones())
+      .then(function(){ if(currentTab==='avaluacio') render(); })
+      .catch(function(){});
+  }catch(e){}
+}
+window.refrescarActuaciones=refrescarActuaciones;
 function go(k){
   if(state.rol==='profesor' && SUBMAP[k]){ ensureSub(); state._sub[SUBMAP[k][0]]=SUBMAP[k][1]; k=SUBMAP[k][0]; }
   currentTab=k; renderTabs();
+  if(k==='avaluacio') refrescarActuaciones();
 }
 function render(){
   const v=document.getElementById('view');
@@ -3240,7 +3282,7 @@ function vEvaluacion(){
     const nota=notaGlobal(r);
     const acierto = r.tipoElegido===e.objetivo;
     return `<tr>
-      <td><b>${esc(al?al.nombre:'—')}</b></td>
+      <td><b>${esc(al?al.nombre:'—')}</b><br><span class="muted mono" style="font-size:12px">${esc(t('Actuación nº {n}',{n:numActuacion(r)}))}</span></td>
       <td>${esc(e.titulo)}<br><span class="muted" style="font-size:12px">${esc(u.nombre)}</span></td>
       <td><span class="chip ${acierto?'g':'r'}"><span class="mk" aria-hidden="true">${acierto?'✓':'✗'}</span>${tipoTxt(r.tipoElegido)}<span class="sr-only"> · ${acierto?'clasificación correcta':'clasificación incorrecta'}</span></span></td>
       <td>${r.tiempo}s</td>
@@ -3560,15 +3602,25 @@ function cerrarLlamada(){
   recProm.then(blob=>{ if(blob) entregarGrabacion(blob,reg); });
 }
 
+/* Numeración visible por alumno: "la 3ª de Lucía". Se calcula del historial, no
+   se guarda: el identificador de la base de datos tiene que ser único de verdad
+   y un contador incremental por cliente no puede garantizarlo. */
+function numActuacion(reg){
+  if(!reg||!reg.alumnoId) return '';
+  const lista=registrosDe(reg.alumnoId).slice()
+    .sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||'')));
+  const i=lista.findIndex(r=>r.id===reg.id);
+  return i<0?'' : (i+1);
+}
 function vMis(){
   const regs=registrosDe(state.alumnoActivo).slice().reverse();
   if(!regs.length) return `<h2 class="section">Mis actuaciones</h2><div class="card list-empty">Aún no has atendido ninguna llamada. Ve a la pestaña “Central”.</div>`;
   const filas=regs.map(r=>{const e=escenario(r.escenarioId),u=usuario(e.usuarioId);const nota=notaGlobal(r);const ac=r.tipoElegido===e.objetivo;
-    return `<tr><td><b>${esc(e.titulo)}</b><br><span class="muted" style="font-size:12px">${esc(u.nombre)}</span></td>
+    return `<tr><td class="mono">${numActuacion(r)}</td><td><b>${esc(e.titulo)}</b><br><span class="muted" style="font-size:12px">${esc(u.nombre)}</span></td>
       <td><span class="chip ${ac?'g':'r'}"><span class="mk" aria-hidden="true">${ac?'✓':'✗'}</span>${tipoTxt(r.tipoElegido)}<span class="sr-only"> · ${ac?'correcto':'incorrecto'}</span></span></td><td>${r.tiempo}s</td>
       <td>${nota!=null?`<b>${nota}/100</b> <span style="color:#f2c94c" aria-hidden="true">${estrellas(nota)}</span>`:'<span class="chip y">pendiente prof.</span>'}</td></tr>`;
   }).join('');
-  return `<h2 class="section">Mis actuaciones</h2><div class="card"><table><thead><tr><th>Caso</th><th>Clasifiqué</th><th>Tiempo</th><th>Nota</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+  return `<h2 class="section">Mis actuaciones</h2><div class="card"><table><thead><tr><th>Nº</th><th>Caso</th><th>Clasifiqué</th><th>Tiempo</th><th>Nota</th></tr></thead><tbody>${filas}</tbody></table></div>`;
 }
 
 /* =========================================================
@@ -4471,7 +4523,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r23';
+const CD_VERSION='2026-09-13 · r26';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -5993,7 +6045,8 @@ langCargar(); setLang(state.lang);
         return;
       }
       intento=intento||1;
-      SB.from('actuaciones').upsert(fila,{onConflict:'id'}).then(function(r){
+      /* Clave compuesta: un alumno nunca puede tropezar con la fila de otro */
+      SB.from('actuaciones').upsert(fila,{onConflict:'alumno_email,id'}).then(function(r){
         if(!r.error){ g_okBD(reg.id); return; }
         /* Reintento: un fallo de red puntual no debe costarle la actuación al alumno */
         if(intento<3){ setTimeout(function(){ CD_DB.guardarActuacion(reg,intento+1); },intento===1?2500:8000); return; }
@@ -6004,10 +6057,13 @@ langCargar(); setLang(state.lang);
     guardarEvaluacion:function(reg){
       if(!SB||!GACC.uid||!g_esProfesor()||!reg) return;
       var patch={evaluacion:reg.eval,nota:g_nota(reg),evaluado_en:new Date().toISOString()};
-      SB.from('actuaciones').update(patch).eq('id',reg.id).select('id').then(function(r){
+      var mail=(g_filaActuacion(reg).alumno_email||'');
+      var upd=SB.from('actuaciones').update(patch).eq('id',reg.id);
+      if(mail) upd=upd.eq('alumno_email',mail);         // no tocar la fila de otro alumno
+      upd.select('id').then(function(r){
         if(r.error){ g_falloBD('guardar la evaluación',r.error.message,reg,r.error); return; }
         if(!r.data||!r.data.length){
-          SB.from('actuaciones').upsert(g_filaActuacion(reg),{onConflict:'id'}).then(function(r2){
+          SB.from('actuaciones').upsert(g_filaActuacion(reg),{onConflict:'alumno_email,id'}).then(function(r2){
             if(r2.error) g_falloBD('guardar la evaluación',r2.error.message,reg,r2.error);
             else g_okBD(reg.id);
           });
@@ -6060,10 +6116,15 @@ langCargar(); setLang(state.lang);
           if(!Array.isArray(e0.protocolo))         e0.protocolo=[];
           if(!Array.isArray(e0.recursosCorrectos)) e0.recursosCorrectos=[];
         }
-        if(!state.registros.some(function(x){return x.id===reg.id;})) state.registros.push(reg);
+        var ya=null;
+        for(var i=0;i<state.registros.length;i++){ if(state.registros[i].id===reg.id){ ya=state.registros[i]; break; } }
+        if(ya){ if(reg.eval && !ya.eval) ya.eval=reg.eval; }      // la nota puesta desde otro equipo
+        else state.registros.push(reg);
       }catch(e){}
     });
   }
+
+  window.g_cargarActuaciones=g_cargarActuaciones;
 
   function g_abrirProfesor(){
     state.profesores=[{id:GACC.uid,nombre:(GACC.perfil.nombre||GACC.email)}];
