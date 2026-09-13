@@ -812,6 +812,21 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Lanza un caso a un alumno, o una simulación entre dos. Lo verá aparecer como alarma entrante en su puesto de la central.':'Send a case to one student, or a simulation between two. It appears as an incoming alarm at their console.',
+  'En “Inicio”, dentro de “Acciones”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno concreto, o como simulación a 2 (teleoperador + persona dependiente).':'In “Home”, under “Actions”, press “Launch a case”, pick the case and choose the target: one student, or a two-student simulation (call handler + service user).',
+  'En “Inicio”, en “Acciones”, pulsa “Lanzar un caso” y elige el caso. Puedes enviarlo a un solo alumno o como simulación a 2 (dos alumnos).':'In “Home”, under “Actions”, press “Launch a case” and pick the case. You can send it to one student or as a two-student simulation.',
+
+  'Unirse a una llamada':'Join a call',
+  'Simulación entre dos alumnos':'Simulation between two students',
+  'Caso individual':'Individual case',
+  'Elige la llamada que quieres escuchar. Entrarás en silencio, sin interrumpir, y el alumno verá que estás escuchando.':'Pick the call you want to listen to. You join muted, without interrupting, and the student can see you are listening.',
+  'No hay ninguna llamada en curso ahora mismo. Lanza un caso desde':'There are no calls in progress right now. Launch a case from',
+  ', o espera a que un alumno empiece una práctica y la coja.':', or wait for a student to start a practice and answer it.',
+  'Sala de práctica libre':'Open practice room',
+  'Sala sin caso asignado, para pruebas sueltas. Solo habrá alguien si un alumno entra a propósito.':'A room with no case attached, for loose testing. Someone is here only if a student deliberately joins.',
+  'Entrar en la sala libre':'Enter the open room',
+  'Esa llamada ya ha terminado':'That call has already ended',
+
   'El profesor está escuchando':'The teacher is listening',
   'El profesor se ha unido a escuchar':'The teacher has joined to listen',
   'El alumno no está emitiendo: o todavía no ha cogido la llamada, o ya la ha terminado.':'The student is not broadcasting: either they have not answered yet, or they have already finished.',
@@ -1061,7 +1076,6 @@ const I18N_EN = {
   'En llamada':'On a call',
   'En una llamada saliente de seguimiento de medicación conviene...':'On an outbound medication follow-up call you should...',
   'En “Inicio” ves los teléfonos en cola y puedes unirte a escuchar. Cada actuación se graba, y en “Avaluació” la evalúas con la rúbrica sobre 100.':'On “Home” you see the calls in the queue and can join to listen. Every call handling is recorded, and on “Assessment” you score it with the rubric out of 100.',
-  'En “Inicio”, dentro de “Acciones rápidas”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno, a toda la clase o como simulación a 2 (teleoperador + persona dependiente).':'On “Home”, under “Quick actions”, press “Launch a case”, choose the case and decide where it goes: to one student, to the whole class, or as a paired simulation (operator + service user).',
   'Encuestas':'Surveys',
   'Encuestas de fin de curso':'End-of-course surveys',
   'English':'English',
@@ -1151,7 +1165,6 @@ const I18N_EN = {
   'La escucha activa consiste en...':'Active listening means...',
   'La plataforma fue intuitiva y fácil de utilizar':'The platform was intuitive and easy to use',
   'Lanza un caso':'Launch a case',
-  'Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.':'Launch a case to one student or to the whole class. It will appear as an incoming alarm at their workstation.',
   'Lanzado por el profesor':'Launched by the teacher',
   'Lanzar':'Launch',
   'Lanzar un caso':'Launch a case',
@@ -1384,6 +1397,21 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Lanza un caso a un alumno, o una simulación entre dos. Lo verá aparecer como alarma entrante en su puesto de la central.':'Llança un cas a un alumne, o una simulació entre dos. El veurà aparéixer com a alarma entrant en el seu lloc de la central.',
+  'En “Inicio”, dentro de “Acciones”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno concreto, o como simulación a 2 (teleoperador + persona dependiente).':'En “Inici”, dins d\'“Accions”, polsa “Llançar un cas”, tria el cas i decideix el destí: a un alumne concret, o com a simulació a 2 (teleoperador + persona dependent).',
+  'En “Inicio”, en “Acciones”, pulsa “Lanzar un caso” y elige el caso. Puedes enviarlo a un solo alumno o como simulación a 2 (dos alumnos).':'En “Inici”, en “Accions”, polsa “Llançar un cas” i tria el cas. Pots enviar-lo a un sol alumne o com a simulació a 2 (dos alumnes).',
+
+  'Unirse a una llamada':'Unir-se a una trucada',
+  'Simulación entre dos alumnos':'Simulació entre dos alumnes',
+  'Caso individual':'Cas individual',
+  'Elige la llamada que quieres escuchar. Entrarás en silencio, sin interrumpir, y el alumno verá que estás escuchando.':'Tria la trucada que vols escoltar. Entraràs en silenci, sense interrompre, i l\'alumne veurà que estàs escoltant.',
+  'No hay ninguna llamada en curso ahora mismo. Lanza un caso desde':'No hi ha cap trucada en curs ara mateix. Llança un cas des de',
+  ', o espera a que un alumno empiece una práctica y la coja.':', o espera que un alumne comence una pràctica i l\'agafe.',
+  'Sala de práctica libre':'Sala de pràctica lliure',
+  'Sala sin caso asignado, para pruebas sueltas. Solo habrá alguien si un alumno entra a propósito.':'Sala sense cas assignat, per a proves soltes. Només hi haurà algú si un alumne entra a propòsit.',
+  'Entrar en la sala libre':'Entrar en la sala lliure',
+  'Esa llamada ya ha terminado':'Eixa trucada ja ha acabat',
+
   'El profesor está escuchando':'El professor està escoltant',
   'El profesor se ha unido a escuchar':'El professor s\'ha unit a escoltar',
   'El alumno no está emitiendo: o todavía no ha cogido la llamada, o ya la ha terminado.':'L\'alumne no està emetent: o encara no ha agafat la trucada, o ja l\'ha acabada.',
@@ -1481,13 +1509,11 @@ const I18N = {
   'Comparte el código de tu centro':'Comparteix el codi del teu centre',
   'Entra como profesor: la app te da un código de 4 dígitos (o escribe el tuyo). Compártelo con tus alumnos; ellos entran como alumno, escriben ese código y eligen su nombre.':"Entra com a professor: l'app et dóna un codi de 4 dígits (o escriu el teu). Compartix-lo amb els teus alumnes; ells entren com a alumne, escriuen eixe codi i trien el seu nom.",
   'Lanza un caso':'Llança un cas',
-  'En “Inicio”, dentro de “Acciones rápidas”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno, a toda la clase o como simulación a 2 (teleoperador + persona dependiente).':'En “Inici”, dins d\'“Accions ràpides”, polsa “Llançar un cas”, tria el cas i decidix el destí: a un alumne, a tota la classe o com a simulació a 2 (teleoperador + persona dependent).',
   'Escucha, graba y evalúa':'Escolta, grava i avalua',
   'En “Inicio” ves los teléfonos en cola y puedes unirte a escuchar. Cada actuación se graba, y en “Avaluació” la evalúas con la rúbrica sobre 100.':"En “Inici” veus els telèfons en cua i pots unir-te a escoltar. Cada actuació es grava, i en “Avaluació” l'avalues amb la rúbrica sobre 100.",
   '¿Cómo empiezo una sesión con mis alumnos?':'Com comence una sessió amb els meus alumnes?',
   'Entra como profesor: la app genera un código de centro de 4 dígitos (o escribe el tuyo). Compártelo con tus alumnos; ellos entran como alumno, escriben ese código y eligen su nombre de la lista.':"Entra com a professor: l'app genera un codi de centre de 4 dígits (o escriu el teu). Compartix-lo amb els teus alumnes; ells entren com a alumne, escriuen eixe codi i trien el seu nom de la llista.",
   '¿Cómo lanzo un caso a un alumno?':'Com llance un cas a un alumne?',
-  'En “Inicio”, en “Acciones rápidas”, pulsa “Lanzar un caso” y elige el caso. Puedes enviarlo a un solo alumno, a toda la clase o como simulación a 2.':'En “Inici”, en “Accions ràpides”, polsa “Llançar un cas” i tria el cas. Pots enviar-lo a un sol alumne, a tota la classe o com a simulació a 2.',
   '¿Qué es la simulación a 2?':'Què és la simulació a 2?',
   'Un alumno hace de teleoperador (atiende y registra) y otro de persona dependiente (interpreta al usuario con el guion). Hablan por voz y tú puedes unirte a escuchar sin cortar la llamada.':"Un alumne fa de teleoperador (atén i registra) i un altre de persona dependent (interpreta l'usuari amb el guió). Parlen per veu i tu pots unir-te a escoltar sense tallar la trucada.",
   '¿Dónde veo y escucho las grabaciones?':'On veig i escolte les gravacions?',
@@ -2376,7 +2402,7 @@ function vInicio(){
         <button class="btn" onclick="go('evaluacion')">Evaluar actuaciones ${sinEval?`<span class="pill-count">${sinEval}</span>`:''}</button>
         <button class="btn" onclick="go('gestion')">Dar de alta alumno</button>
       </div>
-      <p class="muted mt" style="font-size:13.5px">Lanza un caso a un alumno concreto o a toda la clase. Lo verá aparecer como alarma entrante en su puesto de la central.</p>
+      <p class="muted mt" style="font-size:13.5px">Lanza un caso a un alumno, o una simulación entre dos. Lo verá aparecer como alarma entrante en su puesto de la central.</p>
     </div>
   </div>
   ${colaPanelProfesor()}
@@ -2700,22 +2726,21 @@ function colaPanelProfesor(){
     if(c.modo==='pareja'){
       const op=alumno(c.opId)||{nombre:'—'}, pd=alumno(c.pdId)||{nombre:'—'};
       const est=c.estado==='finalizada'?'<span class="chip g"><span class="mk" aria-hidden="true">✓</span>Finalizada</span>':((c.opIn||c.pdIn)?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>':'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>');
-      const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:`<button class="btn ok sm" onclick="profesorEscuchar('${c.id}')"><svg class="ic"><use href="#i-headset"/></svg> Unirse a escuchar</button>`;
+      const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:'';
       return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
         <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br>
         <span class="chip b"><svg class="ic"><use href="#i-headset"/></svg> ${esc(op.nombre)}</span> <span class="chip b"><svg class="ic"><use href="#i-home"/></svg> ${esc(pd.nombre)}</span> ${est}</div>
         <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
     }
-    const dest=c.alumnoId==='*'?'Toda la clase':((alumno(c.alumnoId)||{}).nombre||'—');
+    const dest=((alumno(c.alumnoId)||{}).nombre||'—');
     const est=c.estado==='finalizada'?'<span class="chip g"><span class="mk" aria-hidden="true">✓</span>Finalizada</span>'
       :(c.estado==='en_curso'?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>'
       :(c.estado==='rechazada'?'<span class="chip r"><span class="mk" aria-hidden="true">✕</span>Rechazada</span>'
       :'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>'));
+    /* Para unirse a escuchar está el botón "Unirse a simulación" de Acciones,
+       que pregunta a qué llamada; aquí solo queda evaluar lo ya terminado. */
     const acc=(c.estado==='finalizada'&&c.regId)
-      ? `<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`
-      : (c.estado==='en_curso'
-         ? `<button class="btn ok sm" onclick="profesorEscuchar('${c.id}')"><svg class="ic"><use href="#i-headset"/></svg> Unirse a escuchar</button>`
-         : '');
+      ? `<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>` : '';
     return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
       <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br><span class="chip b">${esc(dest)}</span> ${est}</div>
       <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
@@ -2821,7 +2846,6 @@ function lanzarModal(escId){
   const pocos = state.alumnos.length < 2;
   state._lanzar={escId,modo: pocos?'solo':'pareja'};
   const alOpts=state.alumnos.map(a=>`<option value="${a.id}">${esc(a.nombre)}</option>`).join('');
-  const alOptsAll='<option value="*">Toda la clase</option>'+alOpts;
   openModal(`<div class="between"><h3 style="margin:0">Lanzar: ${esc(e.titulo)}</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
     <div class="agseg mt" style="display:flex"><button id="mPar" class="${pocos?'':'on'}" ${pocos?'disabled title="Necesitas al menos 2 alumnos dados de alta para la simulación a 2" style="opacity:.45;cursor:not-allowed"':''} onclick="lanzarModo('pareja')"><svg class="ic"><use href="#i-users"/></svg> Simulación a 2</button><button id="mSolo" class="${pocos?'on':''}" onclick="lanzarModo('solo')"><svg class="ic"><use href="#i-user"/></svg> Individual</button></div>
     ${pocos?`<p class="muted" style="font-size:12.5px;margin:8px 0 0">La simulación a 2 se activa cuando des de alta al menos 2 alumnos. Ahora solo puedes lanzar en modo individual.</p>`:''}
@@ -2832,7 +2856,7 @@ function lanzarModal(escId){
     </div>
     <div id="bloqueSolo" class="mt" ${pocos?'':'hidden'}>
       <p class="muted" style="font-size:13px">El alumno atiende el caso él solo en su central.</p>
-      <label class="f">Enviar a</label><select id="selSolo">${alOptsAll}</select>
+      <label class="f">Enviar a</label><select id="selSolo">${alOpts}</select>
     </div>
     <div class="between mt"><span class="muted" style="font-size:12px">Sala ${esc(state.sala||'')}</span><button class="btn primary" onclick="lanzarConfirmar('${escId}')"><svg class="ic"><use href="#i-phone"/></svg> Lanzar</button></div>`,true);
   const pd=document.getElementById('selPd'); if(pd&&state.alumnos[1])pd.value=state.alumnos[1].id;
@@ -2858,6 +2882,7 @@ function lanzarPareja(escId,opId,pdId){
 }
 function profesorEscuchar(caseId){
   const c=state.cola.find(x=>x.id===caseId);
+  if(c&&c.estado==='finalizada') return toast('Esa llamada ya ha terminado');
   sim.modo=(c&&c.modo)||'solo';          // en un caso individual solo emite el teleoperador
   simEntrarCaso(caseId,'OB');
   toast('Te unes a escuchar (en silencio)');
@@ -2868,7 +2893,7 @@ function lanzar(escId,alId){
   const casoId=uid('c');
   state.cola.push({id:casoId,modo:'solo',escenarioId:escId,alumnoId:alId,estado:'sonando',regId:null});
   rtcEnviarCaso(escId,alId,casoId);           // propaga el caso al/los alumno(s) en otros dispositivos
-  const dest=alId==='*'?'toda la clase':alumno(alId).nombre;
+  const dest=(alumno(alId)||{}).nombre||'—';
   toast('<svg class="ic"><use href="#i-phone"/></svg> Caso lanzado a '+dest);
   render();
 }
@@ -4038,7 +4063,7 @@ function toggleEncuesta(){ensureEncuestas();state.encuestas.activa=!state.encues
 function vAyuda(){
   const guia=[
     ['Comparte el código de tu centro','Entra como profesor: la app te da un código de 4 dígitos (o escribe el tuyo). Compártelo con tus alumnos; ellos entran como alumno, escriben ese código y eligen su nombre.'],
-    ['Lanza un caso','En “Inicio”, dentro de “Acciones rápidas”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno, a toda la clase o como simulación a 2 (teleoperador + persona dependiente).'],
+    ['Lanza un caso','En “Inicio”, dentro de “Acciones”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno concreto, o como simulación a 2 (teleoperador + persona dependiente).'],
     ['Escucha, graba y evalúa','En “Inicio” ves los teléfonos en cola y puedes unirte a escuchar. Cada actuación se graba, y en “Avaluació” la evalúas con la rúbrica sobre 100.'],
   ];
   const pasos=guia.map((g,i)=>`<div class="flex" style="gap:12px;align-items:flex-start;margin-bottom:14px">
@@ -4046,7 +4071,7 @@ function vAyuda(){
     <div><b style="font-size:14.5px">${esc(g[0])}</b><p class="muted" style="margin:2px 0 0;font-size:13.5px">${esc(g[1])}</p></div></div>`).join('');
   const faqs=[
     ['¿Cómo empiezo una sesión con mis alumnos?','Entra como profesor: la app genera un código de centro de 4 dígitos (o escribe el tuyo). Compártelo con tus alumnos; ellos entran como alumno, escriben ese código y eligen su nombre de la lista.'],
-    ['¿Cómo lanzo un caso a un alumno?','En “Inicio”, en “Acciones rápidas”, pulsa “Lanzar un caso” y elige el caso. Puedes enviarlo a un solo alumno, a toda la clase o como simulación a 2.'],
+    ['¿Cómo lanzo un caso a un alumno?','En “Inicio”, en “Acciones”, pulsa “Lanzar un caso” y elige el caso. Puedes enviarlo a un solo alumno o como simulación a 2 (dos alumnos).'],
     ['¿Qué es la simulación a 2?','Un alumno hace de teleoperador (atiende y registra) y otro de persona dependiente (interpreta al usuario con el guion). Hablan por voz y tú puedes unirte a escuchar sin cortar la llamada.'],
     ['¿Dónde veo y escucho las grabaciones?','Cada actuación se graba automáticamente. Las tienes en “Inicio”, en “Grabaciones de los alumnos”, y también al abrir “Ver actuación”. Se guardan en tu equipo.'],
     ['¿Cómo creo o edito escenarios y usuarios?','Todo está en “Escenarios y usuarios”: arriba cambias entre los casos y los usuarios ficticios, y puedes crear nuevos o editar los existentes.'],
@@ -4123,9 +4148,9 @@ const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'
 function simId(r){return state.sala+'-SIM-'+(sim.caseId||'LIBRE')+'-'+r;}
 function simTargets(){return Object.keys(SIMROLES).filter(r=>r!==sim.role).map(simId);}
 function simAbrir(){
-  /* El profesor siempre entra como oyente: no tiene sentido preguntarle el papel.
-     Los roles de teleoperador y persona dependiente son de los alumnos. */
-  if(state.rol==='profesor') return simEntrar('OB');
+  /* Al profesor no se le pregunta el papel (siempre entra como oyente), sino
+     A QUÉ llamada quiere unirse: antes le metía directamente en una sala fija. */
+  if(state.rol==='profesor') return simElegirLlamada();
 
   const opts=['OP','PD'].map(k=>{
     const icono = k==='PD' ? '<svg class="ic"><use href="#i-home"/></svg>' : '<svg class="ic"><use href="#i-headset"/></svg>';
@@ -4138,6 +4163,31 @@ function simAbrir(){
   openModal(`<div class="between"><h3 style="margin:0">Unirse a simulación</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
     <p class="muted" style="font-size:13px">Sala de práctica <b class="no-i18n">${esc(state.sala||'')}</b>. Elige tu papel:</p>${opts}
     <p class="muted" style="font-size:12px;margin-top:6px">Un alumno hace de <b>persona dependiente</b> y otro de <b>teleoperador</b>. El profesor puede unirse a escuchar sin cortar la llamada. Cada papel solo puede ocuparlo una persona.</p>`,true);
+}
+/* Lista de llamadas en curso a las que el profesor puede unirse a escuchar */
+function simLlamadasActivas(){ return state.cola.filter(c=>c.estado==='en_curso'); }
+function simElegirLlamada(){
+  const activas=simLlamadasActivas();
+  const filas=activas.map(c=>{
+    const e=escenario(c.escenarioId)||{titulo:'—'};
+    const quien = c.modo==='pareja'
+      ? [(alumno(c.opId)||{}).nombre,(alumno(c.pdId)||{}).nombre].filter(Boolean).join(' · ')
+      : ((alumno(c.alumnoId)||{}).nombre||'—');
+    const tipo = c.modo==='pareja' ? t('Simulación entre dos alumnos') : t('Caso individual');
+    const icono = c.modo==='pareja' ? 'i-users' : 'i-headset';
+    return `<button class="btn" style="width:100%;text-align:left;margin-bottom:8px" onclick="closeModal();profesorEscuchar('${c.id}')">
+      <svg class="ic"><use href="#${icono}"/></svg> <b>${esc(e.titulo)}</b><br>
+      <span class="muted" style="font-size:12.5px">${esc(tipo)} · ${esc(quien)}</span></button>`;
+  }).join('');
+  openModal(`<div class="between"><h3 style="margin:0"><svg class="ic"><use href="#i-headset"/></svg> Unirse a una llamada</h3>
+      <button class="btn ghost sm" onclick="closeModal()" aria-label="Cerrar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    ${activas.length
+      ? `<p class="muted" style="font-size:13px">Elige la llamada que quieres escuchar. Entrarás en silencio, sin interrumpir, y el alumno verá que estás escuchando.</p>${filas}`
+      : `<div class="note-info" style="font-size:13px">No hay ninguna llamada en curso ahora mismo. Lanza un caso desde <b>Acciones</b>, o espera a que un alumno empiece una práctica y la coja.</div>`}
+    <details class="mt"><summary class="muted" style="cursor:pointer;font-size:13px">Sala de práctica libre</summary>
+      <p class="muted" style="font-size:12.5px;margin:8px 0">Sala sin caso asignado, para pruebas sueltas. Solo habrá alguien si un alumno entra a propósito.</p>
+      <button class="btn sm" onclick="closeModal();simEntrar('OB')">Entrar en la sala libre</button>
+    </details>`,true);
 }
 function simEntrar(role){ return simEntrarCaso('LIBRE',role); }
 async function simEntrarCaso(caseId,role){
@@ -4304,7 +4354,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r12';
+const CD_VERSION='2026-09-13 · r14';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
