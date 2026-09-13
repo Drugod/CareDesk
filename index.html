@@ -4461,9 +4461,9 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r20';
+const CD_VERSION='2026-09-13 · r21';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
-  conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null};
+  conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
   {urls:'stun:stun.relay.metered.ca:80'},
   {urls:'turn:global.relay.metered.ca:80',username:'1a2d9126cbbd3f33d15a5275',credential:'GJft05EjO87B+U4q'},
@@ -4633,6 +4633,32 @@ function rtcOrigenSeguro(){
   if(location.protocol==='https:') return true;
   return location.protocol==='http:' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 }
+/* ---- ¿Está libre mi sitio en la sala? ----
+   Se usa en la pantalla de carga, antes de entrar: así el usuario no se mete en
+   la app para encontrarse las llamadas caídas mientras la sesión anterior se
+   cierra. Si el sitio está libre, NOS QUEDAMOS el peer abierto y lo adopta
+   iniciarRTC(); así no hay ventana en la que otro pueda colarse. */
+function rtcIdDe(rol,sala,nombre){
+  sala=(sala||'').trim().toUpperCase().replace(/[^A-Z0-9-]/g,'')||'CENTRO-1';
+  return rol==='profesor' ? (sala+'-PROF') : (sala+'-AL-'+rtcSlug(nombre||''));
+}
+function rtcProbarSitio(id){
+  return new Promise(res=>{
+    if(typeof Peer==='undefined'||!rtcOrigenSeguro()||!id) return res(true);
+    let p=null, hecho=false;
+    const fin=v=>{ if(hecho)return; hecho=true; res(v); };
+    try{ p=new Peer(id,rtcOpts()); }catch(e){ return fin(true); }
+    p.on('open',()=>{ rtc._preparado=p; fin(true); });          // sitio libre y reservado
+    p.on('error',e=>{
+      const t=(e&&e.type)||'';
+      p._retirado=true; try{p.destroy();}catch(_){}
+      fin(t!=='unavailable-id');                                 // solo "ocupado" significa NO
+    });
+    setTimeout(()=>{ if(!hecho){ p._retirado=true; try{p.destroy();}catch(_){}; fin(true); } },7000);
+  });
+}
+window.rtcIdDe=rtcIdDe; window.rtcProbarSitio=rtcProbarSitio;
+
 let rtcArrancando=0;
 async function iniciarRTC(){
   const ahora=Date.now();
@@ -4656,7 +4682,15 @@ async function iniciarRTC(){
   /* El micrófono ya NO se pide aquí. Antes se esperaba a getUserMedia antes de
      crear el peer: si el permiso quedaba pendiente (típico en el móvil), el canal
      no llegaba a abrirse nunca y ni entraban llamadas ni se veía la presencia. */
-  let pr; try{ pr=new Peer(rtcMiId(),rtcOpts()); }catch(e){ rtcEstado('error','No se pudo iniciar el servicio de llamadas.','excepcion'); rtcReintentar(); return; }
+  let pr, yaAbierto=false;
+  const res=rtc._preparado; rtc._preparado=null;
+  if(res && res.open && !res.destroyed && !res._retirado && res.id===rtcMiId()){
+    pr=res; yaAbierto=true;                      // reservado en la pantalla de carga
+  }else{
+    if(res){ res._retirado=true; try{res.destroy();}catch(e){} }
+    try{ pr=new Peer(rtcMiId(),rtcOpts()); }
+    catch(e){ rtcEstado('error','No se pudo iniciar el servicio de llamadas.','excepcion'); rtcReintentar(); return; }
+  }
   rtc.peer=pr;
   pr.on('call',c=>rtcEntrante(c));
   pr.on('connection',c=>rtcRegistrarDC(c));
@@ -4698,6 +4732,10 @@ async function iniciarRTC(){
     anunciar(rtcMsgError(tipo),true);
     if(tipo!=='browser-incompatible'&&tipo!=='ssl-unavailable') rtcReintentar();
   });
+  if(yaAbierto){                                 // el evento 'open' ya pasó: aplicamos su efecto
+    rtc.intentos=0; rtc.idOcupado=0; rtcEstado('ok','');
+    if(state.rol==='alumno'){ rtcHello(); rtcLatidoArrancar(); }
+  }
   pr.on('disconnected',()=>{
     if(pr._retirado||rtc.peer!==pr) return;
     if(rtc.conn==='ok') rtcEstado('abriendo','Conexión perdida, reconectando…','disconnected');
@@ -5697,6 +5735,24 @@ langCargar(); setLang(state.lang);
     if(ev.newValue&&ev.newValue!==SESION_TOKEN) sesionExpulsar('otra pestaña de este navegador');
   });
 
+  /* Antes de abrir la app, esperamos aquí a que la sesión anterior suelte el
+     sitio en la sala. Es menos alarmante que entrar y encontrarse las llamadas
+     caídas mientras se cierra por detrás. */
+  async function sesionEsperarSitio(rol,nombre){
+    if(!window.rtcIdDe||!window.rtcProbarSitio) return;
+    var id=window.rtcIdDe(rol,GACC.sala,nombre);
+    if(!id) return;
+    if(await window.rtcProbarSitio(id)) return;            // vía libre a la primera
+    gv().innerHTML='<p class="g-sub">Cerrando sesiones previas…</p>';
+    var hasta=Date.now()+40000;
+    while(Date.now()<hasta){
+      await new Promise(function(r){ setTimeout(r,2000); });
+      if(await window.rtcProbarSitio(id)) return;
+    }
+    /* No se ha liberado (el otro equipo puede estar dormido): entramos igual y
+       el estado de llamadas lo explicará, en vez de dejar al usuario bloqueado. */
+  }
+
   async function g_irAPanel(){
     gv().innerHTML='<p class="g-sub">Entrando…</p>';
     await sesionReclamar();
@@ -5713,12 +5769,14 @@ langCargar(); setLang(state.lang);
       if(GACC.est.bloqueado) return g_pantallaBloqueado();
       await g_recargarRoster();
       await g_cargarTodo();
+      await sesionEsperarSitio('profesor');
       return g_abrirProfesor();
     } else {
       var al=await SB.from('alumnos').select('*').eq('id',sesUser.id).maybeSingle();
       if(!al.data){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta de alumno no está completa. Pide a tu profesor que te dé de alta con tu email.'}); }
       GACC.alu=al.data; GACC.sala=g_sala(al.data.profesor_id);
       await g_cargarTodo();
+      await sesionEsperarSitio('alumno',GACC.alu.nombre);
       return g_abrirAlumno();
     }
   }
