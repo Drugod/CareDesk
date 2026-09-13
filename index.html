@@ -814,6 +814,11 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Base de datos':'Database',
+  'Error al guardar':'Save error',
+  'Guardando bien':'Saving correctly',
+  'Sin usar todavía':'Not used yet',
+
   'Recuperando tu sitio: la sesión anterior todavía se está cerrando…':'Reclaiming your slot: the previous session is still closing…',
   'Tu sitio en la sala sigue ocupado por una sesión anterior. Ciérrala en el otro dispositivo y pulsa Reintentar conexión.':'Your slot in the room is still held by a previous session. Close it on the other device and press Retry connection.',
 
@@ -1418,6 +1423,11 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Base de datos':'Base de dades',
+  'Error al guardar':'Error en guardar',
+  'Guardando bien':'Guardant bé',
+  'Sin usar todavía':'Sense usar encara',
+
   'Recuperando tu sitio: la sesión anterior todavía se está cerrando…':'Recuperant el teu lloc: la sessió anterior encara s\'està tancant…',
   'Tu sitio en la sala sigue ocupado por una sesión anterior. Ciérrala en el otro dispositivo y pulsa Reintentar conexión.':'El teu lloc en la sala continua ocupat per una sessió anterior. Tanca-la en l\'altre dispositiu i polsa Reintentar connexió.',
 
@@ -4461,7 +4471,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r21';
+const CD_VERSION='2026-09-13 · r23';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -4772,6 +4782,12 @@ function rtcDiagHtml(){
     + f('Conexión segura',location.protocol==='https:'?'Sí (https)':'No ('+location.protocol+')')
     + f('Servidor de llamadas',peerSrvNombre())
     + f('Navegador',navigator.userAgent.slice(0,70))
+    + f('Base de datos', (function(){
+        var B=window.CD_BD||{};
+        if(B.estado==='error') return t('Error al guardar')+': '+(B.msg||'');
+        if(B.estado==='ok') return t('Guardando bien');
+        return t('Sin usar todavía');
+      })())
     + f('Sesión única', (function(){
         var S=window.CD_SESION||{};
         if(S.estado==='ok') return t('Activa')+' · '+(S.detalle||'');
@@ -5660,7 +5676,12 @@ langCargar(); setLang(state.lang);
      Dentro del mismo navegador el aviso es instantáneo (localStorage); entre
      equipos distintos, en cuanto toca comprobación (cada 20 s). */
   var SESION_TOKEN=null, sesionInt=null;
-  var SESION_CLAVE='caredesk-sesion';
+  /* Una clave POR CUENTA: si fuera una sola para todo el navegador, entrar como
+     profesor en una pestaña echaría al alumno de la otra, aunque sean cuentas
+     distintas. Cada cuenta vigila solo la suya. */
+  var SESION_CLAVE='caredesk-sesion';                 // clave antigua, solo para limpiarla
+  var SESION_CLAVE_MIA=null;
+  function sesionClaveDe(uid){ return 'caredesk-sesion:'+uid; }
   function sesionNueva(){
     try{ return (crypto.randomUUID&&crypto.randomUUID())||String(Date.now())+Math.random(); }
     catch(e){ return String(Date.now())+Math.random(); }
@@ -5673,7 +5694,9 @@ langCargar(); setLang(state.lang);
   }
   async function sesionReclamar(){
     SESION_TOKEN=sesionNueva();
-    try{ localStorage.setItem(SESION_CLAVE,SESION_TOKEN); }catch(e){}
+    SESION_CLAVE_MIA=sesionClaveDe(sesUser.id);
+    try{ localStorage.removeItem(SESION_CLAVE); }catch(e){}      // resto de versiones anteriores
+    try{ localStorage.setItem(SESION_CLAVE_MIA,SESION_TOKEN); }catch(e){}
     /* supabase-js NO lanza excepción cuando falla: devuelve {error}. Si no se
        mira, la sesión única deja de funcionar sin que nadie se entere — que es
        exactamente lo que pasó en la primera prueba. */
@@ -5731,7 +5754,7 @@ langCargar(); setLang(state.lang);
   }
   /* Otra pestaña del mismo navegador: aviso inmediato */
   window.addEventListener('storage',function(ev){
-    if(ev.key!==SESION_CLAVE||!SESION_TOKEN) return;
+    if(!SESION_CLAVE_MIA||ev.key!==SESION_CLAVE_MIA||!SESION_TOKEN) return;
     if(ev.newValue&&ev.newValue!==SESION_TOKEN) sesionExpulsar('otra pestaña de este navegador');
   });
 
@@ -5962,12 +5985,19 @@ langCargar(); setLang(state.lang);
       });
     },
     /* El alumno guarda su actuación al colgar */
-    guardarActuacion:function(reg){
+    guardarActuacion:function(reg,intento){
       if(!SB||!GACC.uid||!reg) return;
       var fila=g_filaActuacion(reg);
-      if(!fila.profesor_id||!fila.alumno_email) return;
+      if(!fila.profesor_id||!fila.alumno_email){
+        g_falloBD('guardar la actuación','faltan datos de la cuenta (¿sesión caducada?)',reg,null);
+        return;
+      }
+      intento=intento||1;
       SB.from('actuaciones').upsert(fila,{onConflict:'id'}).then(function(r){
-        if(r.error) console.warn('CareDesk · no se pudo guardar la actuación:',r.error.message);
+        if(!r.error){ g_okBD(reg.id); return; }
+        /* Reintento: un fallo de red puntual no debe costarle la actuación al alumno */
+        if(intento<3){ setTimeout(function(){ CD_DB.guardarActuacion(reg,intento+1); },intento===1?2500:8000); return; }
+        g_falloBD('guardar la actuación',r.error.message,reg,r.error);
       });
     },
     /* El profesor guarda la nota. Si la fila no llegó a crearse, la crea entera. */
@@ -5975,15 +6005,27 @@ langCargar(); setLang(state.lang);
       if(!SB||!GACC.uid||!g_esProfesor()||!reg) return;
       var patch={evaluacion:reg.eval,nota:g_nota(reg),evaluado_en:new Date().toISOString()};
       SB.from('actuaciones').update(patch).eq('id',reg.id).select('id').then(function(r){
-        if(r.error){ console.warn('CareDesk · no se pudo guardar la evaluación:',r.error.message); return; }
+        if(r.error){ g_falloBD('guardar la evaluación',r.error.message,reg,r.error); return; }
         if(!r.data||!r.data.length){
           SB.from('actuaciones').upsert(g_filaActuacion(reg),{onConflict:'id'}).then(function(r2){
-            if(r2.error) console.warn('CareDesk · no se pudo crear la actuación evaluada:',r2.error.message);
+            if(r2.error) g_falloBD('guardar la evaluación',r2.error.message,reg,r2.error);
+            else g_okBD(reg.id);
           });
         }
       });
     }
   };
+
+  /* Que un fallo al guardar no pase desapercibido: el alumno pierde su trabajo
+     y nadie se entera hasta que alguien recarga. */
+  function g_falloBD(que,msg,reg,err){
+    window.CD_BD={estado:'error',que:que,msg:msg||'error desconocido',ts:Date.now(),reg:reg&&reg.id};
+    console.warn('CareDesk · no se pudo '+que+':',msg,err||'');
+    try{ toast('No se pudo '+que+' en la base de datos. Sigue guardada en esta pestaña: no la cierres y avisa al profesor.',7000); }catch(e){}
+    try{ anunciar('No se pudo '+que+' en la base de datos',true); }catch(e){}
+  }
+  function g_okBD(id){ window.CD_BD={estado:'ok',ts:Date.now(),reg:id}; }
+  window.CD_BD={estado:'sin-usar'};
 
   /* Al entrar, recuperar el historial de la cuenta */
   async function g_cargarActuaciones(){
@@ -6052,6 +6094,8 @@ langCargar(); setLang(state.lang);
     try{ closeModal(); }catch(e){}
     GACC={}; window.GACC=GACC;
     try{ clearInterval(sesionInt); }catch(e){} sesionInt=null;
+    try{ if(SESION_CLAVE_MIA&&localStorage.getItem(SESION_CLAVE_MIA)===SESION_TOKEN) localStorage.removeItem(SESION_CLAVE_MIA); }catch(e){}
+    SESION_CLAVE_MIA=null;
     if(SB&&sesUser&&SESION_TOKEN){ try{ SB.from('sesiones').delete().eq('usuario_id',sesUser.id).eq('token',SESION_TOKEN); }catch(e){} }
     SESION_TOKEN=null; sesUser=null;
     if(SB){ try{ SB.auth.signOut(); }catch(e){} }
