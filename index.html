@@ -524,6 +524,7 @@
 <symbol viewBox="0 0 24 24" id="i-activity"><path d="M3 12h3.5l2.5-7 4 14 2.5-7H21"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-pin"><path d="M12 21s7-6.3 7-11a7 7 0 0 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-zap"><path d="M13 3 5 13h6l-1 8 8-10h-6z"/></symbol>
+<symbol viewBox="0 0 24 24" id="i-clock"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-steth"><path d="M5 4v5a4 4 0 0 0 8 0V4"/><path d="M9 17a5 5 0 0 0 9 3"/><circle cx="19" cy="16" r="2"/></symbol>
 </defs></svg>
 
@@ -813,6 +814,12 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  '¿Sigues ahí?':'Still there?',
+  'Sigo aquí':'I am still here',
+  'Cerrar sesión ahora':'Sign out now',
+  'Sesión cerrada por inactividad':'Signed out due to inactivity',
+  'Vamos a cerrar la sesión por inactividad.':'We are about to sign you out for inactivity.',
+
   'esperando la actuación':'waiting for the record',
   'Se ha cortado':'Dropped',
   'Sin conectar':'Not connected',
@@ -1403,6 +1410,12 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  '¿Sigues ahí?':'Segueixes ahí?',
+  'Sigo aquí':'Continue ací',
+  'Cerrar sesión ahora':'Tancar sessió ara',
+  'Sesión cerrada por inactividad':'Sessió tancada per inactivitat',
+  'Vamos a cerrar la sesión por inactividad.':'Anem a tancar la sessió per inactivitat.',
+
   'esperando la actuación':'esperant l\'actuació',
   'Se ha cortado':'S\'ha tallat',
   'Sin conectar':'Sense connectar',
@@ -2237,8 +2250,57 @@ function categoriaDe(e){return ({caida:'Emergencias',sanitaria:'Emergencias',sol
 function prioColor(p){return p==='Alta'?'r':p==='Media'?'y':'g'}
 function estrellas(pct){const n=Math.max(1,Math.round(pct/20));return '★★★★★☆☆☆☆☆'.slice(5-n,10-n)}
 
+/* ================= Cierre automático por inactividad =================
+   Para que una sesión olvidada (el móvil en la mochila, la pestaña del aula) no
+   se quede abierta. Una llamada, una simulación o una grabación en curso NO
+   cuentan como inactividad: mientras haya actividad real, no se cierra nada. */
+const INACTIVIDAD_MIN   = 30;   // ← minutos sin tocar nada antes de cerrar sesión
+const INACTIVIDAD_AVISO = 60;   // segundos de cuenta atrás antes de cerrarla
+let inacUltimo=Date.now(), inacAvisando=false;
+function inacActivo(){
+  inacUltimo=Date.now();
+  if(inacAvisando){ inacAvisando=false; try{ closeModal(); }catch(e){} }
+}
+function inacOcupado(){
+  try{
+    if(state.llamada) return true;
+    if(typeof sim!=='undefined'&&sim.peer) return true;
+    if(typeof rtc!=='undefined'&&rtc.state&&rtc.state!=='idle') return true;
+    if(typeof escucha!=='undefined'&&escucha.peer) return true;
+    if(typeof rec!=='undefined'&&rec.active) return true;
+  }catch(e){}
+  return false;
+}
+function inacAvisar(seg){
+  inacAvisando=true;
+  openModal(`<h3 style="margin:0"><svg class="ic"><use href="#i-clock"/></svg> ¿Sigues ahí?</h3>
+    <p class="muted mt" style="font-size:13.5px">Vamos a cerrar la sesión por inactividad.</p>
+    <p class="timer" style="font-size:26px;margin:4px 0"><span id="inacSeg">${Math.max(0,Math.ceil((seg||INACTIVIDAD_AVISO*1000)/1000))}</span>s</p>
+    <div class="row mt"><button class="btn primary" onclick="inacActivo()">Sigo aquí</button>
+    <button class="btn" onclick="closeModal();salir()">Cerrar sesión ahora</button></div>`,true);
+}
+function inacCerrar(){
+  inacAvisando=false;
+  try{ closeModal(); }catch(e){}
+  try{ salir(); }catch(e){}
+  toast('Sesión cerrada por inactividad');
+}
+setInterval(function(){
+  if(!state.rol) return;
+  if(inacOcupado()){ inacUltimo=Date.now(); return; }
+  const resto=INACTIVIDAD_MIN*60000-(Date.now()-inacUltimo);
+  if(resto<=0) return inacCerrar();
+  if(resto<=INACTIVIDAD_AVISO*1000 && !inacAvisando) return inacAvisar(resto);
+  if(inacAvisando){ const el=document.getElementById('inacSeg'); if(el) el.textContent=Math.max(0,Math.ceil(resto/1000)); }
+}, 5000);
+['pointerdown','keydown','wheel','touchstart'].forEach(function(ev){
+  document.addEventListener(ev,inacActivo,{passive:true,capture:true});
+});
+window.inacActivo=inacActivo;
+
 /* ---------- navegación ---------- */
 function entrar(rol,alumnoId){
+  inacUltimo=Date.now(); inacAvisando=false;
   state.rol=rol; state.alumnoActivo=alumnoId||null;
   state.sala=(window._salaTmp||'CENTRO-1').trim().toUpperCase().replace(/[^A-Z0-9-]/g,'')||'CENTRO-1';
   document.getElementById('splash').classList.add('hidden');
@@ -3743,6 +3805,7 @@ function verLegal(seccion){
    ========================================================= */
 /* Nombre accesible para los botones que solo llevan icono */
 const ICONO_ETIQUETA={
+  'i-clock':'Reloj',
   'i-x':'Cerrar','i-trash':'Eliminar','i-download':'Descargar','i-pencil':'Editar',
   'i-plus':'Añadir','i-bell':'Notificaciones','i-phone':'Llamar','i-mic':'Micrófono',
   'i-mic-off':'Silenciar micrófono','i-headset':'Escuchar','i-play':'Reproducir',
@@ -4382,7 +4445,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r15';
+const CD_VERSION='2026-09-13 · r16';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
@@ -5492,8 +5555,59 @@ langCargar(); setLang(state.lang);
   }
 
   /* ============ ENRUTADO SEGÚN ROL → SIMULADOR ============ */
+  /* ============ UNA SOLA SESIÓN POR CUENTA ============
+     Al entrar se reclama la cuenta con una marca nueva. Las sesiones anteriores
+     (otra pestaña, el móvil que te dejaste abierto, otro equipo) lo detectan y
+     se cierran solas: manda siempre la más reciente.
+     Dentro del mismo navegador el aviso es instantáneo (localStorage); entre
+     equipos distintos, en cuanto toca comprobación (cada 20 s). */
+  var SESION_TOKEN=null, sesionInt=null;
+  var SESION_CLAVE='caredesk-sesion';
+  function sesionNueva(){
+    try{ return (crypto.randomUUID&&crypto.randomUUID())||String(Date.now())+Math.random(); }
+    catch(e){ return String(Date.now())+Math.random(); }
+  }
+  function sesionDispositivo(){
+    var ua=navigator.userAgent||'';
+    var so=/Android/i.test(ua)?'Android':/iPhone|iPad|iPod/i.test(ua)?'iOS':/Windows/i.test(ua)?'Windows':/Mac/i.test(ua)?'Mac':/Linux/i.test(ua)?'Linux':'—';
+    var nav=/Edg\//.test(ua)?'Edge':/Brave/i.test(ua)?'Brave':/Chrome\//.test(ua)?'Chrome':/Firefox\//.test(ua)?'Firefox':/Safari\//.test(ua)?'Safari':'navegador';
+    return nav+' · '+so;
+  }
+  async function sesionReclamar(){
+    SESION_TOKEN=sesionNueva();
+    try{ localStorage.setItem(SESION_CLAVE,SESION_TOKEN); }catch(e){}
+    try{
+      await SB.from('sesiones').upsert({usuario_id:sesUser.id,token:SESION_TOKEN,dispositivo:sesionDispositivo(),visto:new Date().toISOString()},{onConflict:'usuario_id'});
+    }catch(e){ console.warn('CareDesk: tabla "sesiones" no disponible; la sesión única solo valdrá dentro de este navegador.',e); }
+    sesionVigilar();
+  }
+  function sesionVigilar(){
+    clearInterval(sesionInt);
+    sesionInt=setInterval(sesionComprobar,20000);
+  }
+  async function sesionComprobar(){
+    if(!SESION_TOKEN||!sesUser) return;
+    try{
+      var r=await SB.from('sesiones').select('token,dispositivo').eq('usuario_id',sesUser.id).maybeSingle();
+      if(r&&r.data&&r.data.token&&r.data.token!==SESION_TOKEN) return sesionExpulsar(r.data.dispositivo);
+      await SB.from('sesiones').update({visto:new Date().toISOString()}).eq('usuario_id',sesUser.id).eq('token',SESION_TOKEN);
+    }catch(e){}
+  }
+  function sesionExpulsar(dispositivo){
+    clearInterval(sesionInt); sesionInt=null; SESION_TOKEN=null;
+    var d=dispositivo?(' ('+dispositivo+')'):'';
+    try{ window.g_salir(); }catch(e){}
+    g_go('login',{err:'Has entrado en CareDesk desde otro dispositivo'+d+'. Esta sesión se ha cerrado.'});
+  }
+  /* Otra pestaña del mismo navegador: aviso inmediato */
+  window.addEventListener('storage',function(ev){
+    if(ev.key!==SESION_CLAVE||!SESION_TOKEN) return;
+    if(ev.newValue&&ev.newValue!==SESION_TOKEN) sesionExpulsar('otra pestaña de este navegador');
+  });
+
   async function g_irAPanel(){
     gv().innerHTML='<p class="g-sub">Entrando…</p>';
+    await sesionReclamar();
     var pr=await SB.from('perfiles').select('rol,nombre').eq('id',sesUser.id).maybeSingle();
     if(pr.error||!pr.data){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta no tiene perfil. Regístrate de nuevo o contacta con soporte.'}); }
     GACC.uid=sesUser.id; GACC.perfil=pr.data; GACC.email=sesUser.email;
@@ -5786,7 +5900,10 @@ langCargar(); setLang(state.lang);
     state.examenes=null;                       // se vuelve a sembrar con ensureExamenes()
     var a=document.getElementById('app'); if(a)a.classList.add('hidden');
     try{ closeModal(); }catch(e){}
-    GACC={}; window.GACC=GACC; sesUser=null;
+    GACC={}; window.GACC=GACC;
+    try{ clearInterval(sesionInt); }catch(e){} sesionInt=null;
+    if(SB&&sesUser&&SESION_TOKEN){ try{ SB.from('sesiones').delete().eq('usuario_id',sesUser.id).eq('token',SESION_TOKEN); }catch(e){} }
+    SESION_TOKEN=null; sesUser=null;
     if(SB){ try{ SB.auth.signOut(); }catch(e){} }
     showGate(); g_go('login');
   };
