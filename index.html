@@ -611,6 +611,7 @@
 const state = {
   rol:null, alumnoActivo:null,
   presencia:{},            // alumnoId -> timestamp del último latido (solo en el profesor)
+  miEstado:{},             // casoId -> estado que el alumno reporta en cada latido
   profTs:0,                // último latido recibido del profesor (solo en el alumno)
   salaOn:[],               // ids de los alumnos que el profesor ve en la sala (solo en el alumno)
   profesores:[{id:'p1',nombre:'Prof. Antuan'}],
@@ -812,6 +813,11 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'esperando la actuación':'waiting for the record',
+  'Se ha cortado':'Dropped',
+  'Sin conectar':'Not connected',
+  'ha finalizado la llamada':'finished the call',
+
   'Lanza un caso a un alumno, o una simulación entre dos. Lo verá aparecer como alarma entrante en su puesto de la central.':'Send a case to one student, or a simulation between two. It appears as an incoming alarm at their console.',
   'En “Inicio”, dentro de “Acciones”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno concreto, o como simulación a 2 (teleoperador + persona dependiente).':'In “Home”, under “Actions”, press “Launch a case”, pick the case and choose the target: one student, or a two-student simulation (call handler + service user).',
   'En “Inicio”, en “Acciones”, pulsa “Lanzar un caso” y elige el caso. Puedes enviarlo a un solo alumno o como simulación a 2 (dos alumnos).':'In “Home”, under “Actions”, press “Launch a case” and pick the case. You can send it to one student or as a two-student simulation.',
@@ -1397,6 +1403,11 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'esperando la actuación':'esperant l\'actuació',
+  'Se ha cortado':'S\'ha tallat',
+  'Sin conectar':'Sense connectar',
+  'ha finalizado la llamada':'ha finalitzat la trucada',
+
   'Lanza un caso a un alumno, o una simulación entre dos. Lo verá aparecer como alarma entrante en su puesto de la central.':'Llança un cas a un alumne, o una simulació entre dos. El veurà aparéixer com a alarma entrant en el seu lloc de la central.',
   'En “Inicio”, dentro de “Acciones”, pulsa “Lanzar un caso”, elige el caso y decide el destino: a un alumno concreto, o como simulación a 2 (teleoperador + persona dependiente).':'En “Inici”, dins d\'“Accions”, polsa “Llançar un cas”, tria el cas i decideix el destí: a un alumne concret, o com a simulació a 2 (teleoperador + persona dependent).',
   'En “Inicio”, en “Acciones”, pulsa “Lanzar un caso” y elige el caso. Puedes enviarlo a un solo alumno o como simulación a 2 (dos alumnos).':'En “Inici”, en “Accions”, polsa “Llançar un cas” i tria el cas. Pots enviar-lo a un sol alumne o com a simulació a 2 (dos alumnes).',
@@ -2718,6 +2729,25 @@ function vEscenarios(){
     <div class="grid g2 mt">${cards}</div>
     ${colaPanelProfesor()}`;
 }
+/* El profesor tiene que poder distinguir "ha terminado" de "se ha cortado":
+   si el caso sigue en curso pero el alumno ya no late, la llamada se ha caído. */
+function estadoChip(c,alumnos){
+  const ids=(alumnos||[]).filter(Boolean);
+  const alguienDentro=ids.some(id=>presenciaOnline(id));
+  if(c.estado==='finalizada'){
+    return '<span class="chip g"><span class="mk" aria-hidden="true">✓</span>'+esc(t('Finalizada'))+'</span>'
+      + (c.regId?'':' <span class="chip y"><span class="mk" aria-hidden="true">…</span>'+esc(t('esperando la actuación'))+'</span>');
+  }
+  if(c.estado==='rechazada') return '<span class="chip r"><span class="mk" aria-hidden="true">✕</span>'+esc(t('Rechazada'))+'</span>';
+  if(c.estado==='en_curso'){
+    return alguienDentro
+      ? '<span class="chip y"><span class="mk" aria-hidden="true">▶</span>'+esc(t('En curso'))+'</span>'
+      : '<span class="chip r"><span class="mk" aria-hidden="true">⚠</span>'+esc(t('Se ha cortado'))+'</span>';
+  }
+  return alguienDentro || !ids.length
+    ? '<span class="chip r"><span class="mk" aria-hidden="true">☎</span>'+esc(t('Sonando…'))+'</span>'
+    : '<span class="chip"><span class="mk" aria-hidden="true">○</span>'+esc(t('Sin conectar'))+'</span>';
+}
 function colaPanelProfesor(){
   const items=state.cola.slice().reverse();
   const orig=c=>c.origen==='alumno'?'<span class="chip chip-practica"><svg class="ic"><use href="#i-target"/></svg> Práctica de alumnos</span>':'<span class="chip chip-profe"><svg class="ic"><use href="#i-cap"/></svg> Lanzado por el profesor</span>';
@@ -2725,7 +2755,7 @@ function colaPanelProfesor(){
     const e=escenario(c.escenarioId)||{titulo:'—'}; const u=e.usuarioId?usuario(e.usuarioId):null;
     if(c.modo==='pareja'){
       const op=alumno(c.opId)||{nombre:'—'}, pd=alumno(c.pdId)||{nombre:'—'};
-      const est=c.estado==='finalizada'?'<span class="chip g"><span class="mk" aria-hidden="true">✓</span>Finalizada</span>':((c.opIn||c.pdIn)?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>':'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>');
+      const est=estadoChip(c,[c.opId,c.pdId]);
       const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:'';
       return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
         <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br>
@@ -2733,10 +2763,7 @@ function colaPanelProfesor(){
         <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
     }
     const dest=((alumno(c.alumnoId)||{}).nombre||'—');
-    const est=c.estado==='finalizada'?'<span class="chip g"><span class="mk" aria-hidden="true">✓</span>Finalizada</span>'
-      :(c.estado==='en_curso'?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>'
-      :(c.estado==='rechazada'?'<span class="chip r"><span class="mk" aria-hidden="true">✕</span>Rechazada</span>'
-      :'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>'));
+    const est=estadoChip(c,[c.alumnoId]);
     /* Para unirse a escuchar está el botón "Unirse a simulación" de Acciones,
        que pregunta a qué llamada; aquí solo queda evaluar lo ya terminado. */
     const acc=(c.estado==='finalizada'&&c.regId)
@@ -3291,7 +3318,7 @@ async function rtcEmergencia(tipo){
   clearTimeout(rtc._to);rtc._to=setTimeout(()=>{if(rtc.state==='llamando'){toast('El profesor no responde');rtcColgar();}},15000);
 }
 function descartar(cid){
-  rtcEnviarADatos(state.sala+'-PROF',{t:'caso-estado',casoId:cid,estado:'rechazada',alumnoId:state.alumnoActivo});
+  avisarEstado(cid,'rechazada');
   state.cola=state.cola.filter(c=>c.id!==cid);toast('Llamada rechazada');renderTabs();}
 /* ---- Diálogo de práctica del alumno (solo o con un compañero) ---- */
 function practicarDialog(){
@@ -3350,7 +3377,7 @@ function atender(cid){
   state.llamada={cid,escenarioId:e.id,inicio:Date.now(),pasos:new Set(),recursos:new Set(),tipo:null,notas:''};
   /* Avisar al profesor: si no, en su panel el caso se queda "Sonando…" para siempre */
   if(c) c.estado='en_curso';
-  rtcEnviarADatos(state.sala+'-PROF',{t:'caso-estado',casoId:cid,estado:'en_curso',alumnoId:state.alumnoActivo});
+  avisarEstado(cid,'en_curso');
   escuchaPublicar(cid);                 // el profesor podrá unirse a escuchar en directo
   beep();
   recStart();
@@ -3419,6 +3446,7 @@ function cerrarLlamada(){
   try{ window.CD_DB && CD_DB.guardarActuacion(reg); }catch(e){}   // persistir en Supabase
   const recProm = rec.active ? recStop() : Promise.resolve(null);  // detener grabación antes de cerrar el audio
   rtcEnviarRegistro(reg,L.cid);                    // envía la actuación al profesor (evaluación cross-device)
+  avisarEstado(L.cid,'finalizada',reg.id);         // aviso pequeño: el estado nunca se queda atrás
   escuchaParar();                                  // deja de emitir para el profesor
   if(L.sim){ rtcSimEnd(L.cid,L.pdId); simSalir(); state.simActivo=null; }  // finaliza la llamada para ambos
   state.cola=state.cola.filter(c=>c.id!==L.cid);
@@ -4354,7 +4382,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r14';
+const CD_VERSION='2026-09-13 · r15';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
@@ -4670,10 +4698,37 @@ async function rtcProbarServidor(){
 window.rtcDiagnostico=rtcDiagnostico; window.rtcReconectarYa=rtcReconectarYa;
 window.rtcProbarServidor=rtcProbarServidor; window.rtcGuardarServidor=rtcGuardarServidor;
 window.rtcServidorPorDefecto=rtcServidorPorDefecto;
+/* ---- El alumno siempre notifica; el profesor siempre escucha ----
+   Cada cambio se avisa al momento, y además el alumno lleva SU foto de estado
+   en cada latido. Así, si un aviso suelto se pierde, el panel del profesor se
+   pone al día solo en el siguiente latido: no hace falta que confirme nada. */
+function miEstadoPoner(casoId,estado,regId){
+  if(state.rol!=='alumno'||!casoId) return;
+  state.miEstado[casoId]={estado,regId:regId||null,ts:Date.now()};
+  miEstadoLimpiar();
+}
+function miEstadoLimpiar(){
+  const lim=Date.now()-30*60000;                       // media hora de memoria
+  Object.keys(state.miEstado).forEach(k=>{ if(state.miEstado[k].ts<lim) delete state.miEstado[k]; });
+  const ks=Object.keys(state.miEstado);
+  if(ks.length>20) ks.sort((a,b)=>state.miEstado[a].ts-state.miEstado[b].ts)
+                     .slice(0,ks.length-20).forEach(k=>delete state.miEstado[k]);
+}
+function miEstadoLista(){
+  return Object.keys(state.miEstado).map(id=>({id,e:state.miEstado[id].estado,r:state.miEstado[id].regId}));
+}
+function avisarEstado(casoId,estado,regId){
+  miEstadoPoner(casoId,estado,regId);
+  rtcEnviarADatos(state.sala+'-PROF',{t:'caso-estado',casoId,estado,regId:regId||null,alumnoId:state.alumnoActivo});
+}
 /* El alumno avisa al profesor de que ya está en la sala (para recibir casos ya lanzados) */
-function rtcHello(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sala+'-PROF',{t:'hello',alumnoId:state.alumnoActivo}); }
+function rtcHello(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sala+'-PROF',{t:'hello',alumnoId:state.alumnoActivo,estados:miEstadoLista()}); }
 /* El alumno manda un latido cada pocos segundos para que el profesor sepa que sigue conectado */
-function rtcLatido(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sala+'-PROF',{t:'ping',alumnoId:state.alumnoActivo}); }
+function rtcLatido(){
+  if(state.rol!=='alumno'||!rtc.peer) return;
+  miEstadoLimpiar();
+  rtcEnviarADatos(state.sala+'-PROF',{t:'ping',alumnoId:state.alumnoActivo,estados:miEstadoLista()});
+}
 function rtcLatidoArrancar(){ if(rtc._lat) clearInterval(rtc._lat); rtcLatido(); rtc._lat=setInterval(rtcLatido,PRESENCIA_LATIDO); }
 function rtcLatidoParar(){ if(rtc._lat){clearInterval(rtc._lat);rtc._lat=null;} }
 function rtcAdios(){
@@ -4688,6 +4743,26 @@ function rtcAdios(){
    descubrimiento lo hacen los alumnos, que saludan al entrar y laten cada 15 s. */
 window.addEventListener('beforeunload',()=>{ try{ rtcAdios(); }catch(e){} });
 /* ---- Canal de datos: el profesor "empuja" el caso lanzado al navegador del alumno ---- */
+/* El alumno manda su foto de estado en cada latido: aquí se pone al día la cola
+   aunque se haya perdido algún aviso suelto. Solo se avanza, nunca se retrocede. */
+const ORDEN_ESTADO={sonando:0,en_curso:1,rechazada:2,finalizada:3};
+function reconciliarEstados(lista,alumnoId,conn){
+  let cambios=false; const faltan=[];
+  lista.forEach(x=>{
+    const c=state.cola.find(q=>q.id===x.id); if(!c) return;
+    if((ORDEN_ESTADO[x.e]||0)>(ORDEN_ESTADO[c.estado]||0)){ c.estado=x.e; cambios=true; }
+    if(x.e==='finalizada'&&x.r){
+      const tengo=state.registros.some(r=>r.id===x.r);
+      if(tengo&&c.regId!==x.r){ c.regId=x.r; cambios=true; }
+      if(!tengo) faltan.push(x.id);
+    }
+  });
+  /* Esto no es una confirmación: es pedir lo que falta. Si la actuación (un
+     mensaje grande) se perdió, sin esto el profesor no podría evaluarla nunca.
+     Aun así también llega sola por Supabase la próxima vez que entre. */
+  if(faltan.length) rtcResponder(conn,alumnoId&&rtcIdAlumno(alumnoId),{t:'pide-registro',casos:faltan.slice(0,3)});
+  if(cambios) render();
+}
 function rtcData(conn){ conn.on('data',msg=>rtcRecibir(msg,conn)); }
 function rtcMerge(msg){ // asegura ficha+escenario en este navegador (casos personalizados)
   if(msg.usuario && !usuario(msg.usuario.id)) state.usuarios.push(msg.usuario);
@@ -4698,6 +4773,7 @@ function rtcRecibir(msg,conn){
   /* ===== Mensajes que procesa el PROFESOR ===== */
   if(state.rol==='profesor'){
     if(msg.alumnoId) presenciaVisto(msg.alumnoId);
+    if(Array.isArray(msg.estados)) reconciliarEstados(msg.estados,msg.alumnoId,conn);
     if(msg.t==='ping'){                            // latido del alumno: le devolvemos el estado de la sala
       rtcResponder(conn,msg.alumnoId&&rtcIdAlumno(msg.alumnoId),rtcSalaMsg());
       return;
@@ -4708,7 +4784,7 @@ function rtcRecibir(msg,conn){
       rtcResponder(conn,pid,rtcSalaMsg());         // "estoy aquí, y esto es quién hay en la sala"
       rtcEnviarEvalsPendientes(msg.alumnoId);      // y las notas que se le hayan puesto mientras no estaba
       state.cola.forEach(c=>{
-        if(c.estado==='finalizada') return;
+        if(c.estado==='finalizada'||c.estado==='rechazada') return;
         if(c.modo==='solo' && (c.alumnoId===msg.alumnoId||c.alumnoId==='*')){
           const e0=escenario(c.escenarioId); if(e0) rtcEnviarADatos(pid,{t:'caso',casoId:c.id,alumnoId:c.alumnoId,escenario:e0,usuario:usuario(e0.usuarioId)||null});
         }
@@ -4719,12 +4795,22 @@ function rtcRecibir(msg,conn){
       });
       return;
     }
-    if(msg.t==='caso-estado'){                      // el alumno ha cogido (o rechazado) un caso lanzado
+    if(msg.t==='caso-estado'){                      // el alumno ha cogido, rechazado o terminado un caso
       const c=state.cola.find(x=>x.id===msg.casoId);
-      if(c&&c.estado!=='finalizada'){
-        c.estado=msg.estado||c.estado;
-        if(msg.estado==='rechazada') toast('<svg class="ic"><use href="#i-x"/></svg> '+((alumno(msg.alumnoId)||{}).nombre||'Un alumno')+' ha rechazado la llamada');
-        render();
+      if(c){
+        const cerrado = c.estado==='finalizada'||c.estado==='rechazada';
+        if(!cerrado || msg.estado==='finalizada'){
+          const antes=c.estado;
+          c.estado=msg.estado||c.estado;
+          if(msg.estado==='finalizada'){
+            /* Si la actuación (mensaje grande) aún no ha llegado, lo marcamos igual
+               como terminada: el panel no puede quedarse en "En curso". */
+            if(msg.regId && state.registros.some(r=>r.id===msg.regId)) c.regId=msg.regId;
+            if(antes!=='finalizada') toast('<svg class="ic"><use href="#i-check"/></svg> '+((alumno(msg.alumnoId)||{}).nombre||'Un alumno')+' ha finalizado la llamada');
+          }
+          if(msg.estado==='rechazada'&&antes!=='rechazada') toast('<svg class="ic"><use href="#i-x"/></svg> '+((alumno(msg.alumnoId)||{}).nombre||'Un alumno')+' ha rechazado la llamada');
+          render();
+        }
       }
       return;
     }
@@ -4764,6 +4850,14 @@ function rtcRecibir(msg,conn){
   /* ===== Mensajes que procesa el ALUMNO ===== */
   if(state.rol!=='alumno') return;
   if(msg.t==='quien'){ rtcLatido(); return; }      // el profesor pregunta quién está dentro
+  if(msg.t==='pide-registro'){                     // al profesor le falta alguna actuación: se la reenviamos
+    (msg.casos||[]).forEach(cid=>{
+      const st=state.miEstado[cid]; if(!st||!st.regId) return;
+      const r=state.registros.find(x=>x.id===st.regId); if(!r) return;
+      rtcEnviarRegistro(r,cid);
+    });
+    return;
+  }
   if(msg.t==='sala'){                              // latido del profesor + lista de la sala
     const antes=profOnline();
     state.profTs=Date.now();
