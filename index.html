@@ -814,6 +814,9 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Recuperando tu sitio: la sesión anterior todavía se está cerrando…':'Reclaiming your slot: the previous session is still closing…',
+  'Tu sitio en la sala sigue ocupado por una sesión anterior. Ciérrala en el otro dispositivo y pulsa Reintentar conexión.':'Your slot in the room is still held by a previous session. Close it on the other device and press Retry connection.',
+
   'Sesión única':'Single session',
   'Activa':'Active',
   'Solo en este navegador — falta la tabla «sesiones» en Supabase':'This browser only — the «sesiones» table is missing in Supabase',
@@ -1415,6 +1418,9 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Recuperando tu sitio: la sesión anterior todavía se está cerrando…':'Recuperant el teu lloc: la sessió anterior encara s\'està tancant…',
+  'Tu sitio en la sala sigue ocupado por una sesión anterior. Ciérrala en el otro dispositivo y pulsa Reintentar conexión.':'El teu lloc en la sala continua ocupat per una sessió anterior. Tanca-la en l\'altre dispositiu i polsa Reintentar connexió.',
+
   'Sesión única':'Sessió única',
   'Activa':'Activa',
   'Solo en este navegador — falta la tabla «sesiones» en Supabase':'Només en este navegador — falta la taula «sesiones» en Supabase',
@@ -4455,9 +4461,9 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r17';
+const CD_VERSION='2026-09-13 · r18';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
-  conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
+  conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
   {urls:'stun:stun.relay.metered.ca:80'},
   {urls:'turn:global.relay.metered.ca:80',username:'1a2d9126cbbd3f33d15a5275',credential:'GJft05EjO87B+U4q'},
@@ -4607,9 +4613,7 @@ function rtcChipEstado(){
 function rtcMsgError(tipo){
   switch(tipo){
     case 'unavailable-id':
-      return state.rol==='profesor'
-        ? 'Ya hay otra sesión de profesor abierta en esta sala. Cierra la aplicación en el otro equipo o pestaña y pulsa Reintentar.'
-        : 'Ya hay otra sesión de este alumno abierta. Cierra la aplicación en el otro equipo o pestaña y pulsa Reintentar.';
+      return 'Tu sitio en la sala sigue ocupado por una sesión anterior. Ciérrala en el otro dispositivo y pulsa Reintentar conexión.';
     case 'network': case 'server-error': case 'socket-error': case 'socket-closed':
       return 'No se puede conectar con el servidor de llamadas. Reintentando…';
     case 'browser-incompatible':
@@ -4649,7 +4653,7 @@ async function iniciarRTC(){
   pr.on('call',c=>rtcEntrante(c));
   pr.on('connection',c=>rtcRegistrarDC(c));
   pr.on('open',()=>{
-    rtc.intentos=0; rtcEstado('ok','');
+    rtc.intentos=0; rtc.idOcupado=0; rtcEstado('ok','');
     if(state.rol==='alumno'){ rtcHello(); rtcLatidoArrancar(); }
     /* El profesor ya no sale a buscar a nadie: son los alumnos los que saludan
        al entrar y laten cada 15 s, y él contesta por ese mismo canal. Así, entre
@@ -4660,6 +4664,21 @@ async function iniciarRTC(){
     if(tipo==='peer-unavailable'){
       if(rtc.state==='llamando'){ toast('El alumno no está conectado a esta sala'); rtcColgar(); }
       return;                                   // no es un fallo del servicio
+    }
+    if(tipo==='unavailable-id'){
+      /* Con una sola sesión por cuenta, esto casi siempre es el dispositivo
+         anterior soltando el sitio: se cierra en ~20 s. Insistimos rápido y sin
+         asustar, en vez de esperar el reintento largo y dar por rota la conexión. */
+      rtc.idOcupado=(rtc.idOcupado||0)+1;
+      if(rtc.idOcupado<=25){
+        rtcEstado('abriendo','Recuperando tu sitio: la sesión anterior todavía se está cerrando…','unavailable-id');
+        clearTimeout(rtc._re);
+        rtc._re=setTimeout(()=>{ if(state.rol) iniciarRTC(); },3000);
+        return;
+      }
+      rtcEstado('error',rtcMsgError(tipo),tipo);
+      anunciar(rtcMsgError(tipo),true);
+      return;                                   // ya no insistimos solos: queda el botón Reintentar
     }
     rtcEstado('error',rtcMsgError(tipo),tipo);
     anunciar(rtcMsgError(tipo),true);
@@ -5177,6 +5196,12 @@ function rtcWidget(){
 }
 // desbloqueo de audio en móvil al primer toque
 document.addEventListener('click',()=>{ if(rtc.audio&&rtc.state==='en')rtc.audio.play().catch(()=>{}); },{passive:true});
+/* Al volver a la app, si el canal sigue caído se intenta ya, sin esperar al reloj */
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden||!state.rol) return;
+  if(rtc.peer&&rtc.peer.open) return;
+  clearTimeout(rtc._re); rtc.intentos=0; iniciarRTC();
+});
 function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator();const g=a.createGain();o.connect(g);g.connect(a.destination);o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(.001,a.currentTime);g.gain.exponentialRampToValueAtTime(.2,a.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.35);o.start();o.stop(a.currentTime+.36);}catch(e){}}
 
 /* ================= GRABACIÓN DE AUDIO (alumno teleoperador) ================= */
