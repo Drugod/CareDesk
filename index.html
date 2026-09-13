@@ -812,6 +812,10 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'El profesor está escuchando':'The teacher is listening',
+  'El profesor se ha unido a escuchar':'The teacher has joined to listen',
+  'El alumno no está emitiendo: o todavía no ha cogido la llamada, o ya la ha terminado.':'The student is not broadcasting: either they have not answered yet, or they have already finished.',
+
   'Todavía no se ha unido nadie':'Nobody has joined yet',
   'Esta es la sala de práctica libre: aquí solo hay alguien si un alumno entra a propósito desde su central.':'This is the open practice room: someone is here only if a student deliberately joins from their console.',
   'Nadie más ha entrado todavía en este caso.':'Nobody else has joined this case yet.',
@@ -1380,6 +1384,10 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'El profesor está escuchando':'El professor està escoltant',
+  'El profesor se ha unido a escuchar':'El professor s\'ha unit a escoltar',
+  'El alumno no está emitiendo: o todavía no ha cogido la llamada, o ya la ha terminado.':'L\'alumne no està emetent: o encara no ha agafat la trucada, o ja l\'ha acabada.',
+
   'Todavía no se ha unido nadie':'Encara no s\'ha unit ningú',
   'Esta es la sala de práctica libre: aquí solo hay alguien si un alumno entra a propósito desde su central.':'Esta és la sala de pràctica lliure: ací només hi ha algú si un alumne entra a propòsit des de la seua central.',
   'Nadie más ha entrado todavía en este caso.':'Ningú més ha entrat encara en este cas.',
@@ -2215,6 +2223,7 @@ function pintarCabecera(){
 }
 function salir(){
   try{ rtcAdios(); rtcLatidoParar(); }catch(e){}
+  try{ escuchaParar(); }catch(e){}
   try{ if(rtc.local){rtc.local.getTracks().forEach(t=>t.stop());rtc.local=null;} }catch(e){}
   state.presencia={};
   rtcColgar();try{rtcCerrarDCs();}catch(e){}try{rtc.peer&&rtc.peer.destroy();}catch(e){}rtc.peer=null;
@@ -2702,7 +2711,11 @@ function colaPanelProfesor(){
       :(c.estado==='en_curso'?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>'
       :(c.estado==='rechazada'?'<span class="chip r"><span class="mk" aria-hidden="true">✕</span>Rechazada</span>'
       :'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>'));
-    const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:'';
+    const acc=(c.estado==='finalizada'&&c.regId)
+      ? `<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`
+      : (c.estado==='en_curso'
+         ? `<button class="btn ok sm" onclick="profesorEscuchar('${c.id}')"><svg class="ic"><use href="#i-headset"/></svg> Unirse a escuchar</button>`
+         : '');
     return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
       <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br><span class="chip b">${esc(dest)}</span> ${est}</div>
       <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
@@ -2843,7 +2856,12 @@ function lanzarPareja(escId,opId,pdId){
   toast('<svg class="ic"><use href="#i-headset"/></svg> Simulación lanzada a '+((alumno(opId)||{}).nombre||'')+' y '+((alumno(pdId)||{}).nombre||''));
   render();
 }
-function profesorEscuchar(caseId){ simEntrarCaso(caseId,'OB'); toast('Te unes a escuchar (en silencio)'); }
+function profesorEscuchar(caseId){
+  const c=state.cola.find(x=>x.id===caseId);
+  sim.modo=(c&&c.modo)||'solo';          // en un caso individual solo emite el teleoperador
+  simEntrarCaso(caseId,'OB');
+  toast('Te unes a escuchar (en silencio)');
+}
 function lanzarEsc(eid){lanzarModal(eid);}
 function lanzarA(aid){const v=escenariosVisibles();if(v.length)lanzarModal(v[0].id);}
 function lanzar(escId,alId){
@@ -3308,6 +3326,7 @@ function atender(cid){
   /* Avisar al profesor: si no, en su panel el caso se queda "Sonando…" para siempre */
   if(c) c.estado='en_curso';
   rtcEnviarADatos(state.sala+'-PROF',{t:'caso-estado',casoId:cid,estado:'en_curso',alumnoId:state.alumnoActivo});
+  escuchaPublicar(cid);                 // el profesor podrá unirse a escuchar en directo
   beep();
   recStart();
   render();
@@ -3324,7 +3343,7 @@ function vLlamadaEnCurso(){
     : `<div class="card mt note-amber"><b><svg class="ic"><use href="#i-volume"/></svg> El usuario dice:</b><p class="quote" style="margin:6px 0 0">${esc(e.guion)}</p></div>`;
   return `
   <div class="between"><h2 class="section" style="margin:0"><svg class="ic"><use href="#i-phone"/></svg> ${L.sim?'Simulación en curso':'Llamada en curso'}</h2>
-    <div class="flex"><span class="chip chip-rec"><svg class="ic ic-fill"><use href="#i-rec"/></svg> Grabando</span><span class="chip r">EN LÍNEA</span><span class="timer" id="tmr">00:00</span></div></div>
+    <div class="flex"><span class="chip chip-rec"><svg class="ic ic-fill"><use href="#i-rec"/></svg> Grabando</span><span class="chip r">EN LÍNEA</span>${chipOyenteHtml()}<span class="timer" id="tmr">00:00</span></div></div>
   <div class="callscreen mt">
     <div class="card ficha">
       <h3><svg class="ic"><use href="#i-folder"/></svg> Ficha del usuario</h3>
@@ -3375,6 +3394,7 @@ function cerrarLlamada(){
   try{ window.CD_DB && CD_DB.guardarActuacion(reg); }catch(e){}   // persistir en Supabase
   const recProm = rec.active ? recStop() : Promise.resolve(null);  // detener grabación antes de cerrar el audio
   rtcEnviarRegistro(reg,L.cid);                    // envía la actuación al profesor (evaluación cross-device)
+  escuchaParar();                                  // deja de emitir para el profesor
   if(L.sim){ rtcSimEnd(L.cid,L.pdId); simSalir(); state.simActivo=null; }  // finaliza la llamada para ambos
   state.cola=state.cola.filter(c=>c.id!==L.cid);
   state.llamada=null;clearInterval(timerInt);
@@ -4099,7 +4119,7 @@ function camaraEncendida(){
   return VIDEO_ON;
 }
 function tieneVideo(st){ try{ return !!(st&&st.getVideoTracks&&st.getVideoTracks().length&&st.getVideoTracks()[0].enabled); }catch(e){ return false; } }
-const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'LIBRE',t0:0,_pedido:null,_reint:0};
+const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'LIBRE',t0:0,_pedido:null,_reint:0,modo:null};
 function simId(r){return state.sala+'-SIM-'+(sim.caseId||'LIBRE')+'-'+r;}
 function simTargets(){return Object.keys(SIMROLES).filter(r=>r!==sim.role).map(simId);}
 function simAbrir(){
@@ -4123,12 +4143,12 @@ function simEntrar(role){ return simEntrarCaso('LIBRE',role); }
 async function simEntrarCaso(caseId,role){
   if(sim.peer){ if(sim.caseId===caseId){toast('Ya estás en esta simulación');return;} simSalir(); }
   sim.caseId=caseId||'LIBRE'; sim.role=role; sim.t0=Date.now(); sim._pedido=simId(role);
-  if(!sim.local||!sim.local.getTracks().some(t=>t.readyState==='live')) sim.local=await pedirMedios();
-  if(role==='OB'&&sim.local){
-    /* El profesor se une a escuchar: ni micro ni cámara. Si quiere aparecer,
-       puede encender la cámara a mano desde el panel. */
-    sim.local.getAudioTracks().forEach(t=>t.enabled=false); sim.muted=true;
-    sim.local.getVideoTracks().forEach(t=>t.enabled=false);
+  if(role==='OB'){
+    /* El oyente no emite: ni micro ni cámara. Así tampoco se le pide permiso
+       para nada, que es una petición incómoda de explicar en clase. */
+    sim.local=null; sim.muted=true;
+  } else if(!sim.local||!sim.local.getTracks().some(t=>t.readyState==='live')){
+    sim.local=await pedirMedios();
   }
   try{sim.peer=new Peer(simId(role),rtcOpts());}catch(e){toast('No se pudo iniciar');sim.role=null;return;}
   sim.peer.on('open',()=>{sim._reint=0;simConectar();sim.int=setInterval(simConectar,2500);});
@@ -4183,16 +4203,74 @@ function simSalir(){
   Object.values(sim.conns).forEach(c=>{try{c.call.close();}catch(e){} if(c.audio)c.audio.remove();});
   sim.conns={};
   try{sim.peer&&sim.peer.destroy();}catch(e){}
-  sim.peer=null; sim.role=null; sim.muted=false; sim.caseId='LIBRE'; sim._pedido=null; sim._reint=0; sim.t0=0;
+  sim.peer=null; sim.role=null; sim.muted=false; sim.caseId='LIBRE'; sim._pedido=null; sim._reint=0; sim.t0=0; sim.modo=null;
   /* soltar micro y cámara: antes se quedaban encendidos tras salir */
   try{ if(sim.local && !rec.active){ sim.local.getTracks().forEach(t=>t.stop()); sim.local=null; } }catch(e){}
   try{ rtcMicOff(); }catch(e){}      // por si el micro de las llamadas quedó retenido por la simulación
   simPanel();
 }
+/* ================= Escucha en directo de un caso individual =================
+   El alumno que atiende una alarma publica su micrófono como el par "OP" de la
+   sala de ese caso. El profesor se une como oyente y le escucha sin cortarle.
+   No abre panel ni llama a nadie: solo espera a que le llamen. */
+const escucha={peer:null,caseId:null,calls:[],_reint:0};
+function escuchaIdOP(caseId){ return state.sala+'-SIM-'+caseId+'-OP'; }
+function escuchaHayOyente(){ return escucha.calls.length>0; }
+async function escuchaPublicar(caseId){
+  if(typeof Peer==='undefined'||!caseId) return;
+  if(escucha.peer&&escucha.caseId===caseId) return;
+  escuchaParar();
+  escucha.caseId=caseId;
+  const mic=await rtcMicOn();
+  if(!mic){ escucha.caseId=null; return; }          // sin micro no hay nada que emitir
+  if(escucha.caseId!==caseId) return;               // se cerró mientras se pedía el permiso
+  let pr; try{ pr=new Peer(escuchaIdOP(caseId),rtcOpts()); }catch(e){ escucha.caseId=null; return; }
+  escucha.peer=pr;
+  pr.on('open',()=>{ escucha._reint=0; });
+  pr.on('call',c=>{
+    try{ c.answer(rtc.local||rtcStream()); }catch(e){ return; }
+    escucha.calls.push(c);
+    c.on('close',()=>{ escucha.calls=escucha.calls.filter(x=>x!==c); pintarOyente(); });
+    c.on('error',()=>{ escucha.calls=escucha.calls.filter(x=>x!==c); pintarOyente(); });
+    toast('<svg class="ic"><use href="#i-cap"/></svg> El profesor se ha unido a escuchar');
+    try{ anunciar('El profesor se ha unido a escuchar'); }catch(e){}
+    pintarOyente();
+  });
+  pr.on('error',e=>{
+    if(e.type==='unavailable-id'&&escucha._reint<3&&escucha.caseId===caseId){
+      escucha._reint++;
+      try{pr.destroy();}catch(_){}
+      if(escucha.peer===pr) escucha.peer=null;
+      setTimeout(()=>{ if(escucha.caseId===caseId&&!escucha.peer) escuchaPublicar(caseId); },1200*escucha._reint);
+    }
+  });
+  pr.on('disconnected',()=>{ try{pr.reconnect();}catch(e){} });
+}
+function escuchaParar(){
+  escucha.calls.forEach(c=>{try{c.close();}catch(e){}}); escucha.calls=[];
+  try{ escucha.peer&&escucha.peer.destroy(); }catch(e){}
+  escucha.peer=null; escucha.caseId=null; escucha._reint=0;
+  pintarOyente();
+}
+/* El alumno debe ver que le están escuchando: nunca en secreto */
+function chipOyenteHtml(){
+  return escuchaHayOyente()
+    ? '<span class="chip chip-profe" id="chipOyente"><svg class="ic"><use href="#i-cap"/></svg>'+esc(t('El profesor está escuchando'))+'</span>'
+    : '<span id="chipOyente" hidden></span>';
+}
+function pintarOyente(){
+  const el=document.getElementById('chipOyente'); if(!el)return;
+  const tmp=document.createElement('div'); tmp.innerHTML=chipOyenteHtml();
+  const nuevo=tmp.firstElementChild; if(!nuevo)return;
+  el.replaceWith(nuevo); aplicarIdioma(nuevo);
+}
 function simPanel(){
   const el=document.getElementById('simWidget'); if(!el)return;
   if(!sim.peer){el.innerHTML='';return;}
-  const rows=Object.keys(SIMROLES).map(r=>{
+  const roles=(sim.role==='OB'&&sim.modo==='solo'&&sim.caseId!=='LIBRE')
+    ? Object.keys(SIMROLES).filter(r=>r==='OP'||r===sim.role)     // caso individual: solo el teleoperador
+    : Object.keys(SIMROLES);
+  const rows=roles.map(r=>{
     if(r===sim.role) return `<div class="simrow"><span class="dot on"></span><div style="flex:1"><b>${SIMROLES[r]} · Tú</b><br><small>${sim.muted?'micro en silencio':'micro activo'}</small></div></div>`;
     const c=sim.conns[simId(r)]; const espera=Date.now()-(sim.t0||Date.now());
     const st=c&&c.stream?'on':(c&&espera<15000?'wait':'');
@@ -4216,18 +4294,17 @@ function simPanel(){
     <b>${esc(t('Todavía no se ha unido nadie'))}</b>
     <p style="margin:4px 0 0">${esc(sim.caseId==='LIBRE'
       ? t('Esta es la sala de práctica libre: aquí solo hay alguien si un alumno entra a propósito desde su central.')
-      : t('Nadie más ha entrado todavía en este caso.'))}</p>
-    ${state.rol==='profesor'?`<p style="margin:4px 0 0">${esc(t('Un caso lanzado a un solo alumno no es una simulación y no se puede escuchar en directo: su grabación te llega al terminar.'))}</p>`:''}
+      : t('El alumno no está emitiendo: o todavía no ha cogido la llamada, o ya la ha terminado.'))}</p>
   </div>`;
   el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${vids}${rows}${aviso}
-    <div class="rtcbtns" style="margin-top:10px"><button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button><button class="btn sm" onclick="videoAlternar()" aria-pressed="${camaraEncendida()}" title="${camaraEncendida()?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${camaraEncendida()?'Vídeo activado':'Solo voz'}</button><button class="btn danger sm" onclick="simSalir()">Salir</button></div>
+    <div class="rtcbtns" style="margin-top:10px">${sim.role==='OB'?'':`<button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button>`}${sim.role==='OB'?'':`<button class="btn sm" onclick="videoAlternar()" aria-pressed="${camaraEncendida()}" title="${camaraEncendida()?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${camaraEncendida()?'Vídeo activado':'Solo voz'}</button>`}<button class="btn danger sm" onclick="simSalir()">Salir</button></div>
     <p class="muted" style="font-size:11px;margin:8px 0 0">Consejo: usad auriculares para evitar eco.</p></div>`;
   aplicarIdioma(el); a11yPass(el); simPintarVideos();
 }
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r11';
+const CD_VERSION='2026-09-13 · r12';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
