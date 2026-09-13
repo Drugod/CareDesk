@@ -4461,7 +4461,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r18';
+const CD_VERSION='2026-09-13 · r20';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
@@ -4633,14 +4633,22 @@ function rtcOrigenSeguro(){
   if(location.protocol==='https:') return true;
   return location.protocol==='http:' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 }
+let rtcArrancando=0;
 async function iniciarRTC(){
+  const ahora=Date.now();
+  if(ahora-rtcArrancando<800) return;            // dos arranques seguidos se pisarían
+  rtcArrancando=ahora;
   if(typeof Peer==='undefined'){ rtcEstado('error','No se ha podido cargar el motor de llamadas.','sin-peerjs'); return; }
   if(!rtcOrigenSeguro()){
     rtcEstado('error','Has abierto el archivo desde el disco. Las llamadas, el micrófono y la cámara solo funcionan en https://caredesk.me','origen-inseguro');
     return;                                   // sin reintentos: recargando desde file: nunca va a funcionar
   }
   clearTimeout(rtc._re);
-  try{ if(rtc.peer){ rtc.peer.destroy(); } }catch(e){}
+  /* Al reemplazar el peer, el viejo emite 'close' al destruirlo. Si no lo
+     marcamos como retirado, ese 'close' se toma por una avería, programa otro
+     reintento y ese reintento vuelve a destruir el peer nuevo: la app se pelea
+     consigo misma y nunca llega a conectar (código "close" en el diagnóstico). */
+  try{ if(rtc.peer){ rtc.peer._retirado=true; rtc.peer.destroy(); } }catch(e){}
   rtcCerrarDCs();
   rtc.peer=null;
   rtcEstado('abriendo','');
@@ -4653,6 +4661,7 @@ async function iniciarRTC(){
   pr.on('call',c=>rtcEntrante(c));
   pr.on('connection',c=>rtcRegistrarDC(c));
   pr.on('open',()=>{
+    if(pr._retirado||rtc.peer!==pr) return;
     rtc.intentos=0; rtc.idOcupado=0; rtcEstado('ok','');
     if(state.rol==='alumno'){ rtcHello(); rtcLatidoArrancar(); }
     /* El profesor ya no sale a buscar a nadie: son los alumnos los que saludan
@@ -4660,6 +4669,7 @@ async function iniciarRTC(){
        en el orden que entre cada uno, la sala se sincroniza sola. */
   });
   pr.on('error',e=>{
+    if(pr._retirado||rtc.peer!==pr) return;
     const tipo=(e&&e.type)||'desconocido';
     if(tipo==='peer-unavailable'){
       if(rtc.state==='llamando'){ toast('El alumno no está conectado a esta sala'); rtcColgar(); }
@@ -4670,26 +4680,35 @@ async function iniciarRTC(){
          anterior soltando el sitio: se cierra en ~20 s. Insistimos rápido y sin
          asustar, en vez de esperar el reintento largo y dar por rota la conexión. */
       rtc.idOcupado=(rtc.idOcupado||0)+1;
-      if(rtc.idOcupado<=25){
+      const rapido = rtc.idOcupado<=25;          // ~75 s insistiendo cada 3 s
+      if(rapido){
         rtcEstado('abriendo','Recuperando tu sitio: la sesión anterior todavía se está cerrando…','unavailable-id');
-        clearTimeout(rtc._re);
-        rtc._re=setTimeout(()=>{ if(state.rol) iniciarRTC(); },3000);
-        return;
+      }else{
+        /* No nos rendimos: el dispositivo anterior puede estar dormido y no
+           enterarse hasta que alguien lo despierte. Seguimos probando despacio,
+           para que en cuanto suelte el sitio esto entre solo, sin recargar. */
+        rtcEstado('error',rtcMsgError(tipo),tipo);
+        if(rtc.idOcupado===26) anunciar(rtcMsgError(tipo),true);
       }
-      rtcEstado('error',rtcMsgError(tipo),tipo);
-      anunciar(rtcMsgError(tipo),true);
-      return;                                   // ya no insistimos solos: queda el botón Reintentar
+      clearTimeout(rtc._re);
+      rtc._re=setTimeout(()=>{ if(state.rol) iniciarRTC(); }, rapido?3000:15000);
+      return;
     }
     rtcEstado('error',rtcMsgError(tipo),tipo);
     anunciar(rtcMsgError(tipo),true);
     if(tipo!=='browser-incompatible'&&tipo!=='ssl-unavailable') rtcReintentar();
   });
   pr.on('disconnected',()=>{
+    if(pr._retirado||rtc.peer!==pr) return;
     if(rtc.conn==='ok') rtcEstado('abriendo','Conexión perdida, reconectando…','disconnected');
     try{ pr.reconnect(); }catch(e){}
     setTimeout(()=>{ if(rtc.peer===pr && !pr.open && !pr.destroyed) rtcReintentar(); },4000);
   });
-  pr.on('close',()=>{ if(rtc.peer===pr){ rtcEstado('error','El servicio de llamadas se ha cerrado.','close'); rtcReintentar(); } });
+  pr.on('close',()=>{
+    if(pr._retirado||rtc.peer!==pr) return;      // lo hemos cerrado nosotros: no es una avería
+    rtcEstado('error','El servicio de llamadas se ha cerrado.','close');
+    rtcReintentar();
+  });
 }
 /* reintento con espera creciente: 4 s, 8 s, 16 s… hasta 60 s */
 function rtcReintentar(){
@@ -5965,7 +5984,7 @@ langCargar(); setLang(state.lang);
   /* ---- salir: cierra sesión y vuelve al login ---- */
   window.g_salir=function(){
     try{ if(typeof rtcColgar==='function') rtcColgar(); }catch(e){}
-    try{ rtc&&rtc.peer&&rtc.peer.destroy(); }catch(e){}
+    try{ if(rtc&&rtc.peer){ rtc.peer._retirado=true; rtc.peer.destroy(); } }catch(e){}
     try{ rtc.peer=null; }catch(e){}
     state.rol=null; state.alumnoActivo=null; state.llamada=null;
     state.registros=[]; state.presencia={};
