@@ -812,6 +812,15 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Todavía no se ha unido nadie':'Nobody has joined yet',
+  'Esta es la sala de práctica libre: aquí solo hay alguien si un alumno entra a propósito desde su central.':'This is the open practice room: someone is here only if a student deliberately joins from their console.',
+  'Nadie más ha entrado todavía en este caso.':'Nobody else has joined this case yet.',
+  'Un caso lanzado a un solo alumno no es una simulación y no se puede escuchar en directo: su grabación te llega al terminar.':'A case sent to a single student is not a simulation and cannot be listened to live: you receive the recording when they finish.',
+  'Ya hay alguien escuchando esta simulación.':'Someone is already listening to this simulation.',
+  'Liberando el papel anterior…':'Releasing the previous role…',
+  'Rechazada':'Declined',
+  'ha rechazado la llamada':'declined the call',
+
   'Sin micrófono: no se grabará tu voz':'No microphone: your voice will not be recorded',
 
   '¿Funcionan las conexiones en tiempo real en este equipo?':'Do real-time connections work on this computer?',
@@ -1371,6 +1380,15 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Todavía no se ha unido nadie':'Encara no s\'ha unit ningú',
+  'Esta es la sala de práctica libre: aquí solo hay alguien si un alumno entra a propósito desde su central.':'Esta és la sala de pràctica lliure: ací només hi ha algú si un alumne entra a propòsit des de la seua central.',
+  'Nadie más ha entrado todavía en este caso.':'Ningú més ha entrat encara en este cas.',
+  'Un caso lanzado a un solo alumno no es una simulación y no se puede escuchar en directo: su grabación te llega al terminar.':'Un cas llançat a un sol alumne no és una simulació i no es pot escoltar en directe: la seua gravació t\'arriba en acabar.',
+  'Ya hay alguien escuchando esta simulación.':'Ja hi ha algú escoltant esta simulació.',
+  'Liberando el papel anterior…':'Alliberant el paper anterior…',
+  'Rechazada':'Rebutjada',
+  'ha rechazado la llamada':'ha rebutjat la trucada',
+
   'Sin micrófono: no se grabará tu voz':'Sense micròfon: no es gravarà la teua veu',
 
   '¿Funcionan las conexiones en tiempo real en este equipo?':'Funcionen les connexions en temps real en este equip?',
@@ -2680,7 +2698,10 @@ function colaPanelProfesor(){
         <div class="flex" style="gap:6px">${acc}<button class="btn ghost sm" onclick="quitarCola('${c.id}')">Retirar</button></div></div>`;
     }
     const dest=c.alumnoId==='*'?'Toda la clase':((alumno(c.alumnoId)||{}).nombre||'—');
-    const est=c.estado==='finalizada'?'<span class="chip g"><span class="mk" aria-hidden="true">✓</span>Finalizada</span>':(c.estado==='en_curso'?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>':'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>');
+    const est=c.estado==='finalizada'?'<span class="chip g"><span class="mk" aria-hidden="true">✓</span>Finalizada</span>'
+      :(c.estado==='en_curso'?'<span class="chip y"><span class="mk" aria-hidden="true">▶</span>En curso</span>'
+      :(c.estado==='rechazada'?'<span class="chip r"><span class="mk" aria-hidden="true">✕</span>Rechazada</span>'
+      :'<span class="chip r"><span class="mk" aria-hidden="true">☎</span>Sonando…</span>'));
     const acc=(c.estado==='finalizada'&&c.regId)?`<button class="btn primary sm" onclick="abrirEval('${c.regId}')">Ver actuación</button>`:'';
     return `<div class="between" style="padding:8px 0;border-bottom:1px solid var(--line)">
       <div>${orig(c)} <b>${esc(e.titulo)}</b> · <span class="muted">${u?esc(u.nombre):''}</span><br><span class="chip b">${esc(dest)}</span> ${est}</div>
@@ -3226,7 +3247,9 @@ async function rtcEmergencia(tipo){
   rtcCall(c,'Profesor · EMERGENCIA '+tipo,'llamando');
   clearTimeout(rtc._to);rtc._to=setTimeout(()=>{if(rtc.state==='llamando'){toast('El profesor no responde');rtcColgar();}},15000);
 }
-function descartar(cid){state.cola=state.cola.filter(c=>c.id!==cid);toast('Llamada rechazada');renderTabs();}
+function descartar(cid){
+  rtcEnviarADatos(state.sala+'-PROF',{t:'caso-estado',casoId:cid,estado:'rechazada',alumnoId:state.alumnoActivo});
+  state.cola=state.cola.filter(c=>c.id!==cid);toast('Llamada rechazada');renderTabs();}
 /* ---- Diálogo de práctica del alumno (solo o con un compañero) ---- */
 function practicarDialog(){
   if(state.simActivo){return toast('Ya estás en una simulación');}
@@ -3282,6 +3305,9 @@ let timerInt=null;
 function atender(cid){
   const c=fnac(cid,state.cola);const e=escenario(c.escenarioId);
   state.llamada={cid,escenarioId:e.id,inicio:Date.now(),pasos:new Set(),recursos:new Set(),tipo:null,notas:''};
+  /* Avisar al profesor: si no, en su panel el caso se queda "Sonando…" para siempre */
+  if(c) c.estado='en_curso';
+  rtcEnviarADatos(state.sala+'-PROF',{t:'caso-estado',casoId:cid,estado:'en_curso',alumnoId:state.alumnoActivo});
   beep();
   recStart();
   render();
@@ -4073,7 +4099,7 @@ function camaraEncendida(){
   return VIDEO_ON;
 }
 function tieneVideo(st){ try{ return !!(st&&st.getVideoTracks&&st.getVideoTracks().length&&st.getVideoTracks()[0].enabled); }catch(e){ return false; } }
-const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'LIBRE'};
+const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'LIBRE',t0:0,_pedido:null,_reint:0};
 function simId(r){return state.sala+'-SIM-'+(sim.caseId||'LIBRE')+'-'+r;}
 function simTargets(){return Object.keys(SIMROLES).filter(r=>r!==sim.role).map(simId);}
 function simAbrir(){
@@ -4096,8 +4122,8 @@ function simAbrir(){
 function simEntrar(role){ return simEntrarCaso('LIBRE',role); }
 async function simEntrarCaso(caseId,role){
   if(sim.peer){ if(sim.caseId===caseId){toast('Ya estás en esta simulación');return;} simSalir(); }
-  sim.caseId=caseId||'LIBRE'; sim.role=role;
-  sim.local=await pedirMedios();
+  sim.caseId=caseId||'LIBRE'; sim.role=role; sim.t0=Date.now(); sim._pedido=simId(role);
+  if(!sim.local||!sim.local.getTracks().some(t=>t.readyState==='live')) sim.local=await pedirMedios();
   if(role==='OB'&&sim.local){
     /* El profesor se une a escuchar: ni micro ni cámara. Si quiere aparecer,
        puede encender la cámara a mano desde el panel. */
@@ -4105,9 +4131,26 @@ async function simEntrarCaso(caseId,role){
     sim.local.getVideoTracks().forEach(t=>t.enabled=false);
   }
   try{sim.peer=new Peer(simId(role),rtcOpts());}catch(e){toast('No se pudo iniciar');sim.role=null;return;}
-  sim.peer.on('open',()=>{simConectar();sim.int=setInterval(simConectar,2500);});
+  sim.peer.on('open',()=>{sim._reint=0;simConectar();sim.int=setInterval(simConectar,2500);});
   sim.peer.on('call',c=>{ if(sim.conns[c.peer]&&sim.conns[c.peer].stream){try{c.close();}catch(e){}return;} c.answer(sim.local||rtcStream()); simWire(c,c.peer); });
-  sim.peer.on('error',e=>{ if(e.type==='unavailable-id'){toast('Ese rol ya está ocupado. Elige otro.');simSalir();} else if(e.type==='peer-unavailable'){ for(const k in sim.conns){ if(!sim.conns[k].stream){try{sim.conns[k].call.close();}catch(e){} delete sim.conns[k];} } } });
+  sim.peer.on('error',e=>{
+    if(e.type==='unavailable-id'){
+      /* Casi siempre es nuestra propia sesión anterior, que el servidor todavía
+         no ha soltado. Se reintenta antes de rendirse. */
+      if((sim._reint||0)<3 && sim._pedido===simId(role)){
+        sim._reint=(sim._reint||0)+1;
+        const espera=1200*sim._reint;
+        toast('Liberando el papel anterior…');
+        try{sim.peer.destroy();}catch(_){}
+        sim.peer=null; clearInterval(sim.int);
+        setTimeout(()=>{ if(!sim.peer) simEntrarCaso(caseId,role); },espera);
+        return;
+      }
+      toast(role==='OB' ? 'Ya hay alguien escuchando esta simulación.' : 'Ese rol ya está ocupado. Elige otro.');
+      simSalir(); return;
+    }
+    if(e.type==='peer-unavailable'){ for(const k in sim.conns){ if(!sim.conns[k].stream){try{sim.conns[k].call.close();}catch(e){} delete sim.conns[k];} } }
+  });
   sim.peer.on('disconnected',()=>{try{sim.peer.reconnect();}catch(e){}});
   simPanel();
 }
@@ -4135,13 +4178,25 @@ function simPintarVideos(){
   });
 }
 function simMute(){ sim.muted=!sim.muted; if(sim.local)sim.local.getAudioTracks().forEach(t=>t.enabled=!sim.muted); simPanel(); }
-function simSalir(){ clearInterval(sim.int); Object.values(sim.conns).forEach(c=>{try{c.call.close();}catch(e){} if(c.audio)c.audio.remove();}); sim.conns={}; try{sim.peer&&sim.peer.destroy();}catch(e){} sim.peer=null; sim.role=null; sim.muted=false; sim.caseId='LIBRE'; simPanel(); }
+function simSalir(){
+  clearInterval(sim.int);
+  Object.values(sim.conns).forEach(c=>{try{c.call.close();}catch(e){} if(c.audio)c.audio.remove();});
+  sim.conns={};
+  try{sim.peer&&sim.peer.destroy();}catch(e){}
+  sim.peer=null; sim.role=null; sim.muted=false; sim.caseId='LIBRE'; sim._pedido=null; sim._reint=0; sim.t0=0;
+  /* soltar micro y cámara: antes se quedaban encendidos tras salir */
+  try{ if(sim.local && !rec.active){ sim.local.getTracks().forEach(t=>t.stop()); sim.local=null; } }catch(e){}
+  try{ rtcMicOff(); }catch(e){}      // por si el micro de las llamadas quedó retenido por la simulación
+  simPanel();
+}
 function simPanel(){
   const el=document.getElementById('simWidget'); if(!el)return;
   if(!sim.peer){el.innerHTML='';return;}
   const rows=Object.keys(SIMROLES).map(r=>{
     if(r===sim.role) return `<div class="simrow"><span class="dot on"></span><div style="flex:1"><b>${SIMROLES[r]} · Tú</b><br><small>${sim.muted?'micro en silencio':'micro activo'}</small></div></div>`;
-    const c=sim.conns[simId(r)]; const st=c&&c.stream?'on':(c?'wait':''); const txt=c&&c.stream?'conectado':(c?'conectando…':'sin conectar');
+    const c=sim.conns[simId(r)]; const espera=Date.now()-(sim.t0||Date.now());
+    const st=c&&c.stream?'on':(c&&espera<15000?'wait':'');
+    const txt=c&&c.stream?'conectado':(c&&espera<15000?'conectando…':'sin conectar');
     return `<div class="simrow"><span class="dot ${st}"></span><div style="flex:1"><b>${SIMROLES[r]}</b><br><small>${txt}</small></div></div>`;
   }).join('');
   /* Mosaico de vídeo: solo si hay alguna imagen que enseñar */
@@ -4155,7 +4210,16 @@ function simPanel(){
     }).join('')}
   </div>`;
   const cab = sim.caseId&&sim.caseId!=='LIBRE' ? '<svg class="ic"><use href="#i-headset"/></svg> Simulación del caso' : '<svg class="ic"><use href="#i-headset"/></svg> Simulación libre';
-  el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${vids}${rows}
+  /* Si tras 15 s no se ha conectado nadie, decirlo en vez de dejar un "conectando…" eterno */
+  const nadie = !Object.values(sim.conns).some(c=>c.stream) && (Date.now()-(sim.t0||Date.now()))>15000;
+  const aviso = !nadie ? '' : `<div class="note-warn" style="margin:8px 0;font-size:12.5px">
+    <b>${esc(t('Todavía no se ha unido nadie'))}</b>
+    <p style="margin:4px 0 0">${esc(sim.caseId==='LIBRE'
+      ? t('Esta es la sala de práctica libre: aquí solo hay alguien si un alumno entra a propósito desde su central.')
+      : t('Nadie más ha entrado todavía en este caso.'))}</p>
+    ${state.rol==='profesor'?`<p style="margin:4px 0 0">${esc(t('Un caso lanzado a un solo alumno no es una simulación y no se puede escuchar en directo: su grabación te llega al terminar.'))}</p>`:''}
+  </div>`;
+  el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${vids}${rows}${aviso}
     <div class="rtcbtns" style="margin-top:10px"><button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button><button class="btn sm" onclick="videoAlternar()" aria-pressed="${camaraEncendida()}" title="${camaraEncendida()?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${camaraEncendida()?'Vídeo activado':'Solo voz'}</button><button class="btn danger sm" onclick="simSalir()">Salir</button></div>
     <p class="muted" style="font-size:11px;margin:8px 0 0">Consejo: usad auriculares para evitar eco.</p></div>`;
   aplicarIdioma(el); a11yPass(el); simPintarVideos();
@@ -4163,7 +4227,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-12 · r10';
+const CD_VERSION='2026-09-13 · r11';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
@@ -4526,6 +4590,15 @@ function rtcRecibir(msg,conn){
           if(e0) rtcEnviarADatos(pid,{t:'sim-invite',caseId:c.id,role,opId:c.opId,pdId:c.pdId,escenario:e0,usuario:usuario(e0.usuarioId)||null});
         }
       });
+      return;
+    }
+    if(msg.t==='caso-estado'){                      // el alumno ha cogido (o rechazado) un caso lanzado
+      const c=state.cola.find(x=>x.id===msg.casoId);
+      if(c&&c.estado!=='finalizada'){
+        c.estado=msg.estado||c.estado;
+        if(msg.estado==='rechazada') toast('<svg class="ic"><use href="#i-x"/></svg> '+((alumno(msg.alumnoId)||{}).nombre||'Un alumno')+' ha rechazado la llamada');
+        render();
+      }
       return;
     }
     if(msg.t==='sim-state'){                        // un alumno se ha unido / cambia el estado
