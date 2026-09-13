@@ -832,6 +832,21 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Eliminar esta actuación':'Delete this record',
+  '{alumno} · {caso}. Se borrará de tu lista y de la del alumno, junto con su nota{grab}. No se puede deshacer.':'{alumno} · {caso}. It will be removed from your list and the student\'s, along with its mark{grab}. This cannot be undone.',
+  ' y su grabación':' and its recording',
+  'Actuación eliminada':'Record deleted',
+  'El profesor ha eliminado una de tus actuaciones':'The teacher has deleted one of your records',
+
+  'Intervenir':'Speak',
+  'Te oyen · cerrar micro':'You are live · mute',
+  'Pidiendo el micrófono…':'Requesting the microphone…',
+  'Sin micrófono no puedes intervenir':'Without a microphone you cannot speak',
+  'Micrófono abierto: te oyen':'Microphone open: they can hear you',
+  'Micrófono cerrado: vuelves a escuchar en silencio':'Microphone closed: listening silently again',
+  'estás interviniendo: te oyen':'speaking: they can hear you',
+  'escuchando en silencio':'listening silently',
+
   'Actuación nº {n}':'Record no. {n}',
   'Nº':'No.',
 
@@ -1444,6 +1459,21 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Eliminar esta actuación':'Eliminar esta actuació',
+  '{alumno} · {caso}. Se borrará de tu lista y de la del alumno, junto con su nota{grab}. No se puede deshacer.':'{alumno} · {caso}. S\'esborrarà de la teua llista i de la de l\'alumne, junt amb la seua nota{grab}. No es pot desfer.',
+  ' y su grabación':' i la seua gravació',
+  'Actuación eliminada':'Actuació eliminada',
+  'El profesor ha eliminado una de tus actuaciones':'El professor ha eliminat una de les teues actuacions',
+
+  'Intervenir':'Intervindre',
+  'Te oyen · cerrar micro':'Et senten · tancar micro',
+  'Pidiendo el micrófono…':'Demanant el micròfon…',
+  'Sin micrófono no puedes intervenir':'Sense micròfon no pots intervindre',
+  'Micrófono abierto: te oyen':'Micròfon obert: et senten',
+  'Micrófono cerrado: vuelves a escuchar en silencio':'Micròfon tancat: tornes a escoltar en silenci',
+  'estás interviniendo: te oyen':'estàs intervenint: et senten',
+  'escuchando en silencio':'escoltant en silenci',
+
   'Actuación nº {n}':'Actuació núm. {n}',
   'Nº':'Núm.',
 
@@ -3287,7 +3317,10 @@ function vEvaluacion(){
       <td><span class="chip ${acierto?'g':'r'}"><span class="mk" aria-hidden="true">${acierto?'✓':'✗'}</span>${tipoTxt(r.tipoElegido)}<span class="sr-only"> · ${acierto?'clasificación correcta':'clasificación incorrecta'}</span></span></td>
       <td>${r.tiempo}s</td>
       <td>${nota!=null?`<b>${nota}/100</b> <span style="color:#f2c94c" aria-hidden="true">${estrellas(nota)}</span>`:'<span class="chip y">sin evaluar</span>'}</td>
-      <td><button class="btn primary sm" onclick="abrirEval('${r.id}')">${r.eval?'Revisar':'Evaluar'}</button></td>
+      <td><div class="flex" style="gap:6px;justify-content:flex-end">
+        <button class="btn primary sm" onclick="abrirEval('${r.id}')">${r.eval?'Revisar':'Evaluar'}</button>
+        <button class="btn ghost sm" onclick="borrarActuacion('${r.id}')" title="Eliminar esta actuación" aria-label="Eliminar esta actuación"><svg class="ic"><use href="#i-trash"/></svg></button>
+      </div></td>
     </tr>`;
   }).join('');
   const nGrab=Object.keys(state.grabaciones||{}).length;
@@ -3332,7 +3365,9 @@ function abrirEval(rid){
     <p class="muted" style="font-size:12.5px;margin:0 0 8px">Puntúa cada criterio (No / Parcial / Sí). El sistema propone una puntuación de partida a partir de lo que hizo el alumno.</p>
     <div style="max-height:40vh;overflow:auto">${bloquesHtml}</div>
     <div class="between mt"><span class="muted" id="evalTotal" style="font-size:14px;font-weight:700"></span>
-      <div><button class="btn ghost sm" onclick="closeModal()">Cancelar</button>
+      <div class="flex" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">
+      <button class="btn ghost sm" onclick="borrarActuacion('${rid}')"><svg class="ic"><use href="#i-trash"/></svg> Eliminar</button>
+      <button class="btn ghost sm" onclick="closeModal()">Cancelar</button>
       <button class="btn ok" onclick="guardarEval('${rid}')">Finalizar evaluación</button></div></div>
   `);
   actualizarTotal(rid);
@@ -3347,6 +3382,34 @@ function actualizarTotal(rid){
   state.bloques.forEach(b=>{const el=document.getElementById('bl-'+b.k);if(el)el.textContent=notaBloque(r,b,r._draft)+' / '+b.pts;});
   const pct=notaGlobal({eval:r._draft});
   const el=document.getElementById('evalTotal');if(el)el.innerHTML='Puntuación total: '+pct+'/100 <span style="color:#f2c94c">'+estrellas(pct)+'</span>';
+}
+/* El profesor decide qué actuaciones conserva. Puede haber varias del mismo
+   alumno conviviendo: se miran, se evalúan, y se borra la que sobre. */
+function borrarActuacion(rid){
+  if(state.rol!=='profesor') return;
+  const r=state.registros.find(x=>x.id===rid); if(!r) return;
+  const al=alumno(r.alumnoId), e=escenario(r.escenarioId)||{titulo:'—'};
+  const hayGrab=!!(state.grabaciones&&state.grabaciones[rid]);
+  confirmar(t('Eliminar esta actuación'),
+    t('{alumno} · {caso}. Se borrará de tu lista y de la del alumno, junto con su nota{grab}. No se puede deshacer.',
+      {alumno:(al&&al.nombre)||'—', caso:e.titulo, grab: hayGrab?t(' y su grabación'):''}),
+    function(){
+      try{ window.CD_DB && CD_DB.borrarActuacion && CD_DB.borrarActuacion(r); }catch(err){}
+      if(hayGrab){ try{ borrarGrabacionSilencio(rid); }catch(err){} }
+      state.registros=state.registros.filter(x=>x.id!==rid);
+      state.cola.forEach(c=>{ if(c.regId===rid) c.regId=null; });
+      /* que también desaparezca del listado del alumno */
+      if(al) rtcEnviarADatos(rtcIdAlumno(al),{t:'reg-borrado',regId:rid});
+      toast(t('Actuación eliminada'));
+      closeModal(); render();
+    });
+}
+window.borrarActuacion=borrarActuacion;
+function borrarGrabacionSilencio(regId){
+  try{ idbDel(regId); }catch(e){}
+  const g=state.grabaciones[regId];
+  if(g&&g.url){ try{URL.revokeObjectURL(g.url);}catch(e){} }
+  delete state.grabaciones[regId];
 }
 function guardarEval(rid){
   const r=fnac(rid,state.registros);
@@ -4417,6 +4480,40 @@ function simPintarVideos(){
   });
 }
 function simMute(){ sim.muted=!sim.muted; if(sim.local)sim.local.getAudioTracks().forEach(t=>t.enabled=!sim.muted); simPanel(); }
+/* El profesor entra en silencio, pero tiene que poder intervenir. El micro se
+   pide en ese momento y la pista se mete en las conexiones ya abiertas, sin
+   cortar el audio que está escuchando. */
+function simCambiarPista(){
+  const pista=(sim.local&&sim.local.getAudioTracks()[0])||null;
+  if(!pista) return false;
+  let ok=false;
+  Object.values(sim.conns).forEach(c=>{
+    try{
+      const pc=c.call&&c.call.peerConnection; if(!pc||!pc.getSenders) return;
+      const env=pc.getSenders().filter(x=>!x.track||(x.track&&x.track.kind==='audio'))[0];
+      if(env&&env.replaceTrack){ env.replaceTrack(pista); ok=true; }
+    }catch(e){}
+  });
+  return ok;
+}
+async function simHablar(){
+  if(sim.role!=='OB') return simMute();
+  if(!sim.local||!sim.local.getAudioTracks().length){
+    toast('Pidiendo el micrófono…');
+    const st=await pedirMedios();
+    if(!st||!st.getAudioTracks().length){ toast('Sin micrófono no puedes intervenir'); return; }
+    sim.local=st;
+    sim.local.getVideoTracks().forEach(t=>t.enabled=false);   // el oyente no emite imagen
+    simCambiarPista();
+    sim.muted=true;                                            // entra silenciado; el clic siguiente abre el micro
+  }
+  sim.muted=!sim.muted;
+  sim.local.getAudioTracks().forEach(t=>t.enabled=!sim.muted);
+  toast(sim.muted?'Micrófono cerrado: vuelves a escuchar en silencio':'Micrófono abierto: te oyen');
+  try{ anunciar(sim.muted?'Micrófono cerrado':'Micrófono abierto'); }catch(e){}
+  simPanel();
+}
+window.simHablar=simHablar;
 function simSalir(){
   clearInterval(sim.int);
   Object.values(sim.conns).forEach(c=>{try{c.call.close();}catch(e){} if(c.audio)c.audio.remove();});
@@ -4490,7 +4587,9 @@ function simPanel(){
     ? Object.keys(SIMROLES).filter(r=>r==='OP'||r===sim.role)     // caso individual: solo el teleoperador
     : Object.keys(SIMROLES);
   const rows=roles.map(r=>{
-    if(r===sim.role) return `<div class="simrow"><span class="dot on"></span><div style="flex:1"><b>${SIMROLES[r]} · Tú</b><br><small>${sim.muted?'micro en silencio':'micro activo'}</small></div></div>`;
+    if(r===sim.role) return `<div class="simrow"><span class="dot on"></span><div style="flex:1"><b>${SIMROLES[r]} · Tú</b><br><small>${
+      sim.role==='OB' ? (sim.muted===false?'estás interviniendo: te oyen':'escuchando en silencio')
+                      : (sim.muted?'micro en silencio':'micro activo')}</small></div></div>`;
     const c=sim.conns[simId(r)]; const espera=Date.now()-(sim.t0||Date.now());
     const st=c&&c.stream?'on':(c&&espera<15000?'wait':'');
     const txt=c&&c.stream?'conectado':(c&&espera<15000?'conectando…':'sin conectar');
@@ -4516,14 +4615,16 @@ function simPanel(){
       : t('El alumno no está emitiendo: o todavía no ha cogido la llamada, o ya la ha terminado.'))}</p>
   </div>`;
   el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${vids}${rows}${aviso}
-    <div class="rtcbtns" style="margin-top:10px">${sim.role==='OB'?'':`<button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button>`}${sim.role==='OB'?'':`<button class="btn sm" onclick="videoAlternar()" aria-pressed="${camaraEncendida()}" title="${camaraEncendida()?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${camaraEncendida()?'Vídeo activado':'Solo voz'}</button>`}<button class="btn danger sm" onclick="simSalir()">Salir</button></div>
+    <div class="rtcbtns" style="margin-top:10px">${sim.role==='OB'
+        ? `<button class="btn ${sim.muted===false?'ok':'sm'} sm" onclick="simHablar()" aria-pressed="${sim.muted===false}">${sim.muted===false?'<svg class="ic"><use href="#i-mic"/></svg> Te oyen · cerrar micro':'<svg class="ic"><use href="#i-mic-off"/></svg> Intervenir'}</button>`
+        : `<button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button>`}${sim.role==='OB'?'':`<button class="btn sm" onclick="videoAlternar()" aria-pressed="${camaraEncendida()}" title="${camaraEncendida()?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${camaraEncendida()?'Vídeo activado':'Solo voz'}</button>`}<button class="btn danger sm" onclick="simSalir()">Salir</button></div>
     <p class="muted" style="font-size:11px;margin:8px 0 0">Consejo: usad auriculares para evitar eco.</p></div>`;
   aplicarIdioma(el); a11yPass(el); simPintarVideos();
 }
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r26';
+const CD_VERSION='2026-09-13 · r27';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -5073,6 +5174,13 @@ function rtcRecibir(msg,conn){
   /* ===== Mensajes que procesa el ALUMNO ===== */
   if(state.rol!=='alumno') return;
   if(msg.t==='quien'){ rtcLatido(); return; }      // el profesor pregunta quién está dentro
+  if(msg.t==='reg-borrado'){                       // el profesor ha eliminado una actuación
+    const antes=state.registros.length;
+    state.registros=state.registros.filter(x=>x.id!==msg.regId);
+    delete state.miEstado[msg.regId];
+    if(state.registros.length!==antes){ toast('El profesor ha eliminado una de tus actuaciones'); render(); }
+    return;
+  }
   if(msg.t==='pide-registro'){                     // al profesor le falta alguna actuación: se la reenviamos
     (msg.casos||[]).forEach(cid=>{
       const st=state.miEstado[cid]; if(!st||!st.regId) return;
@@ -6051,6 +6159,17 @@ langCargar(); setLang(state.lang);
         /* Reintento: un fallo de red puntual no debe costarle la actuación al alumno */
         if(intento<3){ setTimeout(function(){ CD_DB.guardarActuacion(reg,intento+1); },intento===1?2500:8000); return; }
         g_falloBD('guardar la actuación',r.error.message,reg,r.error);
+      });
+    },
+    /* El profesor puede eliminar una actuación de su clase (RLS ya lo permite) */
+    borrarActuacion:function(reg){
+      if(!SB||!GACC.uid||!g_esProfesor()||!reg) return;
+      var mail=(g_filaActuacion(reg).alumno_email||'');
+      var del=SB.from('actuaciones').delete().eq('id',reg.id);
+      if(mail) del=del.eq('alumno_email',mail);
+      del.then(function(r){
+        if(r&&r.error) g_falloBD('eliminar la actuación',r.error.message,reg,r.error);
+        else g_okBD(reg.id);
       });
     },
     /* El profesor guarda la nota. Si la fila no llegó a crearse, la crea entera. */
