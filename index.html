@@ -814,6 +814,11 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Sesión única':'Single session',
+  'Activa':'Active',
+  'Solo en este navegador — falta la tabla «sesiones» en Supabase':'This browser only — the «sesiones» table is missing in Supabase',
+  'Sin comprobar':'Not checked',
+
   '¿Sigues ahí?':'Still there?',
   'Sigo aquí':'I am still here',
   'Cerrar sesión ahora':'Sign out now',
@@ -1410,6 +1415,11 @@ const I18N_EN = {
   '¿Se guardan los datos al recargar?':'Is data kept when the page reloads?',
 };
 const I18N = {
+  'Sesión única':'Sessió única',
+  'Activa':'Activa',
+  'Solo en este navegador — falta la tabla «sesiones» en Supabase':'Només en este navegador — falta la taula «sesiones» en Supabase',
+  'Sin comprobar':'Sense comprovar',
+
   '¿Sigues ahí?':'Segueixes ahí?',
   'Sigo aquí':'Continue ací',
   'Cerrar sesión ahora':'Tancar sessió ara',
@@ -4445,7 +4455,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r16';
+const CD_VERSION='2026-09-13 · r17';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,_re:null,_desde:0,dc:{},_salaT:null};
 const TURN_SERVERS_SIM=[
@@ -4686,6 +4696,12 @@ function rtcDiagHtml(){
     + f('Conexión segura',location.protocol==='https:'?'Sí (https)':'No ('+location.protocol+')')
     + f('Servidor de llamadas',peerSrvNombre())
     + f('Navegador',navigator.userAgent.slice(0,70))
+    + f('Sesión única', (function(){
+        var S=window.CD_SESION||{};
+        if(S.estado==='ok') return t('Activa')+' · '+(S.detalle||'');
+        if(S.estado==='solo-local') return t('Solo en este navegador — falta la tabla «sesiones» en Supabase');
+        return t('Sin comprobar');
+      })())
     + f('Versión de CareDesk',CD_VERSION)
     + '</div>';
 }
@@ -5576,23 +5592,55 @@ langCargar(); setLang(state.lang);
   async function sesionReclamar(){
     SESION_TOKEN=sesionNueva();
     try{ localStorage.setItem(SESION_CLAVE,SESION_TOKEN); }catch(e){}
+    /* supabase-js NO lanza excepción cuando falla: devuelve {error}. Si no se
+       mira, la sesión única deja de funcionar sin que nadie se entere — que es
+       exactamente lo que pasó en la primera prueba. */
+    var err=null;
     try{
-      await SB.from('sesiones').upsert({usuario_id:sesUser.id,token:SESION_TOKEN,dispositivo:sesionDispositivo(),visto:new Date().toISOString()},{onConflict:'usuario_id'});
-    }catch(e){ console.warn('CareDesk: tabla "sesiones" no disponible; la sesión única solo valdrá dentro de este navegador.',e); }
+      var r=await SB.from('sesiones').upsert(
+        {usuario_id:sesUser.id,token:SESION_TOKEN,dispositivo:sesionDispositivo(),visto:new Date().toISOString()},
+        {onConflict:'usuario_id'});
+      err=r&&r.error;
+    }catch(e){ err=e; }
+    if(err){
+      window.CD_SESION={estado:'solo-local',detalle:(err.message||String(err))};
+      console.warn('CareDesk · sesión única: no se pudo registrar en Supabase. ¿Has ejecutado caredesk_sesiones.sql?',err);
+    }else{
+      window.CD_SESION={estado:'ok',detalle:sesionDispositivo()};
+    }
     sesionVigilar();
+    sesionComprobar();
   }
   function sesionVigilar(){
     clearInterval(sesionInt);
     sesionInt=setInterval(sesionComprobar,20000);
   }
+  var sesionComprobando=false;
   async function sesionComprobar(){
-    if(!SESION_TOKEN||!sesUser) return;
+    if(!SESION_TOKEN||!sesUser||sesionComprobando) return;
+    sesionComprobando=true;
     try{
       var r=await SB.from('sesiones').select('token,dispositivo').eq('usuario_id',sesUser.id).maybeSingle();
-      if(r&&r.data&&r.data.token&&r.data.token!==SESION_TOKEN) return sesionExpulsar(r.data.dispositivo);
-      await SB.from('sesiones').update({visto:new Date().toISOString()}).eq('usuario_id',sesUser.id).eq('token',SESION_TOKEN);
-    }catch(e){}
+      if(r&&r.error){
+        window.CD_SESION={estado:'solo-local',detalle:(r.error.message||'error al leer')};
+      }else{
+        window.CD_SESION={estado:'ok',detalle:(r&&r.data&&r.data.dispositivo)||sesionDispositivo()};
+        if(r&&r.data&&r.data.token&&r.data.token!==SESION_TOKEN){ sesionComprobando=false; return sesionExpulsar(r.data.dispositivo); }
+        if(!r||!r.data){ await sesionReanotar(); }      // alguien borró la fila: la volvemos a poner
+        else await SB.from('sesiones').update({visto:new Date().toISOString()}).eq('usuario_id',sesUser.id).eq('token',SESION_TOKEN);
+      }
+    }catch(e){ window.CD_SESION={estado:'solo-local',detalle:(e.message||String(e))}; }
+    sesionComprobando=false;
   }
+  async function sesionReanotar(){
+    try{ await SB.from('sesiones').upsert({usuario_id:sesUser.id,token:SESION_TOKEN,dispositivo:sesionDispositivo(),visto:new Date().toISOString()},{onConflict:'usuario_id'}); }catch(e){}
+  }
+  /* En el móvil los temporizadores se congelan con la pantalla apagada: al
+     volver a la app hay que comprobar al momento, no esperar a los 20 s. */
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) sesionComprobar(); });
+  window.addEventListener('focus',function(){ sesionComprobar(); });
+  window.CD_SESION={estado:'sin-entrar',detalle:''};
+  window.sesionComprobar=function(){ return sesionComprobar(); };
   function sesionExpulsar(dispositivo){
     clearInterval(sesionInt); sesionInt=null; SESION_TOKEN=null;
     var d=dispositivo?(' ('+dispositivo+')'):'';
