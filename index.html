@@ -464,9 +464,11 @@
 #gate .g-row{display:flex;gap:10px}#gate .g-row>*{flex:1}
 #gate .g-lic{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:16px 0;font-size:13.5px}
 #gate .g-pill{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
-#gate .g-pill.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
-#gate .g-pill.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
-#gate .g-pill.err{background:color-mix(in srgb,var(--danger) 16%,transparent);color:var(--danger)}
+/* El texto de la etiqueta va oscurecido sobre su propio fondo: con el color
+   puro se quedaba en 3.2:1 y AA pide 4.5:1 para este tamaño. */
+#gate .g-pill.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:color-mix(in srgb,var(--ok) 72%,#000)}
+#gate .g-pill.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:color-mix(in srgb,var(--warn) 58%,#000)}
+#gate .g-pill.err{background:color-mix(in srgb,var(--danger) 16%,transparent);color:color-mix(in srgb,var(--danger) 66%,#000)}
 #gate .g-tiny{font-size:12px;color:var(--muted);text-align:center;margin-top:14px}
 
 /* ---- Móvil ---- */
@@ -4624,7 +4626,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-13 · r27';
+const CD_VERSION='2026-09-14 · r28';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -5740,7 +5742,14 @@ langCargar(); setLang(state.lang);
       centro:g_val('gcentro'),cif:g_val('gcif'),direccion:g_val('gdir'),contacto:g_val('gcont'),email_factura:g_val('gef')||email
     }}});
     g_busy('gb',false);
-    if(r.error) return g_msg('gm', /already registered/i.test(r.error.message)?'Ese email ya tiene cuenta. Inicia sesión.':('No se pudo crear la cuenta: '+r.error.message),'err');
+    if(r.error){
+      /* Con una demo caducada esto era un bucle: aquí decía "ya existe" y en el
+         login decía "la demo terminó". Ahora lo llevamos al login: al entrar,
+         la pantalla de licencia ofrece registrar el centro con esa misma cuenta. */
+      if(/already registered|already been registered|User already/i.test(r.error.message))
+        return g_go('login',{email:email,rol:'profesor',err:'Ese email ya tiene cuenta (por ejemplo, la de la demo). Entra con ella: desde dentro podrás registrar tu centro y pasar a licencia de curso sin crear otra cuenta.'});
+      return g_msg('gm','No se pudo crear la cuenta: '+r.error.message,'err');
+    }
     if(r.data.session){ sesUser=r.data.session.user; return g_irAPanel(); }
     gv().innerHTML='<h1>Cuenta creada</h1><p class="g-sub">Te hemos enviado un email a <b>'+esc(email)+'</b> para confirmar la cuenta. Confírmala y luego inicia sesión.</p><button class="g-btn" onclick="g_go(\'login\',{email:\''+esc(email)+'\'})">Ir al login</button>';
   };
@@ -5760,7 +5769,11 @@ langCargar(); setLang(state.lang);
     g_busy('gb',true);
     var r=await SB.auth.signUp({email:email,password:pass,options:{data:{rol:'profesor',tipo_licencia:'demo',nombre:'(demo)'}}});
     g_busy('gb',false);
-    if(r.error) return g_msg('gm', /already registered/i.test(r.error.message)?'Ese email ya tiene cuenta o ya usó su demo. Inicia sesión.':'No se pudo iniciar la demo. Puede que ese email ya haya usado su demo de 3 días.','err');
+    if(r.error){
+      if(/already registered|already been registered|User already/i.test(r.error.message))
+        return g_go('login',{email:email,rol:'profesor',err:'Ese email ya tiene cuenta o ya usó su demo. Entra con ella: si la demo ha terminado, desde dentro puedes registrar tu centro y pasar a licencia de curso.'});
+      return g_msg('gm','No se pudo iniciar la demo. Puede que ese email ya haya usado su demo de 3 días.','err');
+    }
     if(r.data.session){ sesUser=r.data.session.user; return g_irAPanel(); }
     gv().innerHTML='<h1>Casi listo</h1><p class="g-sub">Confirma tu email <b>'+esc(email)+'</b> y luego inicia sesión para empezar la demo.</p><button class="g-btn" onclick="g_go(\'login\',{email:\''+esc(email)+'\'})">Ir al login</button>';
   };
@@ -5818,15 +5831,77 @@ langCargar(); setLang(state.lang);
     await g_irAPanel();
   };
 
-  function g_pantallaBloqueado(){
+  /* Pantalla de salida cuando la licencia no deja pasar.
+     Antes era un callejón sin salida: la demo caducaba y, si intentabas
+     registrar el centro desde el login, te decía "ese email ya existe"; y si
+     entrabas, te decía "la demo terminó". Ahora el registro del centro se hace
+     DESDE AQUÍ, con la cuenta que ya tienes: no se crea otra cuenta, se pasa la
+     que hay de demo a licencia de curso. */
+  function g_pantallaBloqueado(msg,cls){
     showGate();
     var est=GACC.est||{txt:'sin licencia',cls:'err'};
-    var esDemo=GACC.lic&&GACC.lic.tipo==='demo';
+    var lic=GACC.lic||null;
+    var esDemo=lic&&lic.tipo==='demo';
+    var pedida=lic&&lic.tipo==='curso';            // ya hay solicitud de curso registrada
+    var expl;
+    if(pedida) expl='Tu licencia de curso está registrada y pendiente de activación (pago). En cuanto se active, entrarás directamente al simulador.';
+    else if(esDemo) expl='Tu demo de 3 días ha terminado. Para seguir usando CareDesk con esta misma cuenta, registra tu centro y pasa a licencia de curso: no hace falta crear otra cuenta.';
+    else expl='Esta cuenta todavía no tiene licencia. Registra tu centro para solicitar la licencia de curso.';
     gv().innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><h1 style="margin:0">Licencia no activa</h1><button class="g-btn sm sec" onclick="g_salir()">Salir</button></div>'+
       '<div class="g-lic"><span>Estado de tu licencia</span><span class="g-pill '+est.cls+'">'+esc(est.txt)+'</span></div>'+
-      '<p class="g-sub">'+(esDemo?'Tu demo de 3 días ha terminado. Para seguir usando CareDesk, contrata una licencia de curso.':'Tu licencia de curso está pendiente de activación o de pago. La activación se hace desde el sistema; contacta con soporte para activarla.')+'</p>'+
-      '<div class="g-msg info">Cuando tu licencia esté activa, al iniciar sesión entrarás directamente al simulador.</div>';
+      '<p class="g-sub">'+expl+'</p>'+
+      '<div id="gm">'+(msg?'<div class="g-msg '+(cls||'ok')+'">'+esc(msg)+'</div>':'')+'</div>'+
+      '<button class="g-btn" onclick="g_go(\'altaCentro\')">'+(pedida?'Revisar los datos de mi centro':'Registrar mi centro · licencia de curso')+'</button>'+
+      '<button class="g-btn sec" id="gbrec" onclick="g_recomprobarLic()">Ya he pagado · comprobar de nuevo</button>';
   }
+  /* Sin cerrar sesión: vuelve a leer la licencia por si ya la han activado. */
+  window.g_recomprobarLic=async function(){
+    g_busy('gbrec',true);
+    var r=await SB.from('licencias').select('*').eq('profesor_id',sesUser.id).maybeSingle();
+    g_busy('gbrec',false);
+    if(r.error) return g_pantallaBloqueado('No se ha podido consultar la licencia: '+r.error.message,'err');
+    GACC.lic=r.data; GACC.est=g_estadoLic(r.data);
+    if(GACC.est.bloqueado) return g_pantallaBloqueado('Tu licencia sigue sin estar activa.','info');
+    return g_irAPanel();
+  };
+
+  /* Registro del centro con la cuenta ya iniciada (demo caducada o sin licencia).
+     No llama a signUp: eso es lo que provocaba "ese email ya existe". Llama a la
+     función solicitar_licencia_curso, que guarda los datos de facturación y deja
+     la licencia como curso pendiente de pago. */
+  VIEWS.altaCentro=function(){
+    var p=GACC.prof||{};
+    gv().innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><h1 style="margin:0">Registrar mi centro</h1><button class="g-btn sm sec" onclick="g_pantallaBloqueadoVolver()">Volver</button></div>'+
+      '<p class="g-sub">Con tu cuenta actual (<b>'+esc(GACC.email||'')+'</b>). Al enviarlo, tu licencia pasa a <b>curso</b> pendiente de activación; no se crea ninguna cuenta nueva.</p>'+
+      '<div class="g-row"><div><label for="gcentro">Nombre del centro</label><input id="gcentro" value="'+esc(p.centro||'')+'"></div><div><label for="gcif">CIF / NIF</label><input id="gcif" value="'+esc(p.cif||'')+'"></div></div>'+
+      '<label for="gdir">Dirección</label><input id="gdir" value="'+esc(p.direccion||'')+'">'+
+      '<div class="g-row"><div><label for="gcont">Persona de contacto</label><input id="gcont" value="'+esc(p.contacto||'')+'"></div><div><label for="gef">Email de facturación</label><input id="gef" type="email" value="'+esc(p.email_factura||GACC.email||'')+'"></div></div>'+
+      '<div id="gm"></div>'+
+      '<button class="g-btn" id="gb" onclick="g_doAltaCentro()">Enviar solicitud de licencia</button>';
+  };
+  window.g_pantallaBloqueadoVolver=function(){ g_pantallaBloqueado(); };
+  window.g_doAltaCentro=async function(){
+    var centro=g_val('gcentro'), cif=g_val('gcif'), dir=g_val('gdir'), cont=g_val('gcont'), ef=g_val('gef').toLowerCase();
+    if(!centro) return g_msg('gm','Escribe el nombre del centro.','err');
+    if(!cif) return g_msg('gm','Escribe el CIF o NIF del centro.','err');
+    if(ef && !g_emailOk(ef)) return g_msg('gm','El email de facturación no es válido.','err');
+    g_busy('gb',true);
+    var r=await SB.rpc('solicitar_licencia_curso',{p_centro:centro,p_cif:cif,p_direccion:dir,p_contacto:cont,p_email_factura:ef||GACC.email});
+    g_busy('gb',false);
+    /* supabase-js no lanza excepción: si no se mira .error, el fallo pasa
+       desapercibido y el profesor se queda pensando que ya está pedida. */
+    if(r.error){
+      var m=r.error.message||'';
+      if(/solicitar_licencia_curso|function|schema cache|404/i.test(m))
+        m='Falta instalar en la base de datos la función de alta de centro (CareDesk-SQL-Licencia-Curso.sql).';
+      return g_msg('gm','No se ha podido registrar el centro: '+m,'err');
+    }
+    GACC.prof=Object.assign({},GACC.prof||{},{centro:centro,cif:cif,direccion:dir,contacto:cont,email_factura:ef||GACC.email});
+    var lr=await SB.from('licencias').select('*').eq('profesor_id',sesUser.id).maybeSingle();
+    if(!lr.error){ GACC.lic=lr.data; GACC.est=g_estadoLic(lr.data); }
+    if(!GACC.est.bloqueado) return g_irAPanel();
+    return g_pantallaBloqueado('Centro registrado. Tu licencia de curso queda pendiente de activación; te avisaremos por email de facturación. Cuando esté activa, pulsa “comprobar de nuevo”.','ok');
+  };
 
   /* ============ ENRUTADO SEGÚN ROL → SIMULADOR ============ */
   /* ============ UNA SOLA SESIÓN POR CUENTA ============
