@@ -4627,7 +4627,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-15 · r29';
+const CD_VERSION='2026-09-15 · r30';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -6073,15 +6073,21 @@ langCargar(); setLang(state.lang);
     return out;
   }
 
+  /* El alumno identifica la clase por su profesor, no por el centro: puede
+     tener dos profesores del mismo centro. El nombre del profesor manda y el
+     centro va debajo. */
   function g_nombreClase(c){
-    return c.centro || c.profesor || 'Clase '+g_sala(c.profesor_id);
+    return c.profesor || c.centro || 'Clase '+g_sala(c.profesor_id);
   }
   VIEWS.elegirClase=function(){
     var cl=GACC.clases||[];
     gv().innerHTML='<h1>Elige clase</h1><p class="g-sub">Estás dado de alta en '+cl.length+' clases. Cada una es independiente: sus casos, sus llamadas y sus notas van por separado. Podrás cambiar de clase sin cerrar sesión.</p>'+
       cl.map(function(c,i){
-        var sub=[c.profesor,c.nombre?('como '+c.nombre):''].filter(Boolean).join(' · ');
-        return '<button class="g-btn'+(i?' sec':'')+'" onclick="g_elegirClase('+i+')">'+esc(g_nombreClase(c))+
+        var tit=g_nombreClase(c);
+        var sub=[c.centro!==tit?c.centro:'', c.nombre?('como '+c.nombre):''].filter(Boolean).join(' · ');
+        return '<button class="g-btn'+(i?' sec':'')+'" onclick="g_elegirClase('+i+')">'+
+               (c.profesor?'<span style="display:block;font-size:12px;font-weight:600;opacity:.75">Profesor/a</span>':'')+
+               esc(tit)+
                (sub?'<span style="display:block;font-weight:400;font-size:12.5px;opacity:.8">'+esc(sub)+'</span>':'')+'</button>';
       }).join('')+
       '<div class="g-links"><a onclick="g_salir()">Cerrar sesión</a></div>';
