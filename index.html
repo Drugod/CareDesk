@@ -3491,6 +3491,8 @@ function vSimEspera(){
         ? 'Se ha unido. Estableciendo el audio…'
         : 'Esperando a que se una. La práctica empieza cuando los dos estéis en la llamada: hasta entonces no se graba nada.'}
         <span class="no-i18n"> · <b id="espTmr">0s</b></span></p>
+      ${aceptada?'':`<p class="muted" style="font-size:12.5px" class="no-i18n"><span class="no-i18n">${
+        w.escOk?'Aviso entregado · esperando su respuesta':'Contactando… intento '+(w.intentos||1)+' de '+SIM_INVITA_INTENTOS}</span></p>`}
       <div class="call-actions" style="justify-content:center">
         <button class="btn danger" onclick="simEsperaCancelar('Has cancelado la práctica.')"><svg class="ic"><use href="#i-x"/></svg> Cancelar</button>
       </div>
@@ -3626,12 +3628,50 @@ function practicarSolo(escId){
 function practicarConPareja(escId,partId){
   const caseId=uid('sim'); const e=escenario(escId); const u0=usuario(e.usuarioId)||null;
   state.simActivo={caseId,role:'OP',escenarioId:escId,opId:state.alumnoActivo,pdId:partId};
-  state.simEspera={caseId,escenarioId:escId,partId,fase:'llamando',desde:Date.now()};
-  simEntrarCaso(caseId,'OP');                    // abre el audio; todavía no graba
-  rtcEnviarADatos(rtcIdAlumno(partId),{t:'sim-invite',caseId,role:'PD',opId:state.alumnoActivo,pdId:partId,escenario:e,usuario:u0});
-  rtcEnviarADatos(state.sala+'-PROF',{t:'practica',caseId,modo:'pareja',escenarioId:escId,opId:state.alumnoActivo,pdId:partId,escenario:e,usuario:u0});
+  state.simEspera={caseId,escenarioId:escId,partId,fase:'llamando',desde:Date.now(),
+                   intentos:0,escOk:false,e:e,u:u0};
   simEsperaVigilar();
   go('central'); renderTabs();
+  /* Nada de hacerlo todo a la vez. Abrir el canal con el compañero, avisar al
+     profesor y crear el par de audio son TRES operaciones contra el servidor de
+     señalización; lanzadas en el mismo instante, el servidor público corta el
+     socket — es el mismo fallo que tumbaba al profesor con 30 alumnos. Van
+     escalonadas y el aviso al compañero, que es el que importa, va primero. */
+  simInvitarCompanero();
+  setTimeout(()=>{ if(state.simEspera&&state.simEspera.caseId===caseId)
+    rtcEnviarADatos(state.sala+'-PROF',{t:'practica',caseId,modo:'pareja',escenarioId:escId,opId:state.alumnoActivo,pdId:partId,escenario:e,usuario:u0}); },700);
+  setTimeout(()=>{ if(state.simEspera&&state.simEspera.caseId===caseId)
+    simEntrarCaso(caseId,'OP'); },1600);          // el audio; todavía no graba
+}
+/* Avisar a un compañero NO es como avisar al profesor: con el profesor hay un
+   canal abierto permanente (el latido lo mantiene), pero entre dos alumnos hay
+   que abrirlo en ese momento, y una conexión WebRTC recién pedida falla a
+   menudo a la primera. Así que se reintenta, como hace el audio de la
+   simulación, en vez de mandarlo una vez y dar por hecho que ha llegado. */
+const SIM_INVITA_INTENTOS=6, SIM_INVITA_CADA=3000;
+function simCanalAbierto(peerId){
+  const l=(rtc.dc&&rtc.dc[peerId])||[];
+  return l.some(c=>c.open);
+}
+function simInvitarCompanero(){
+  const w=state.simEspera; if(!w||w.fase!=='llamando') return;
+  clearTimeout(w._re);
+  w.intentos++;
+  rtcPeerVivo();                                  // si nuestro sitio se cayó, reengancharlo
+  const pid=rtcIdAlumno(w.partId);
+  rtcEnviarADatos(pid,{t:'sim-invite',caseId:w.caseId,role:'PD',
+    opId:state.alumnoActivo,pdId:w.partId,escenario:w.e,usuario:w.u});
+  w.escOk=simCanalAbierto(pid);
+  renderTabs();
+  if(w.intentos>=SIM_INVITA_INTENTOS){
+    /* Ni una sola de las conexiones ha llegado a abrirse: no es que no conteste,
+       es que no se le puede alcanzar. Merece un mensaje distinto. */
+    if(!simCanalAbierto(pid))
+      return simEsperaCancelar('No se ha podido contactar con '+((alumno(w.partId)||{}).nombre||'tu compañero')+
+        '. Comprueba que tiene CareDesk abierto; si estáis en la red del centro, puede que bloquee las llamadas.');
+    return;                                       // hay canal: seguimos esperando su respuesta
+  }
+  w._re=setTimeout(()=>{ if(state.simEspera===w) simInvitarCompanero(); },SIM_INVITA_CADA);
 }
 /* Si el compañero no aparece, no se deja al alumno mirando una pantalla que no
    avanza: se cancela y se le dice por qué. */
@@ -3653,6 +3693,7 @@ function simEsperaVigilar(){
 }
 function simEsperaCancelar(motivo){
   const w=state.simEspera; clearInterval(simEsperaInt); simEsperaInt=null;
+  if(w) clearTimeout(w._re);
   state.simEspera=null;
   if(w){
     rtcEnviarADatos(rtcIdAlumno(w.partId),{t:'sim-end',caseId:w.caseId});
@@ -4743,7 +4784,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-15 · r33';
+const CD_VERSION='2026-09-15 · r34';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -4852,7 +4893,7 @@ setInterval(()=>{
   else if(state.rol==='alumno') pintarSalaAlumno();     // el profesor caduca si deja de latir
 }, 5000);
 /* Latido del profesor hacia la sala, con la lista de quién está dentro. */
-setInterval(()=>{ rtcSalaDifundir(); }, PRESENCIA_LATIDO);
+setInterval(()=>{ if(state.rol==='profesor') rtcPeerVivo(); rtcSalaDifundir(); }, PRESENCIA_LATIDO);
 
 function rtcSlug(s){return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'x';}
 /* Identidad de un alumno en la sala.
@@ -4967,7 +5008,15 @@ function rtcProbarSitio(id){
     const fin=v=>{ if(hecho)return; hecho=true; res(v); };
     try{ p=new Peer(id,rtcOpts()); }catch(e){ return fin(true); }
     p.on('open',()=>{ rtc._preparado=p; fin(true); });          // sitio libre y reservado
+    /* 🔴 Estos dos manejadores SOLO valen mientras se está probando el sitio.
+       En cuanto el peer se adopta como el de la app (`rtc._preparado`), sigue
+       siendo el mismo objeto: si no se desactivan, el primer `peer-unavailable`
+       —que llega solo, por ejemplo al escribirle al profesor cuando no está en
+       la sala— DESTRUÍA el peer bueno. El alumno se quedaba sin sitio en la
+       sala a los pocos segundos de entrar, sin ningún aviso, y por eso las
+       invitaciones entre compañeros no llegaban nunca. */
     p.on('error',e=>{
+      if(hecho) return;                                          // ya adoptado: no es asunto nuestro
       const t=(e&&e.type)||'';
       p._retirado=true; try{p.destroy();}catch(_){}
       fin(t!=='unavailable-id');                                 // solo "ocupado" significa NO
@@ -5004,6 +5053,10 @@ async function iniciarRTC(){
   const res=rtc._preparado; rtc._preparado=null;
   if(res && res.open && !res.destroyed && !res._retirado && res.id===rtcMiId()){
     pr=res; yaAbierto=true;                      // reservado en la pantalla de carga
+    /* Y se le quitan los manejadores con los que nació: ahora los pone la app.
+       Dejar los de la prueba sería dejar dentro a alguien que destruye el peer
+       al primer error ajeno. */
+    try{ pr.removeAllListeners('error'); pr.removeAllListeners('open'); pr.removeAllListeners('close'); }catch(e){}
   }else{
     if(res){ res._retirado=true; try{res.destroy();}catch(e){} }
     try{ pr=new Peer(rtcMiId(),rtcOpts()); }
@@ -5205,9 +5258,24 @@ function rtcHello(){ if(state.rol==='alumno'&&rtc.peer) rtcEnviarADatos(state.sa
 /* El alumno manda un latido cada pocos segundos para que el profesor sepa que sigue conectado */
 function rtcLatido(){
   if(state.rol!=='alumno'||!rtc.peer) return;
+  rtcPeerVivo();
   miEstadoLimpiar();
   rtcEnviarADatos(state.sala+'-PROF',{t:'ping',alumnoId:state.alumnoActivo,estados:miEstadoLista()});
 }
+/* ¿Sigue vivo nuestro sitio en el servidor de señalización?
+   PeerJS puede quedarse "desconectado" sin avisar (la red del centro, el móvil
+   en suspensión, un corte del servidor público). Mientras nadie nos escribe no
+   se nota… hasta que un compañero intenta avisarnos y su mensaje se pierde en
+   el vacío. Esto lo comprueba y lo reengancha, para los dos roles. */
+function rtcPeerVivo(){
+  try{
+    if(typeof Peer==='undefined') return false;
+    if(!rtc.peer || rtc.peer.destroyed){ if(state.rol) iniciarRTC(); return false; }
+    if(rtc.peer.disconnected){ try{ rtc.peer.reconnect(); }catch(e){} return false; }
+    return !!rtc.peer.open;
+  }catch(e){ return false; }
+}
+window.rtcPeerVivo=rtcPeerVivo;
 function rtcLatidoArrancar(){ if(rtc._lat) clearInterval(rtc._lat); rtcLatido(); rtc._lat=setInterval(rtcLatido,PRESENCIA_LATIDO); }
 function rtcLatidoParar(){ if(rtc._lat){clearInterval(rtc._lat);rtc._lat=null;} }
 function rtcAdios(){
@@ -5387,6 +5455,16 @@ function rtcRecibir(msg,conn){
   } else if(msg.t==='sim-invite'){
     rtcMerge(msg);
     if(state.simInvite && state.simInvite.caseId===msg.caseId) return;
+    /* El que invita reintenta hasta que le contestamos, así que la misma
+       invitación llega varias veces. Si ya la acepté, lo que toca es repetir el
+       "sí" —su pantalla de espera puede haberse perdido el primero—, no
+       responderle que estoy ocupado con su propio caso. */
+    if(state.simActivo && state.simActivo.caseId===msg.caseId){
+      const otro0=(msg.role==='PD')?msg.opId:msg.pdId;
+      if(otro0 && otro0!==state.alumnoActivo)
+        rtcEnviarADatos(rtcIdAlumno(otro0),{t:'sim-ack',caseId:msg.caseId,de:state.alumnoActivo,ok:true});
+      return;
+    }
     /* Si ya estoy en una llamada, en otra práctica o esperando a alguien, la
        invitación no se puede atender. Antes se ignoraba en silencio y quien
        invitaba se quedaba esperando sin saber por qué. */
