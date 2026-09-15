@@ -777,6 +777,7 @@ const state = {
   llamada:null,   // llamada en curso en la central
   simActivo:null, // {caseId, role:'OP'|'PD', escenarioId} cuando el alumno está en una simulación lanzada
   simInvite:null, // {caseId, role, escenarioId} invitación entrante pendiente de aceptar
+  simEspera:null, // {caseId, escenarioId, partId, fase} esperando a que el compañero entre
   grabaciones:{}, // (profesor) regId -> {url, alumnoId, escenarioId, dur, ts}
   _sub:{casos:'esc',agenda:'ag',avaluacio:'eval'}, // sub-pestaña activa en las pestañas fusionadas
 };
@@ -1061,7 +1062,7 @@ const I18N_EN = {
   'Central':'Control room',
   'Central de teleasistencia':'Telecare control room',
   'Centro médico':'Health centre',
-  'Cerrar sesión':'Sign out','conectado':'online','no conectado':'offline','Todavía no hay más alumnos en tu clase. Cuando tu profesor dé de alta a alguien más, podrás practicar con él.':'There are no other students in your class yet. When your teacher adds someone else, you will be able to practise with them.','Ahora mismo no hay ningún compañero conectado. Solo le llegará la invitación si tiene CareDesk abierto.':'No classmates are online right now. The invitation only arrives if they have CareDesk open.','Tu profesor no está en la sala, así que no sabemos quién está conectado. La invitación solo le llegará si tiene CareDesk abierto.':'Your teacher is not in the room, so we do not know who is online. The invitation only arrives if your classmate has CareDesk open.','Configuración':'Settings','Configuración del centro':'School settings','Datos del centro y facturación':'School and billing details','Nombre del centro':'School name','Persona de contacto':'Contact person','Email de facturación':'Billing email','Tu nombre':'Your name','Nombre y apellidos':'Full name','Es lo que ven tus alumnos al elegir clase.':'This is what your students see when they pick a class.','Salen en tus facturas. El alumnado no los ve.':'These appear on your invoices. Students never see them.','Cambiar de clase':'Switch class',
+  'Cerrar sesión':'Sign out','LLAMANDO':'CALLING','CONECTANDO':'CONNECTING','Se ha unido. Estableciendo el audio…':'They have joined. Setting up audio…','Esperando a que se una. La práctica empieza cuando los dos estéis en la llamada: hasta entonces no se graba nada.':'Waiting for them to join. The practice starts when you are both in the call: nothing is recorded until then.','Cancelar':'Cancel','conectado':'online','no conectado':'offline','Todavía no hay más alumnos en tu clase. Cuando tu profesor dé de alta a alguien más, podrás practicar con él.':'There are no other students in your class yet. When your teacher adds someone else, you will be able to practise with them.','Ahora mismo no hay ningún compañero conectado. Solo le llegará la invitación si tiene CareDesk abierto.':'No classmates are online right now. The invitation only arrives if they have CareDesk open.','Tu profesor no está en la sala, así que no sabemos quién está conectado. La invitación solo le llegará si tiene CareDesk abierto.':'Your teacher is not in the room, so we do not know who is online. The invitation only arrives if your classmate has CareDesk open.','Configuración':'Settings','Configuración del centro':'School settings','Datos del centro y facturación':'School and billing details','Nombre del centro':'School name','Persona de contacto':'Contact person','Email de facturación':'Billing email','Tu nombre':'Your name','Nombre y apellidos':'Full name','Es lo que ven tus alumnos al elegir clase.':'This is what your students see when they pick a class.','Salen en tus facturas. El alumnado no los ve.':'These appear on your invoices. Students never see them.','Cambiar de clase':'Switch class',
   'Cierra o programa el seguimiento correctamente':'Closes or schedules follow-up correctly',
   'Ciudad':'Town',
   'Clasifica correctamente el tipo de incidencia':'Classifies the type of incident correctly',
@@ -1850,7 +1851,7 @@ const I18N = {
   '¿Qué alumno eres?':'Quin alumne eres?','Elige tu nombre para acceder a tu puesto en la central.':'Tria el teu nom per a accedir al teu lloc en la central.',
   // --- Botones y palabras comunes ---
   'Guardar':'Guardar','Cancelar':'Cancel·lar','Editar':'Editar','Eliminar':'Eliminar','Añadir':'Afegir','Volver':'Tornar','Entendido':'Entés',
-  'Aceptar':'Acceptar','Rechazar':'Rebutjar','Colgar':'Penjar','Silenciar':'Silenciar','Activar':'Activar','Cerrar sesión':'Tancar sessió','conectado':'connectat','no conectado':'no connectat','Todavía no hay más alumnos en tu clase. Cuando tu profesor dé de alta a alguien más, podrás practicar con él.':'Encara no hi ha més alumnes en la teua classe. Quan el teu professor done d\'alta algú més, podràs practicar amb ell.','Ahora mismo no hay ningún compañero conectado. Solo le llegará la invitación si tiene CareDesk abierto.':'Ara mateix no hi ha cap company connectat. Només li arribarà la invitació si té CareDesk obert.','Tu profesor no está en la sala, así que no sabemos quién está conectado. La invitación solo le llegará si tiene CareDesk abierto.':'El teu professor no està en la sala, així que no sabem qui està connectat. La invitació només li arribarà si té CareDesk obert.','Configuración':'Configuració','Configuración del centro':'Configuració del centre','Datos del centro y facturación':'Dades del centre i facturació','Nombre del centro':'Nom del centre','Persona de contacto':'Persona de contacte','Email de facturación':'Email de facturació','Tu nombre':'El teu nom','Nombre y apellidos':'Nom i cognoms','Es lo que ven tus alumnos al elegir clase.':'És el que veuen els teus alumnes en triar classe.','Salen en tus facturas. El alumnado no los ve.':'Ixen en les teues factures. L\'alumnat no les veu.','Cambiar de clase':'Canviar de classe',
+  'Aceptar':'Acceptar','Rechazar':'Rebutjar','Colgar':'Penjar','Silenciar':'Silenciar','Activar':'Activar','Cerrar sesión':'Tancar sessió','LLAMANDO':'TRUCANT','CONECTANDO':'CONNECTANT','Se ha unido. Estableciendo el audio…':'S\'ha unit. Establint l\'àudio…','Esperando a que se una. La práctica empieza cuando los dos estéis en la llamada: hasta entonces no se graba nada.':'Esperant que s\'unisca. La pràctica comença quan estigueu els dos en la trucada: fins llavors no es grava res.','conectado':'connectat','no conectado':'no connectat','Todavía no hay más alumnos en tu clase. Cuando tu profesor dé de alta a alguien más, podrás practicar con él.':'Encara no hi ha més alumnes en la teua classe. Quan el teu professor done d\'alta algú més, podràs practicar amb ell.','Ahora mismo no hay ningún compañero conectado. Solo le llegará la invitación si tiene CareDesk abierto.':'Ara mateix no hi ha cap company connectat. Només li arribarà la invitació si té CareDesk obert.','Tu profesor no está en la sala, así que no sabemos quién está conectado. La invitación solo le llegará si tiene CareDesk abierto.':'El teu professor no està en la sala, així que no sabem qui està connectat. La invitació només li arribarà si té CareDesk obert.','Configuración':'Configuració','Configuración del centro':'Configuració del centre','Datos del centro y facturación':'Dades del centre i facturació','Nombre del centro':'Nom del centre','Persona de contacto':'Persona de contacte','Email de facturación':'Email de facturació','Tu nombre':'El teu nom','Nombre y apellidos':'Nom i cognoms','Es lo que ven tus alumnos al elegir clase.':'És el que veuen els teus alumnes en triar classe.','Salen en tus facturas. El alumnado no los ve.':'Ixen en les teues factures. L\'alumnat no les veu.','Cambiar de clase':'Canviar de classe',
   'Dar de alta':'Donar d\'alta','Nueva pregunta':'Nova pregunta','Nuevo evento':'Nou esdeveniment','Nuevo usuario':'Nou usuari','Nueva alerta':'Nova alerta',
   'Buscar':'Cerca','Actualizar':'Actualitzar','Retirar':'Retirar','Finalizar':'Finalitzar','Iniciar':'Iniciar','Completar':'Completar',
   'Lanzar caso':'Llançar cas','Llamar a compañero':'Trucar a company','Llamar':'Trucar','Lanzar una llamada':'Llançar una trucada',
@@ -2412,6 +2413,8 @@ function salir(){
   state.presencia={};
   rtcColgar();try{rtcCerrarDCs();}catch(e){}try{rtc.peer&&rtc.peer.destroy();}catch(e){}rtc.peer=null;
   state.profTs=0; state.salaOn=[];
+  state.simEspera=null; state.simInvite=null; state.simActivo=null;
+  try{ clearInterval(simEsperaInt); }catch(e){}
   state.rol=null;state.alumnoActivo=null;state.llamada=null;
   document.getElementById('app').classList.add('hidden');
   document.getElementById('splash').classList.remove('hidden');
@@ -3100,16 +3103,33 @@ function simAceptarInvite(){
   state.simActivo={caseId:inv.caseId,role:inv.role,escenarioId:inv.escenarioId,opId:inv.opId,pdId:inv.pdId};
   simEntrarCaso(inv.caseId,inv.role);
   rtcSimEstado(inv.caseId,inv.role,'en_curso');
+  /* Avisar a quien invitó: es lo que destraba su pantalla de espera. */
+  const otro=(inv.role==='PD')?inv.opId:inv.pdId;
+  if(otro && otro!==state.alumnoActivo)
+    rtcEnviarADatos(rtcIdAlumno(otro),{t:'sim-ack',caseId:inv.caseId,de:state.alumnoActivo,ok:true});
   if(inv.role==='OP'){
-    const e=escenario(inv.escenarioId);
-    state.llamada={cid:inv.caseId,escenarioId:e.id,inicio:Date.now(),pasos:new Set(),recursos:new Set(),tipo:null,notas:'',sim:true,pdId:inv.pdId};
-    recStart();
-    clearInterval(timerInt);
-    timerInt=setInterval(()=>{const el=document.getElementById('tmr');if(el){const s=Math.floor((Date.now()-state.llamada.inicio)/1000);el.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}},500);
+    /* También el teleoperador de un caso lanzado por el profesor espera a que
+       su pareja esté dentro antes de arrancar el cronómetro y la grabación. */
+    state.simEspera={caseId:inv.caseId,escenarioId:inv.escenarioId,partId:inv.pdId,fase:'llamando',desde:Date.now()};
+    simEsperaVigilar();
+    go('central');
   }
   beep(); renderTabs();
 }
-function simRechazarInvite(){ const inv=state.simInvite; state.simInvite=null; if(inv) rtcSimEstado(inv.caseId,inv.role,'rechazada'); renderTabs(); }
+function simRechazarInvite(){
+  const inv=state.simInvite; state.simInvite=null;
+  if(inv){ rtcSimEstado(inv.caseId,inv.role,'rechazada'); simAvisarInvitador(inv,'rechazada'); }
+  renderTabs();
+}
+/* Contesta a quien ha invitado. Si el caso lo ha lanzado el profesor (yo sería
+   el teleoperador), el aviso va al profesor, que es quien lo montó. */
+function simAvisarInvitador(inv,motivo){
+  const yo=state.alumnoActivo;
+  const otro = (inv.role==='PD') ? inv.opId : (inv.opId===yo ? inv.pdId : inv.opId);
+  const msg={t:'sim-ack',caseId:inv.caseId,de:yo,ok:false,motivo};
+  if(otro && otro!==yo) rtcEnviarADatos(rtcIdAlumno(otro),msg);
+  rtcEnviarADatos(state.sala+'-PROF',{t:'sim-state',caseId:inv.caseId,role:inv.role,estado:motivo==='ocupado'?'ocupada':'rechazada'});
+}
 function simSalirPD(){ const s=state.simActivo; if(s) rtcSimEstado(s.caseId,s.role,'salida'); simSalir(); state.simActivo=null; renderTabs(); }
 function vSimPD(){
   const s=state.simActivo, e=escenario(s.escenarioId), u=usuario(e.usuarioId)||{};
@@ -3453,7 +3473,31 @@ function autoEval(r,e){
 /* =========================================================
    VISTAS — ALUMNO (central)
    ========================================================= */
+/* Esperando a que el compañero entre en la práctica. Mientras tanto no se
+   graba, no corre el cronómetro y no se ve la ficha: la práctica no ha
+   empezado. */
+function vSimEspera(){
+  const w=state.simEspera, e=escenario(w.escenarioId)||{titulo:'—'};
+  const quien=(alumno(w.partId)||{}).nombre||'tu compañero/a';
+  const aceptada=w.fase==='aceptada';
+  return `<h2 class="section">Puesto de la central</h2>
+    ${barraLlamadasAlumno()}
+    <div class="incoming">
+      <div class="pulse ring"><svg class="ic"><use href="#i-phone"/></svg></div>
+      <div class="chip y" style="margin-bottom:6px">${aceptada?'CONECTANDO':'LLAMANDO'}</div>
+      <h2>${esc(quien)}</h2>
+      <p class="who">${esc(e.titulo)}</p>
+      <p class="muted">${aceptada
+        ? 'Se ha unido. Estableciendo el audio…'
+        : 'Esperando a que se una. La práctica empieza cuando los dos estéis en la llamada: hasta entonces no se graba nada.'}
+        <span class="no-i18n"> · <b id="espTmr">0s</b></span></p>
+      <div class="call-actions" style="justify-content:center">
+        <button class="btn danger" onclick="simEsperaCancelar('Has cancelado la práctica.')"><svg class="ic"><use href="#i-x"/></svg> Cancelar</button>
+      </div>
+    </div>`;
+}
 function vCentral(){
+  if(state.simEspera) return vSimEspera();
   if(state.simActivo && state.simActivo.role==='PD') return vSimPD();
   if(state.llamada) return vLlamadaEnCurso();
   if(state.simInvite){
@@ -3520,7 +3564,7 @@ function descartar(cid){
   state.cola=state.cola.filter(c=>c.id!==cid);toast('Llamada rechazada');renderTabs();}
 /* ---- Diálogo de práctica del alumno (solo o con un compañero) ---- */
 function practicarDialog(){
-  if(state.simActivo){return toast('Ya estás en una simulación');}
+  if(state.simActivo||state.simEspera){return toast('Ya estás en una simulación');}
   const escOpts=escenariosVisibles().map(e=>`<option value="${e.id}">${tipoTxt(e.tipo)} — ${esc(e.titulo)}</option>`).join('');
   /* Los compañeros salen de la clase (mis_companeros) y, si el profesor está
      en la sala, se marca a quién tenemos por conectado. Antes esta lista era
@@ -3575,17 +3619,63 @@ function practicarSolo(escId){
   rtcEnviarADatos(state.sala+'-PROF',{t:'practica',caseId,modo:'solo',escenarioId:escId,opId:state.alumnoActivo,escenario:e,usuario:usuario(e.usuarioId)||null});
   toast('<svg class="ic"><use href="#i-target"/></svg> Práctica en solitario'); renderTabs();
 }
+/* La práctica en pareja ya no empieza al invitar: primero se llama al
+   compañero y se espera a que esté DENTRO y con audio. Antes arrancaba el
+   cronómetro, la grabación y la ficha aunque el otro no llegara nunca, así que
+   quedaban grabaciones de un minuto de silencio y actuaciones a medias. */
 function practicarConPareja(escId,partId){
   const caseId=uid('sim'); const e=escenario(escId); const u0=usuario(e.usuarioId)||null;
   state.simActivo={caseId,role:'OP',escenarioId:escId,opId:state.alumnoActivo,pdId:partId};
-  state.llamada={cid:caseId,escenarioId:escId,inicio:Date.now(),pasos:new Set(),recursos:new Set(),tipo:null,notas:'',sim:true,pdId:partId};
-  simEntrarCaso(caseId,'OP');
-  recStart();
+  state.simEspera={caseId,escenarioId:escId,partId,fase:'llamando',desde:Date.now()};
+  simEntrarCaso(caseId,'OP');                    // abre el audio; todavía no graba
   rtcEnviarADatos(rtcIdAlumno(partId),{t:'sim-invite',caseId,role:'PD',opId:state.alumnoActivo,pdId:partId,escenario:e,usuario:u0});
   rtcEnviarADatos(state.sala+'-PROF',{t:'practica',caseId,modo:'pareja',escenarioId:escId,opId:state.alumnoActivo,pdId:partId,escenario:e,usuario:u0});
+  simEsperaVigilar();
+  go('central'); renderTabs();
+}
+/* Si el compañero no aparece, no se deja al alumno mirando una pantalla que no
+   avanza: se cancela y se le dice por qué. */
+const SIM_ESPERA_MS=45000, SIM_AUDIO_MS=15000;
+let simEsperaInt=null;
+function simEsperaVigilar(){
+  clearInterval(simEsperaInt);
+  simEsperaInt=setInterval(()=>{
+    const w=state.simEspera; if(!w){ clearInterval(simEsperaInt); return; }
+    const t=Date.now()-w.desde;
+    if(w.fase==='llamando' && t>SIM_ESPERA_MS)
+      return simEsperaCancelar((alumno(w.partId)||{}).nombre+' no ha contestado a la práctica.');
+    /* Ha aceptado pero el audio no acaba de llegar: se empieza igual, mejor
+       practicar sin audio que quedarse bloqueado. */
+    if(w.fase==='aceptada' && Date.now()-w.acepto>SIM_AUDIO_MS) return simArrancarOP(true);
+    const el=document.getElementById('espTmr');
+    if(el) el.textContent=Math.floor(t/1000)+'s';
+  },1000);
+}
+function simEsperaCancelar(motivo){
+  const w=state.simEspera; clearInterval(simEsperaInt); simEsperaInt=null;
+  state.simEspera=null;
+  if(w){
+    rtcEnviarADatos(rtcIdAlumno(w.partId),{t:'sim-end',caseId:w.caseId});
+    rtcEnviarADatos(state.sala+'-PROF',{t:'sim-end',caseId:w.caseId});
+  }
+  simSalir(); state.simActivo=null; state.llamada=null; clearInterval(timerInt);
+  if(motivo) toast(motivo,5500);
+  go('central'); renderTabs();
+}
+window.simEsperaCancelar=simEsperaCancelar;
+/* El compañero ya está dentro: ahora sí empieza la práctica de verdad. */
+function simArrancarOP(sinAudio){
+  const w=state.simEspera; if(!w) return;
+  clearInterval(simEsperaInt); simEsperaInt=null;
+  state.simEspera=null;
+  const e=escenario(w.escenarioId);
+  state.llamada={cid:w.caseId,escenarioId:w.escenarioId,inicio:Date.now(),pasos:new Set(),recursos:new Set(),tipo:null,notas:'',sim:true,pdId:w.partId};
+  recStart();
   clearInterval(timerInt);
   timerInt=setInterval(()=>{const el=document.getElementById('tmr');if(el){const s=Math.floor((Date.now()-state.llamada.inicio)/1000);el.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}},500);
-  toast('<svg class="ic"><use href="#i-target"/></svg> Práctica iniciada con '+((alumno(partId)||{}).nombre||'')); renderTabs();
+  toast('<svg class="ic"><use href="#i-target"/></svg> '+((alumno(w.partId)||{}).nombre||'Tu compañero')+' se ha unido'+(sinAudio?' (sin audio todavía)':'')+': empieza la práctica');
+  try{ anunciar('Tu compañero se ha unido. Empieza la práctica.'); }catch(err){}
+  go('central'); renderTabs();
 }
 
 let timerInt=null;
@@ -4492,6 +4582,11 @@ function simPlay(pid,st){
   a.srcObject=st;a.play().catch(()=>{});
   recAddStream(st,'sim-'+pid);          // la grabación toma solo la pista de audio
   simPanel();                            // repinta por si ahora hay imagen
+  /* Hay audio del otro lado: los dos están realmente en la llamada. Este es el
+     momento de empezar la práctica (ficha, cronómetro y grabación).
+     Solo cuenta la pareja: si quien se ha conectado es el profesor para
+     escuchar (rol OB), la práctica no ha empezado todavía. */
+  if(state.simEspera && sim.caseId===state.simEspera.caseId && /-PD$/.test(pid)) simArrancarOP(false);
 }
 /* Coloca cada stream en su <video> después de pintar el panel */
 function simPintarVideos(){
@@ -4648,7 +4743,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-15 · r32';
+const CD_VERSION='2026-09-15 · r33';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -4760,8 +4855,22 @@ setInterval(()=>{
 setInterval(()=>{ rtcSalaDifundir(); }, PRESENCIA_LATIDO);
 
 function rtcSlug(s){return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'x';}
-function rtcMiId(){return state.rol==='profesor'?(state.sala+'-PROF'):(state.sala+'-AL-'+rtcSlug(alumno(state.alumnoActivo).nombre));}
-function rtcIdAlumno(a){const nom=(typeof a==='string'?(alumno(a)||{}).nombre:a.nombre)||'';return state.sala+'-AL-'+rtcSlug(nom);}
+/* Identidad de un alumno en la sala.
+   Antes se construía con su NOMBRE, y ahí estaba el fallo de las prácticas en
+   pareja: el que invita usa el nombre que le llega del servidor y el invitado
+   usa el suyo propio; en cuanto los dos no coincidían al carácter (un nombre
+   cambiado por el profesor, una tilde, la lista antigua) la invitación se
+   enviaba a un identificador inexistente y no llegaba nunca, sin error.
+   Ahora se usa el identificador del alumno, que es el slug de su email: es el
+   mismo dato en los dos extremos y no cambia aunque le cambien el nombre. */
+function rtcClave(a){
+  if(!a) return 'x';
+  if(typeof a==='string') a=alumno(a)||{id:a};
+  if(a.id && /^al_/.test(a.id)) return rtcSlug(a.id.slice(3));
+  return rtcSlug(a.email||a.nombre||a.id||'');
+}
+function rtcMiId(){return state.rol==='profesor'?(state.sala+'-PROF'):(state.sala+'-AL-'+rtcClave(alumno(state.alumnoActivo)));}
+function rtcIdAlumno(a){return state.sala+'-AL-'+rtcClave(a);}
 function rtcMiNombre(){return state.rol==='profesor'?'Profesor':(alumno(state.alumnoActivo)||{}).nombre||'Alumno';}
 /* ---- Servidor de señalización ----
    Por defecto el público de PeerJS (0.peerjs.com). Se puede apuntar a otro por
@@ -4843,9 +4952,13 @@ function rtcOrigenSeguro(){
    la app para encontrarse las llamadas caídas mientras la sesión anterior se
    cierra. Si el sitio está libre, NOS QUEDAMOS el peer abierto y lo adopta
    iniciarRTC(); así no hay ventana en la que otro pueda colarse. */
-function rtcIdDe(rol,sala,nombre){
+/* `clave` es el identificador del alumno (al_<slug del email>) o, en el modo
+   de demostración sin cuentas, su nombre. */
+function rtcIdDe(rol,sala,clave){
   sala=(sala||'').trim().toUpperCase().replace(/[^A-Z0-9-]/g,'')||'CENTRO-1';
-  return rol==='profesor' ? (sala+'-PROF') : (sala+'-AL-'+rtcSlug(nombre||''));
+  if(rol==='profesor') return sala+'-PROF';
+  clave=String(clave||'');
+  return sala+'-AL-'+rtcSlug(/^al_/.test(clave)?clave.slice(3):clave);
 }
 function rtcProbarSitio(id){
   return new Promise(res=>{
@@ -5273,12 +5386,25 @@ function rtcRecibir(msg,conn){
     if(state.cola.some(c=>c.id===msg.casoId)){ state.cola=state.cola.filter(c=>c.id!==msg.casoId); renderTabs(); }
   } else if(msg.t==='sim-invite'){
     rtcMerge(msg);
-    if(state.simActivo){ return; }                 // ya está en una simulación
     if(state.simInvite && state.simInvite.caseId===msg.caseId) return;
+    /* Si ya estoy en una llamada, en otra práctica o esperando a alguien, la
+       invitación no se puede atender. Antes se ignoraba en silencio y quien
+       invitaba se quedaba esperando sin saber por qué. */
+    const ocupado = !!state.simActivo || !!state.llamada || !!state.simEspera || !!state.simInvite;
+    if(ocupado){ simAvisarInvitador(msg,'ocupado'); return; }
     state.simInvite={caseId:msg.caseId,role:msg.role,opId:msg.opId,pdId:msg.pdId,escenarioId:msg.escenario?msg.escenario.id:msg.escenarioId};
     toast('<svg class="ic"><use href="#i-headset"/></svg> Simulación entrante: eres '+(msg.role==='OP'?'teleoperador/a':'persona dependiente')); beep();
     go('central');
+  } else if(msg.t==='sim-ack'){
+    const w=state.simEspera;
+    if(!w || w.caseId!==msg.caseId) return;
+    const quien=(alumno(msg.de)||{}).nombre||'Tu compañero';
+    if(msg.ok){ w.fase='aceptada'; w.acepto=Date.now(); renderTabs(); return; }
+    return simEsperaCancelar(msg.motivo==='ocupado'
+      ? quien+' ya está en otra llamada ahora mismo: no puede unirse a la práctica.'
+      : quien+' ha rechazado la práctica.');
   } else if(msg.t==='sim-end'){
+    if(state.simEspera && state.simEspera.caseId===msg.caseId) return simEsperaCancelar('La práctica se ha cancelado.');
     if(state.simInvite && state.simInvite.caseId===msg.caseId) state.simInvite=null;
     if(state.simActivo && state.simActivo.caseId===msg.caseId){
       simSalir(); state.simActivo=null; state.llamada=null; clearInterval(timerInt);
@@ -6164,7 +6290,7 @@ langCargar(); setLang(state.lang);
     GACC.sala=g_sala(c.profesor_id);
     await g_cargarCompaneros();
     await g_cargarTodo();
-    await sesionEsperarSitio('alumno',GACC.alu.nombre);
+    await sesionEsperarSitio('alumno','al_'+g_slug(GACC.email));
     return g_abrirAlumno();
   }
 
@@ -6182,7 +6308,8 @@ langCargar(); setLang(state.lang);
     try{ rtc.peer=null; }catch(e){}
     state.rol=null; state.alumnoActivo=null; state.llamada=null;
     state.registros=[]; state.presencia={}; state.cola=[]; state.salaOn=[]; state.profTs=0;
-    state.miEstado={};
+    state.miEstado={}; state.simEspera=null; state.simInvite=null; state.simActivo=null;
+    try{ clearInterval(simEsperaInt); }catch(e){}
     g_restaurarCatalogo();
     state.examenes=null;
     try{ closeModal(); }catch(e){}
