@@ -579,6 +579,7 @@
     <button class="btn ghost sm" onclick="abrirAjustesA11y()" title="Ajustes y accesibilidad" aria-label="Ajustes y accesibilidad"><svg class="ic"><use href="#i-eye"/></svg></button>
     <button class="btn ghost sm" onclick="verNotificaciones()" title="Notificaciones" aria-label="Notificaciones"><svg class="ic"><use href="#i-bell"/></svg></button>
     <div class="role-pill"><span class="rp-et">Sesión:</span> <b id="whoLabel">—</b></div>
+    <button class="btn ghost sm hidden" id="btnClase" onclick="g_cambiarClase()" title="Cambiar de clase">Cambiar de clase</button>
     <button class="btn ghost sm" onclick="salir()" title="Cerrar sesión">Cerrar sesión</button>
   </header>
   <main>
@@ -1058,7 +1059,7 @@ const I18N_EN = {
   'Central':'Control room',
   'Central de teleasistencia':'Telecare control room',
   'Centro médico':'Health centre',
-  'Cerrar sesión':'Sign out',
+  'Cerrar sesión':'Sign out','Cambiar de clase':'Switch class',
   'Cierra o programa el seguimiento correctamente':'Closes or schedules follow-up correctly',
   'Ciudad':'Town',
   'Clasifica correctamente el tipo de incidencia':'Classifies the type of incident correctly',
@@ -1847,7 +1848,7 @@ const I18N = {
   '¿Qué alumno eres?':'Quin alumne eres?','Elige tu nombre para acceder a tu puesto en la central.':'Tria el teu nom per a accedir al teu lloc en la central.',
   // --- Botones y palabras comunes ---
   'Guardar':'Guardar','Cancelar':'Cancel·lar','Editar':'Editar','Eliminar':'Eliminar','Añadir':'Afegir','Volver':'Tornar','Entendido':'Entés',
-  'Aceptar':'Acceptar','Rechazar':'Rebutjar','Colgar':'Penjar','Silenciar':'Silenciar','Activar':'Activar','Cerrar sesión':'Tancar sessió',
+  'Aceptar':'Acceptar','Rechazar':'Rebutjar','Colgar':'Penjar','Silenciar':'Silenciar','Activar':'Activar','Cerrar sesión':'Tancar sessió','Cambiar de clase':'Canviar de classe',
   'Dar de alta':'Donar d\'alta','Nueva pregunta':'Nova pregunta','Nuevo evento':'Nou esdeveniment','Nuevo usuario':'Nou usuari','Nueva alerta':'Nova alerta',
   'Buscar':'Cerca','Actualizar':'Actualitzar','Retirar':'Retirar','Finalizar':'Finalitzar','Iniciar':'Iniciar','Completar':'Completar',
   'Lanzar caso':'Llançar cas','Llamar a compañero':'Trucar a company','Llamar':'Trucar','Lanzar una llamada':'Llançar una trucada',
@@ -4626,7 +4627,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-14 · r28';
+const CD_VERSION='2026-09-15 · r29';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -6030,14 +6031,98 @@ langCargar(); setLang(state.lang);
       await sesionEsperarSitio('profesor');
       return g_abrirProfesor();
     } else {
-      var al=await SB.from('alumnos').select('*').eq('id',sesUser.id).maybeSingle();
-      if(!al.data){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta de alumno no está completa. Pide a tu profesor que te dé de alta con tu email.'}); }
-      GACC.alu=al.data; GACC.sala=g_sala(al.data.profesor_id);
-      await g_cargarTodo();
-      await sesionEsperarSitio('alumno',GACC.alu.nombre);
-      return g_abrirAlumno();
+      /* Un alumno puede estar en varias clases (dos asignaturas, dos centros,
+         un repetidor…). Son independientes: elige en cuál entra y trabaja en
+         una a la vez, porque su sitio en la sala de llamadas es uno por sala. */
+      var clases=await g_misClases();
+      if(!clases.length){ await SB.auth.signOut(); sesUser=null; return g_go('login',{err:'Tu cuenta de alumno no está completa. Pide a tu profesor que te dé de alta con tu email.'}); }
+      GACC.clases=clases;
+      if(clases.length>1) return g_go('elegirClase');
+      return g_entrarEnClase(clases[0]);
     }
   }
+
+  /* Las clases del alumno. Primero engancha las invitaciones nuevas (un profesor
+     que le ha dado de alta hoy) y luego las lee. Si la base de datos todavía no
+     tiene la migración multiclase, se cae con elegancia a la clase única. */
+  async function g_misClases(){
+    var out=[];
+    /* Todo el acceso del alumno pasa por aquí: si algo falla (base de datos sin
+       migrar, red, versión antigua) se sigue adelante con la clase única en vez
+       de dejarle fuera. Nunca se lanza desde este punto. */
+    try{
+      var v=await SB.rpc('vincular_mis_clases');
+      if(v&&v.error) console.warn('CareDesk · no se pudieron enganchar las clases:',v.error.message);
+    }catch(e){ console.warn('CareDesk · vincular_mis_clases no disponible:',e&&e.message||e); }
+    try{
+      var r=await SB.rpc('mis_clases');
+      if(r&&!r.error&&r.data&&r.data.length){
+        out=r.data.map(function(c){
+          return {profesor_id:c.profesor_id,profesor:c.profesor||'',centro:c.centro||'',nombre:c.nombre||''};
+        });
+      } else if(r&&r.error){
+        console.warn('CareDesk · mis_clases no disponible:',r.error.message);
+      }
+    }catch(e){ console.warn('CareDesk · mis_clases no disponible:',e&&e.message||e); }
+    if(!out.length){
+      try{
+        var al=await SB.from('alumnos').select('*').eq('id',sesUser.id).maybeSingle();
+        if(al&&al.data) out=[{profesor_id:al.data.profesor_id,profesor:'',centro:'',nombre:al.data.nombre||''}];
+      }catch(e){ console.warn('CareDesk · no se pudo leer la clase:',e&&e.message||e); }
+    }
+    return out;
+  }
+
+  function g_nombreClase(c){
+    return c.centro || c.profesor || 'Clase '+g_sala(c.profesor_id);
+  }
+  VIEWS.elegirClase=function(){
+    var cl=GACC.clases||[];
+    gv().innerHTML='<h1>Elige clase</h1><p class="g-sub">Estás dado de alta en '+cl.length+' clases. Cada una es independiente: sus casos, sus llamadas y sus notas van por separado. Podrás cambiar de clase sin cerrar sesión.</p>'+
+      cl.map(function(c,i){
+        var sub=[c.profesor,c.nombre?('como '+c.nombre):''].filter(Boolean).join(' · ');
+        return '<button class="g-btn'+(i?' sec':'')+'" onclick="g_elegirClase('+i+')">'+esc(g_nombreClase(c))+
+               (sub?'<span style="display:block;font-weight:400;font-size:12.5px;opacity:.8">'+esc(sub)+'</span>':'')+'</button>';
+      }).join('')+
+      '<div class="g-links"><a onclick="g_salir()">Cerrar sesión</a></div>';
+  };
+  window.g_elegirClase=function(i){
+    var c=(GACC.clases||[])[i]; if(!c) return;
+    gv().innerHTML='<p class="g-sub">Entrando en '+esc(g_nombreClase(c))+'…</p>';
+    return g_entrarEnClase(c);
+  };
+  async function g_entrarEnClase(c){
+    GACC.clase=c;
+    GACC.alu={id:sesUser.id,profesor_id:c.profesor_id,email:GACC.email,
+              nombre:c.nombre||(GACC.perfil&&GACC.perfil.nombre)||GACC.email};
+    GACC.sala=g_sala(c.profesor_id);
+    await g_cargarTodo();
+    await sesionEsperarSitio('alumno',GACC.alu.nombre);
+    return g_abrirAlumno();
+  }
+
+  /* Cambiar de clase sin cerrar sesión: se suelta la sala actual y se vuelve al
+     selector. Lo que es de la clase anterior (casos, actuaciones, exámenes) se
+     descarta aquí para no mezclarlo con el de la nueva. */
+  window.g_cambiarClase=async function(){
+    if(g_esProfesor()||!(GACC.clases&&GACC.clases.length>1)) return;
+    try{ if(typeof rtcAdios==='function') rtcAdios(); }catch(e){}
+    try{ if(typeof rtcLatidoParar==='function') rtcLatidoParar(); }catch(e){}
+    try{ if(typeof rtcColgar==='function') rtcColgar(); }catch(e){}
+    try{ rtcCerrarDCs(); }catch(e){}
+    try{ if(rtc&&rtc.local){ rtc.local.getTracks().forEach(function(t){t.stop();}); rtc.local=null; } }catch(e){}
+    try{ if(rtc&&rtc.peer){ rtc.peer._retirado=true; rtc.peer.destroy(); } }catch(e){}
+    try{ rtc.peer=null; }catch(e){}
+    state.rol=null; state.alumnoActivo=null; state.llamada=null;
+    state.registros=[]; state.presencia={}; state.cola=[]; state.salaOn=[]; state.profTs=0;
+    state.miEstado={};
+    g_restaurarCatalogo();
+    state.examenes=null;
+    try{ closeModal(); }catch(e){}
+    var a=document.getElementById('app'); if(a)a.classList.add('hidden');
+    var bc=document.getElementById('btnClase'); if(bc)bc.classList.add('hidden');
+    showGate(); g_go('elegirClase');
+  };
 
   async function g_recargarRoster(){
     var r=await SB.from('invitaciones').select('*').eq('profesor_id',GACC.uid).order('creado',{ascending:true});
@@ -6281,7 +6366,9 @@ langCargar(); setLang(state.lang);
   async function g_cargarActuaciones(){
     if(!SB||!GACC.uid) return;
     var q=SB.from('actuaciones').select('*').order('creado',{ascending:true});
-    q=g_esProfesor()?q.eq('profesor_id',GACC.uid):q.eq('alumno_id',GACC.uid);
+    /* El alumno ve solo el expediente de la clase en la que ha entrado: cada
+       profesor lleva su asignatura aparte y mezclarlas confunde a los dos. */
+    q=g_esProfesor()?q.eq('profesor_id',GACC.uid):q.eq('alumno_id',GACC.uid).eq('profesor_id',g_profesorId());
     var r=await q;
     if(r.error){ console.warn('CareDesk · no se pudo leer el historial:',r.error.message); return; }
     (r.data||[]).forEach(function(row){
@@ -6334,6 +6421,12 @@ langCargar(); setLang(state.lang);
     window._salaTmp=GACC.sala;
     hideGate();
     entrar('alumno',meId);
+    var bc=document.getElementById('btnClase');
+    if(bc){
+      var varias=(GACC.clases&&GACC.clases.length>1);
+      bc.classList.toggle('hidden',!varias);
+      if(varias&&GACC.clase){ bc.title='Estás en '+g_nombreClase(GACC.clase)+'. Pulsa para cambiar de clase.'; }
+    }
   }
 
   /* ---- salir: cierra sesión y vuelve al login ---- */
@@ -6389,14 +6482,16 @@ langCargar(); setLang(state.lang);
     var a=state.alumnos.find(function(x){return x.id===id;});
     if(!a)return;
     var aviso=a.usada
-      ? 'Se eliminará de tu lista y también su cuenta de acceso, así que no podrá volver a entrar. Sus actuaciones y notas ya registradas se conservan.'
+      ? 'Se le da de baja de tu clase. Si no está con ningún otro profesor, se borra también su cuenta de acceso; si está en otra clase, la cuenta se conserva para que pueda seguir entrando allí. Sus actuaciones y notas ya registradas se conservan.'
       : 'Todavía no ha creado su contraseña, así que solo se retira la invitación.';
     confirmar('¿Eliminar a “'+esc(a.nombre)+'”?', aviso, async function(){
       var r=await g_gestionAlumno({accion:'eliminar',email:a.email});
       if(r.error) return toast(r.error);
       state.cola=(state.cola||[]).filter(function(c){return c.alumnoId!==id;});
       await g_recargarRoster();
-      toast(r.cuentaBorrada?'Alumno y cuenta eliminados':'Alumno eliminado');
+      toast(r.cuentaBorrada ? 'Alumno y cuenta eliminados'
+            : (r.otrasClases ? 'Dado de baja de tu clase · su cuenta sigue activa en otra clase'
+                             : 'Alumno eliminado'));
       render();
     });
   };
