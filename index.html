@@ -518,6 +518,7 @@
 <symbol viewBox="0 0 24 24" id="i-volume"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5a4 4 0 0 1 0 5"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-calendar"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9.5h16"/><path d="M8 3v4"/><path d="M16 3v4"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-file"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></symbol>
+<symbol viewBox="0 0 24 24" id="i-cog"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.5a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.2a1.6 1.6 0 0 0-1.5 1z"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-eye"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-pencil"><path d="M4 20h4L20 8l-4-4L4 16z"/><path d="M14 6l4 4"/></symbol>
 <symbol viewBox="0 0 24 24" id="i-alert"><path d="M10.3 3.8 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
@@ -579,6 +580,7 @@
     <button class="btn ghost sm" onclick="abrirAjustesA11y()" title="Ajustes y accesibilidad" aria-label="Ajustes y accesibilidad"><svg class="ic"><use href="#i-eye"/></svg></button>
     <button class="btn ghost sm" onclick="verNotificaciones()" title="Notificaciones" aria-label="Notificaciones"><svg class="ic"><use href="#i-bell"/></svg></button>
     <div class="role-pill"><span class="rp-et">Sesión:</span> <b id="whoLabel">—</b></div>
+    <button class="btn ghost sm hidden" id="btnCentro" onclick="g_config()" title="Configuración del centro" aria-label="Configuración del centro"><svg class="ic"><use href="#i-cog"/></svg></button>
     <button class="btn ghost sm hidden" id="btnClase" onclick="g_cambiarClase()" title="Cambiar de clase">Cambiar de clase</button>
     <button class="btn ghost sm" onclick="salir()" title="Cerrar sesión">Cerrar sesión</button>
   </header>
@@ -1059,7 +1061,7 @@ const I18N_EN = {
   'Central':'Control room',
   'Central de teleasistencia':'Telecare control room',
   'Centro médico':'Health centre',
-  'Cerrar sesión':'Sign out','Cambiar de clase':'Switch class',
+  'Cerrar sesión':'Sign out','Configuración':'Settings','Configuración del centro':'School settings','Datos del centro y facturación':'School and billing details','Nombre del centro':'School name','Persona de contacto':'Contact person','Email de facturación':'Billing email','Tu nombre':'Your name','Nombre y apellidos':'Full name','Es lo que ven tus alumnos al elegir clase.':'This is what your students see when they pick a class.','Salen en tus facturas. El alumnado no los ve.':'These appear on your invoices. Students never see them.','Cambiar de clase':'Switch class',
   'Cierra o programa el seguimiento correctamente':'Closes or schedules follow-up correctly',
   'Ciudad':'Town',
   'Clasifica correctamente el tipo de incidencia':'Classifies the type of incident correctly',
@@ -1848,7 +1850,7 @@ const I18N = {
   '¿Qué alumno eres?':'Quin alumne eres?','Elige tu nombre para acceder a tu puesto en la central.':'Tria el teu nom per a accedir al teu lloc en la central.',
   // --- Botones y palabras comunes ---
   'Guardar':'Guardar','Cancelar':'Cancel·lar','Editar':'Editar','Eliminar':'Eliminar','Añadir':'Afegir','Volver':'Tornar','Entendido':'Entés',
-  'Aceptar':'Acceptar','Rechazar':'Rebutjar','Colgar':'Penjar','Silenciar':'Silenciar','Activar':'Activar','Cerrar sesión':'Tancar sessió','Cambiar de clase':'Canviar de classe',
+  'Aceptar':'Acceptar','Rechazar':'Rebutjar','Colgar':'Penjar','Silenciar':'Silenciar','Activar':'Activar','Cerrar sesión':'Tancar sessió','Configuración':'Configuració','Configuración del centro':'Configuració del centre','Datos del centro y facturación':'Dades del centre i facturació','Nombre del centro':'Nom del centre','Persona de contacto':'Persona de contacte','Email de facturación':'Email de facturació','Tu nombre':'El teu nom','Nombre y apellidos':'Nom i cognoms','Es lo que ven tus alumnos al elegir clase.':'És el que veuen els teus alumnes en triar classe.','Salen en tus facturas. El alumnado no los ve.':'Ixen en les teues factures. L\'alumnat no les veu.','Cambiar de clase':'Canviar de classe',
   'Dar de alta':'Donar d\'alta','Nueva pregunta':'Nova pregunta','Nuevo evento':'Nou esdeveniment','Nuevo usuario':'Nou usuari','Nueva alerta':'Nova alerta',
   'Buscar':'Cerca','Actualizar':'Actualitzar','Retirar':'Retirar','Finalizar':'Finalitzar','Iniciar':'Iniciar','Completar':'Completar',
   'Lanzar caso':'Llançar cas','Llamar a compañero':'Trucar a company','Llamar':'Trucar','Lanzar una llamada':'Llançar una trucada',
@@ -4627,7 +4629,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-15 · r30';
+const CD_VERSION='2026-09-15 · r31';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -6077,16 +6079,18 @@ langCargar(); setLang(state.lang);
      tener dos profesores del mismo centro. El nombre del profesor manda y el
      centro va debajo. */
   function g_nombreClase(c){
-    return c.profesor || c.centro || 'Clase '+g_sala(c.profesor_id);
+    var n=(c.profesor==='(demo)')?'':c.profesor;
+    return n || c.centro || 'Clase '+g_sala(c.profesor_id);
   }
   VIEWS.elegirClase=function(){
     var cl=GACC.clases||[];
     gv().innerHTML='<h1>Elige clase</h1><p class="g-sub">Estás dado de alta en '+cl.length+' clases. Cada una es independiente: sus casos, sus llamadas y sus notas van por separado. Podrás cambiar de clase sin cerrar sesión.</p>'+
       cl.map(function(c,i){
         var tit=g_nombreClase(c);
+        var esProf=(tit===c.profesor && tit!=='(demo)');
         var sub=[c.centro!==tit?c.centro:'', c.nombre?('como '+c.nombre):''].filter(Boolean).join(' · ');
         return '<button class="g-btn'+(i?' sec':'')+'" onclick="g_elegirClase('+i+')">'+
-               (c.profesor?'<span style="display:block;font-size:12px;font-weight:600;opacity:.75">Profesor/a</span>':'')+
+               (esProf?'<span style="display:block;font-size:12px;font-weight:600;opacity:.75">Profesor/a</span>':'')+
                esc(tit)+
                (sub?'<span style="display:block;font-weight:400;font-size:12.5px;opacity:.8">'+esc(sub)+'</span>':'')+'</button>';
       }).join('')+
@@ -6418,9 +6422,69 @@ langCargar(); setLang(state.lang);
     window._salaTmp=GACC.sala;
     hideGate();
     entrar('profesor');
+    var bc=document.getElementById('btnCentro'); if(bc) bc.classList.remove('hidden');
     // aviso de licencia (demo con días restantes)
     if(GACC.est&&GACC.est.cls==='warn'){ try{ toast('Licencia '+GACC.est.txt); }catch(e){} }
   }
+
+  /* ============ CONFIGURACIÓN DEL CENTRO (solo profesor) ============
+     Los datos de facturación se rellenaban al registrarse y después no había
+     manera de tocarlos: un cambio de dirección o de persona de contacto
+     obligaba a pedirlo por soporte. */
+  window.g_config=function(){
+    if(!g_esProfesor()) return;
+    var p=GACC.prof||{}, est=GACC.est||{txt:'—',cls:''};
+    var lic=GACC.lic||{};
+    /* Las cuentas de demo se registran con el nombre literal '(demo)': no es un
+       nombre, así que no se ofrece como tal. */
+    var nom=(GACC.perfil&&GACC.perfil.nombre)||'';
+    if(nom==='(demo)') nom=p.contacto||'';
+    var tipo=lic.tipo==='demo'?'Demo':(lic.tipo==='curso'?'Licencia de curso':'—');
+    openModal('<h3 style="margin-top:0">Configuración</h3>'+
+      '<div class="between" style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px">'+
+        '<span><b class="no-i18n">'+esc(tipo)+'</b><br><span class="muted" style="font-size:12px" class="no-i18n">'+esc(GACC.email||'')+'</span></span>'+
+        '<span class="pill '+(est.cls==='ok'?'ok':est.cls==='warn'?'warn':'err')+' no-i18n">'+esc(est.txt)+'</span>'+
+      '</div>'+
+      '<h4 style="margin:0 0 4px">Tu nombre</h4>'+
+      '<p class="muted" style="font-size:12px;margin:0 0 10px">Es lo que ven tus alumnos al elegir clase.</p>'+
+      '<label class="f">Nombre y apellidos</label><input id="cfNombre" value="'+esc(nom)+'">'+
+      '<h4 style="margin:16px 0 4px">Datos del centro y facturación</h4>'+
+      '<p class="muted" style="font-size:12px;margin:0 0 10px">Salen en tus facturas. El alumnado no los ve.</p>'+
+      '<label class="f">Nombre del centro</label><input id="cfCentro" value="'+esc(p.centro||'')+'">'+
+      '<div class="row mt"><div style="flex:1 1 180px"><label class="f">CIF / NIF</label><input id="cfCif" value="'+esc(p.cif||'')+'"></div>'+
+      '<div style="flex:1 1 180px"><label class="f">Persona de contacto</label><input id="cfCont" value="'+esc(p.contacto||'')+'"></div></div>'+
+      '<label class="f mt">Dirección</label><input id="cfDir" value="'+esc(p.direccion||'')+'">'+
+      '<label class="f mt">Email de facturación</label><input id="cfEf" type="email" value="'+esc(p.email_factura||GACC.email||'')+'">'+
+      '<div id="cfMsg"></div>'+
+      '<div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Cancelar</button>'+
+      '<button class="btn ok" id="cfSave" onclick="g_guardarCentro()">Guardar</button></div>',true);
+  };
+  window.g_guardarCentro=async function(){
+    var centro=(document.getElementById('cfCentro').value||'').trim();
+    var cif=(document.getElementById('cfCif').value||'').trim();
+    var dir=(document.getElementById('cfDir').value||'').trim();
+    var cont=(document.getElementById('cfCont').value||'').trim();
+    var ef=(document.getElementById('cfEf').value||'').trim().toLowerCase();
+    var nom=(document.getElementById('cfNombre').value||'').trim();
+    if(!nom) return toast('Escribe tu nombre: es lo que ven tus alumnos');
+    if(!centro) return toast('Escribe el nombre del centro');
+    if(ef && !g_emailOk(ef)) return toast('El email de facturación no es válido');
+    var b=document.getElementById('cfSave'); if(b){ b.disabled=true; b.textContent='…'; }
+    var r=await SB.rpc('guardar_datos_centro',{p_centro:centro,p_cif:cif,p_direccion:dir,p_contacto:cont,p_email_factura:ef,p_nombre:nom});
+    if(b){ b.disabled=false; b.textContent='Guardar'; }
+    /* supabase-js no lanza: si no se mira .error, el profesor cree que ha
+       guardado y al volver a entrar se encuentra los datos de antes. */
+    if(r&&r.error){
+      var m=r.error.message||'';
+      if(/guardar_datos_centro|schema cache|404|function/i.test(m))
+        m='falta instalar en la base de datos la función de datos del centro (CareDesk-SQL-Licencia-Curso.sql)';
+      return toast('No se pudieron guardar los datos: '+m, 6000);
+    }
+    GACC.prof=Object.assign({},GACC.prof||{},{centro:centro,cif:cif,direccion:dir,contacto:cont,email_factura:ef});
+    GACC.perfil=Object.assign({},GACC.perfil||{},{nombre:nom});
+    state.profesores=[{id:GACC.uid,nombre:nom}];
+    closeModal(); toast('Datos guardados'); try{ render(); }catch(e){}
+  };
   function g_abrirAlumno(){
     var meId='al_'+g_slug(GACC.email);
     state.alumnos=[{id:meId,nombre:GACC.alu.nombre,email:GACC.email,usada:true}];
@@ -6542,7 +6606,7 @@ langCargar(); setLang(state.lang);
   // en modo cuenta hay un solo profesor (el titular): estos botones informan
   addProf=function(){ toast('Cada cuenta tiene un profesor titular. Para más profesores, usa una licencia por profesor.'); };
   borrarProf=function(){ toast('No se puede eliminar el profesor titular de la cuenta.'); };
-  editarProf=function(){ toast('Los datos del profesor/centro se gestionan desde tu cuenta.'); };
+  editarProf=function(){ try{ window.g_config(); }catch(e){ toast('Los datos del profesor/centro se gestionan desde tu cuenta.'); } };
 
   /* ============ SESIÓN POR PESTAÑA ============ */
   /* La sesión se guarda en sessionStorage, no en localStorage: al cerrar la pestaña
