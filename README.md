@@ -1,135 +1,149 @@
 # CareDesk
 
-**Simulador de central de teleasistencia para el módulo profesional de Teleasistencia (CFGM Atención a Personas en Situación de Dependencia · TAPSD).**
+**Simulador de central de teleasistencia para el módulo profesional de Teleasistencia (CFGM Atención a Personas en Situación de Dependencia).**
 
-CareDesk recrea el puesto de trabajo de una central de teleasistencia para practicar en clase: recepción de alarmas, atención al usuario siguiendo el protocolo, gestión de incidencias, agenda de seguimiento, evaluación del alumnado y **llamadas de voz reales** entre el profesorado y el alumnado desde el navegador.
+🌐 **[caredesk.me](https://caredesk.me)**
 
-> ⚠️ **Uso educativo.** Proyecto independiente con fines docentes, inspirado en el tipo de funcionalidad de las plataformas de simulación de teleasistencia. No reutiliza código, textos, imágenes ni marcas de ningún producto comercial. Todos los datos son ficticios.
+CareDesk recrea el puesto de trabajo de una central de teleasistencia para practicar en clase: recepción de alarmas, atención al usuario siguiendo el protocolo, clasificación de la incidencia, movilización de recursos, registro de la actuación y evaluación del alumnado — con **llamadas de voz y vídeo reales** entre profesorado y alumnado desde el navegador, sin instalar nada.
 
----
-
-## ✨ Características
-
-- **Roles Profesor / Alumno**, con un panel de gestión para el profesor y un puesto de central para el alumno.
-- **Usuarios ficticios** con ficha completa (datos personales, contacto, dirección, dependencia, ayudas técnicas, contactos de emergencia, alergias, notas) y observaciones con valoración por estrellas.
-- **Escenarios y central simulada**: alarma entrante, ficha del usuario, protocolo, clasificación de la incidencia, movilización de recursos y registro de la actuación.
-- **Evaluación práctica** por bloques sobre 100 puntos (No / Parcial / Sí) con nota y estrellas.
-- **Agenda avanzada**: calendario mes/semana/día, 17 tipos de evento, eventos con llamada, citas repetidas (series), pares aleatorios y estados (programado / en curso / completado / cancelado).
-- **Exámenes** por módulos (MF1423 / MF1424 / MF1425): banco de preguntas, exámenes teóricos con corrección automática, rúbrica práctica y resultados.
-- **Alertas y recordatorios**, **Estadísticas** (por alumno y globales) y **Encuestas** de fin de curso.
-- **Llamadas de voz reales (WebRTC)**:
-  - Profesor → alumno (llamada directa).
-  - Alumno → compañero.
-  - Emergencias simuladas **112 / 061** (entran al profesor).
-  - **Simulación en grupo a 3**: persona dependiente + teleoperador + profesor que se une a escuchar/supervisar (puede salir sin cortar la llamada).
-- Extras: perfil, cambiar contraseña, ayuda/FAQ y campana de notificaciones.
+> ⚠️ **Uso educativo.** Proyecto independiente con fines docentes, inspirado en el tipo de funcionalidad de las plataformas de simulación de teleasistencia. No reutiliza código, textos, imágenes ni marcas de ningún producto comercial. Todos los datos de los casos son ficticios.
 
 ---
 
-## 🚀 Publicación (GitHub Pages)
+## ✨ Qué hace
 
-Es una aplicación web de **un solo archivo** (`index.html`), con la librería de llamadas y la configuración del relay ya incluidas.
+### Para el profesor
 
-1. Sube `index.html` a la raíz de este repositorio.
-2. Ve a **Settings → Pages**.
-3. En **Source** elige **Deploy from a branch**, rama **`main`**, carpeta **`/ (root)`** y **Save**.
-4. En ~1 minuto tendrás la URL: `https://TU-USUARIO.github.io/TU-REPO/`.
+- **Panel del centro** con sus alumnos, sus casos y su evaluación. Da de alta al alumnado por email (hasta 30 por licencia); cada alumno crea su propia contraseña la primera vez que entra.
+- **Escenarios y usuarios ficticios** propios: ficha completa de la persona atendida (datos personales, contacto, dirección, dependencia, ayudas técnicas, contactos de emergencia, alergias, notas), guion, protocolo, recursos correctos y gravedad.
+- **Lanzar un caso** a un alumno concreto, o una **simulación entre dos alumnos** (uno hace de teleoperador y el otro de persona dependiente).
+- **Unirse a una llamada en curso** para escuchar en silencio y **intervenir** cuando quiera, sin cortar a nadie.
+- **Evaluación práctica** por bloques sobre 100 puntos (No / Parcial / Sí), con nota, estrellas y observaciones. Puede editar y borrar actuaciones.
+- **Exámenes** por módulos (MF1423 / MF1424 / MF1425): banco de preguntas, corrección automática del teórico y rúbrica para el práctico.
+- **Estadísticas** por alumno y del grupo, y **encuestas** de fin de curso.
+- **Configuración del centro** (datos de facturación y nombre visible) desde el propio simulador.
 
-> El micrófono del navegador **solo funciona en HTTPS** (GitHub Pages ya lo proporciona) o en `http://localhost`.
+### Para el alumno
+
+- **Puesto de la central**: le entra la alarma, atiende siguiendo el protocolo, clasifica y moviliza recursos, y al colgar queda registrada su actuación.
+- **Practicar por su cuenta** un caso cuando quiera, sin esperar al profesor.
+- **Practicar con un compañero**: elige a quién llamar de su clase, ve quién está conectado, y la práctica **no empieza hasta que los dos están dentro de la llamada**.
+- **Mis actuaciones**: su historial con la nota y el comentario del profesor.
+- **Exámenes** publicados por su profesor.
+
+### Cuentas, licencias y clases
+
+- **Login único** por email para profesorado y alumnado; el rol lo decide la cuenta, no el usuario.
+- **Demo gratuita de 3 días** para probar, o **licencia de curso** para el centro.
+- **Una sola sesión activa por cuenta**: si entras en otro dispositivo, el anterior se cierra solo. Cierre automático por inactividad (nunca durante una llamada).
+- **Un alumno puede estar en varias clases** a la vez, con profesores distintos. Cada clase es independiente —sus casos, sus llamadas y sus notas— y el alumno elige en cuál entra, o cambia sin cerrar sesión.
+
+### Grabaciones
+
+Las llamadas se graban **solo en audio**, incluso cuando hay vídeo, y **se quedan en el ordenador del profesor** (IndexedDB del navegador). **Nunca se suben a internet**: es una decisión de diseño, no una limitación pendiente de resolver.
+
+En Chrome y Edge, el profesor puede **elegir una carpeta de su disco** y cada grabación se copia sola ahí, con nombre legible (`Nombre_Alumno[-Segundo_Alumno]_AAAA-MM-DD_HH-MM_Escenario.webm`). En Firefox y Safari queda la descarga manual.
+
+El plazo de conservación es el **curso escolar**. Al empezar uno nuevo, la app avisa de las grabaciones caducadas y ofrece borrarlas — pero **no las borra sola**, por si hay una reclamación de nota.
+
+### Accesibilidad e idiomas
+
+- **WCAG 2.1 AA / EN 301 549 / RD 1112/2018**, con declaración de accesibilidad dentro de la app. Auditoría automática con **axe-core: 0 incumplimientos** en escritorio y móvil, también con alto contraste y texto grande.
+- Panel de **ajustes de accesibilidad**: tamaño de texto, alto contraste, reducir animaciones y cámara.
+- Interfaz en **valencià, castellano e inglés** (los textos legales van siempre en castellano, con resumen en inglés).
+- **Funciona en móvil** sin cambiar nada del diseño de escritorio: probado sin desbordamiento horizontal a 360, 390 y 820 px.
 
 ---
 
-## 🧭 Cómo se usa
+## 🏗️ Arquitectura
 
-1. Todos abren la **misma URL**.
-2. Escriben el **mismo código de sala/centro** (por defecto `CENTRO-1`). El **profesor** define ese código y lo comparte; los **alumnos** lo escriben para unirse.
-3. Aceptan el **permiso de micrófono**.
-4. Uno entra como **Profesor** y el resto como **Alumno** (nombres precargados: Lucía, Marcos, Aixa).
-
-**Prueba de llamada a 3 (la más completa):**
-- Alumno 1 → Central → *Simulación en grupo* → **Persona dependiente**.
-- Alumno 2 → Central → *Simulación en grupo* → **Teleoperador**.
-- Profesor → Inicio → *Unirse a simulación* → **Profesor / Oyente**.
-
-> En móvil, si al conectar no se oye, basta con **tocar la pantalla** una vez (los navegadores móviles bloquean el audio automático hasta que hay una interacción).
-
----
-
-## 🏗️ Arquitectura (resumen)
-
-CareDesk es **todo frontend**: se ejecuta en el navegador, sin backend propio.
-
-- **Navegador (frontend)** — la app y la lógica; usa **WebRTC** (nativo del navegador) para el audio.
-- **Señalización** — servicio **público y gratuito de PeerJS** que "presenta" a los navegadores antes de la llamada. La voz **no** pasa por él.
-- **TURN (relay)** — **Metered**, reenvía la voz cuando las dos redes no pueden conectar directamente (imprescindible para llamadas entre redes/antenas distintas).
+CareDesk es **un único archivo HTML** que se sirve tal cual, más dos servicios externos:
 
 ```
-Navegador A ─┐        (1) señalización: "presentaos" (PeerJS)
-             ├──────────────────────────────────────────────
-Navegador B ─┘        (2) voz directa entre navegadores (P2P)
-                      (3) si la red bloquea lo directo → TURN (Metered) reenvía la voz
+                    ┌────────────────────────────────────────────┐
+  index.html  ──────┤ Supabase · cuentas, licencias y datos      │
+  (navegador)       │ (Auth + Postgres con RLS + Edge Function)  │
+        │           └────────────────────────────────────────────┘
+        │
+        │  (1) señalización: "presentaos"  ──►  PeerJS
+        │  (2) voz y vídeo directos entre navegadores (P2P)
+        └─ (3) si la red lo impide  ────────►  TURN (Metered) reenvía
 ```
 
-### Configuración del TURN (Metered)
-Las credenciales del TURN van embebidas en `index.html` (bloque `TURN_SERVERS_SIM`). Son credenciales **de TURN** (pensadas para el front-end); si necesitas cambiarlas, genera unas nuevas en tu panel de [Metered](https://dashboard.metered.ca) → *TURN Server* y sustituye ese bloque. El plan gratuito incluye una cuota mensual de relay.
+- **Frontend**: HTML + CSS + JavaScript *vanilla*, sin framework ni proceso de *build*. PeerJS va **embebido** dentro del `index.html`.
+- **Supabase**: autenticación, base de datos con **RLS** (cada profesor ve solo su clase; cada alumno, solo lo suyo) y una **Edge Function** para lo que el navegador no puede hacer con seguridad (cambiar el email de acceso de un alumno o eliminar su cuenta).
+- **WebRTC** para el audio y el vídeo. La voz **no pasa** por el servidor de señalización.
+- **TURN (Metered)** para cuando las dos redes no pueden conectar directamente — imprescindible si el centro aísla a los clientes de su wifi.
 
----
+### Identidad en las llamadas
 
-## 🔧 Descripción técnica
-
-**Stack:** HTML + CSS + JavaScript *vanilla* (sin framework ni proceso de *build*). La única dependencia, **PeerJS**, va **embebida** dentro del `index.html`, por lo que la app es un **único archivo autoservido**: no requiere instalación, ni Node, ni servidor de aplicaciones.
-
-- **Frontend puro**: todo se ejecuta en el navegador del usuario.
-- **WebRTC** (nativo del navegador) para el audio de las llamadas.
-- **PeerJS** para la señalización (descubrimiento y *handshake* entre pares).
-- **STUN + TURN de Metered** para la travesía de NAT (que la voz cruce entre redes distintas).
-- **Sin base de datos**: el estado vive en memoria (objeto `state`) y se reinicia al recargar. Es una decisión consciente de la Fase 1.
-
-## ⚙️ Cómo funciona por dentro
-
-**Interfaz por vistas.** Hay dos roles (Profesor / Alumno). Según el rol, se pinta una barra de pestañas y cada pestaña renderiza su vista con funciones `v*()` (por ejemplo `vAgenda`, `vExamenes`, `vFicticios`). Todo el estado (alumnos, usuarios ficticios, escenarios, agenda, exámenes, alertas, etc.) se guarda en un objeto `state` en memoria y las vistas se regeneran al vuelo.
-
-**Identidad en las llamadas.** Como no hay backend, la coordinación de las llamadas se hace con un **código de sala** compartido + la identidad de cada participante, formando un identificador PeerJS determinista:
+La sala se deriva de la cuenta del profesor, así que todos los que cuelgan de él calculan la misma sin escribir ningún código:
 
 - Profesor → `SALA-PROF`
-- Alumno → `SALA-AL-<nombre-normalizado>`
-- Simulación en grupo → `SALA-SIM-PD` / `SALA-SIM-OP` / `SALA-SIM-OB` (persona dependiente / teleoperador / oyente)
+- Alumno → `SALA-AL-<slug de su email>`
+- Simulación → `SALA-SIM-<caso>-<rol>` (teleoperador / persona dependiente / oyente)
 
-Así, cuando el profesor pulsa *Llamar* sobre "Lucía Fernández", el navegador llama al identificador `SALA-AL-lucia-fernandez`, que es el que ha registrado el navegador de esa alumna.
+> El identificador del alumno se deriva de su **email**, nunca de su nombre: un nombre lo puede cambiar el profesor, y si los dos extremos no calculan exactamente el mismo identificador, los mensajes se envían a una dirección que no existe y se pierden sin ningún error visible.
 
-**Flujo de una llamada (paso a paso):**
-1. Cada navegador se registra en la señalización de PeerJS con su identificador (sala + rol/nombre).
-2. Al iniciar una llamada, el emisor solicita al receptor mediante la señalización (widget "Llamando…" / "Llamada entrante").
-3. El receptor **acepta** y ambos negocian la conexión WebRTC (con los servidores STUN/TURN configurados).
-4. La **voz viaja directa** entre los dos navegadores (P2P). Si sus redes lo impiden, el **TURN (Metered)** reenvía el audio.
-5. La simulación en grupo forma una **malla**: cada participante se conecta con los otros dos; el oyente entra silenciado y puede salir sin cortar la llamada de los alumnos.
+### Presencia
 
-## 🗂️ Modelo de datos (entidades principales)
+Alumnos y profesor se mandan **latidos** cada pocos segundos por canales de datos que se mantienen abiertos, así que la sala se sincroniza sola entre en el orden que entre cada uno. Los alumnos también se saludan entre ellos, de forma escalonada y acotada, para poder practicar en pareja **aunque el profesor no esté delante**.
 
-En memoria, dentro de `state`:
+El profesor **nunca abre conexiones en bloque**: con 30 alumnos eran decenas de negociaciones simultáneas y el servidor de señalización cerraba el socket. Son los alumnos los que saludan al entrar y laten; él contesta por ese mismo canal.
 
-- **alumnos / profesores** — participantes del centro.
-- **usuarios (ficticios)** — personas simuladas con ficha extensa + observaciones.
-- **escenarios** — casos con ficha, guion, protocolo, recursos correctos y gravedad.
-- **agenda** — eventos (tipo, fecha/hora, alumno, con-llamada, serie, estado…).
-- **registros** — actuaciones del alumno en cada llamada simulada + su evaluación por bloques.
-- **examenes** — módulos, banco de preguntas, exámenes publicados, rúbricas y resultados.
-- **alertas**, **encuestas** — recordatorios y satisfacción de fin de curso.
+---
 
-## 🧩 Estructura del código
+## 🚀 Publicación
 
-Todo en `index.html`, en secciones claramente separadas por comentarios:
+Es una aplicación web de **un solo archivo**. Para publicarla:
 
-- Bloque `<style>` con el sistema visual (tema oscuro, tarjetas, tablas, calendario, widgets de llamada).
-- **PeerJS embebido**.
-- `state` (datos y catálogos) y utilidades (`uid`, `esc`, `norm`, fechas…).
-- Navegación (`TABS`, `renderTabs`, `render`) y vistas por módulo (`v*`).
-- Motor de **llamadas reales** (`rtc*`) y de **simulación en grupo** (`sim*`).
+1. Sube `index.html` a la raíz del repositorio.
+2. **Settings → Pages** → *Source*: **Deploy from a branch**, rama `main`, carpeta `/ (root)`.
+3. Con dominio propio, el archivo `CNAME` va en la raíz del repo y los registros DNS apuntan a GitHub Pages **sin proxy** (en Cloudflare, nube gris: con la naranja GitHub no emite el certificado).
+
+> El micrófono, la cámara y las llamadas **solo funcionan en HTTPS** (GitHub Pages ya lo da) o en `http://localhost`. Abrir el archivo desde el disco con `file://` no funciona, y la app lo avisa.
+
+### Puesta en marcha del backend
+
+La app necesita un proyecto de **Supabase** con su esquema: `perfiles`, `profesores`, `licencias`, `invitaciones`, `alumnos`, `matriculas`, `actuaciones`, `escenarios`, `usuarios_ficticios`, `examenes_config`, `resultados_examen` y `sesiones`, con sus políticas RLS y sus funciones `SECURITY DEFINER`. Los scripts de migración se mantienen junto a la documentación del proyecto, fuera de este repositorio.
+
+La `URL` y la **anon key** van embebidas en `index.html`: son públicas por diseño y la seguridad la dan las reglas RLS.
+
+> 🔒 La **service_role** y la contraseña de la base de datos **no aparecen nunca** en el cliente. La `service_role` vive únicamente dentro de la Edge Function, en el servidor.
+
+---
+
+## 🧭 Cómo se usa en clase
+
+1. **El profesor** entra en [caredesk.me](https://caredesk.me), registra su centro (o empieza la demo de 3 días) y da de alta a su alumnado por email.
+2. **Cada alumno** entra con su email, crea su contraseña la primera vez y aparece en la sala.
+3. El profesor **lanza un caso** a un alumno, o monta una **simulación entre dos**.
+4. Si quiere, **se une a la llamada** para escuchar y corregir sobre la marcha.
+5. Al colgar, la actuación queda registrada y el profesor la **evalúa** desde su panel; el alumno ve la nota en *Mis actuaciones*.
+
+> En el móvil, si al conectar no se oye nada, basta con **tocar la pantalla** una vez: los navegadores bloquean el audio automático hasta que hay una interacción.
+
+---
+
+## 🔐 Protección de datos
+
+El **centro educativo es el responsable** del tratamiento y CareDesk el **encargado**. Grabar para evaluar está amparado por la función docente y no requiere consentimiento, solo información transparente. Los datos se alojan en la **Unión Europea** (Irlanda), sin transferencias internacionales.
+
+La app incluye aviso legal, política de privacidad y declaración de accesibilidad. Para un despliegue real existen además un contrato de encargo (art. 28 RGPD), una hoja informativa para alumnado y familias, y el registro de actividades (art. 30.2) — pendientes de revisión jurídica antes de firmar con ningún centro.
+
+---
 
 ## 🗺️ Estado y hoja de ruta
 
-- **Fase 1 (actual):** aplicación de un solo archivo, datos en memoria (se reinician al recargar), señalización y TURN mediante servicios externos.
-- **Fase 2 (futuro):** backend (Node) con cuentas/login, centros multi-tenant, licencias y **persistencia real** de los datos; monitor de "llamadas en curso" y consola de teleasistencia a pantalla completa.
+**Hoy (Fase 2)**: producto con cuentas, licencias y persistencia real, en producción en caredesk.me.
+
+Pendiente antes de vender la primera licencia:
+
+- **Servidor de señalización propio** (PeerServer + coturn). El servicio público de PeerJS es un punto único de fallo y no es un apoyo aceptable para un producto de pago.
+- **SMTP propio** para los correos de confirmación y recuperación de contraseña.
+- **Pagos** (Stripe): hoy la licencia de curso se registra como pendiente y se activa a mano.
+- **Revisión jurídica** de los documentos y paso del modo piloto a modo producto.
+- **Contenido de los casos en inglés** (la interfaz ya lo está).
 
 ---
 
@@ -137,6 +151,7 @@ Todo en `index.html`, en secciones claramente separadas por comentarios:
 
 ```
 index.html      # La aplicación completa (un único archivo)
+CNAME           # Dominio propio para GitHub Pages
 README.md       # Este archivo
 ```
 
@@ -144,4 +159,4 @@ README.md       # Este archivo
 
 ## 📄 Licencia y aviso
 
-Proyecto con fines **educativos** para la formación en Teleasistencia (TAPSD). Recreación independiente; los nombres, casos y usuarios son ficticios. Añade aquí la licencia que prefieras (por ejemplo, MIT) si vas a compartirlo públicamente.
+Proyecto con fines **educativos** para la formación en Teleasistencia. Recreación independiente; los nombres, casos y personas atendidas son ficticios.
