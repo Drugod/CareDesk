@@ -4806,7 +4806,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-21 · r36';
+const CD_VERSION='2026-09-23 · r37';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -6198,6 +6198,8 @@ langCargar(); setLang(state.lang);
     var r=await SB.auth.updateUser({password:g_val('gp')});
     g_busy('gb',false);
     if(r.error) return g_msg('gm',r.error.message,'err');
+    RECUPERANDO=false;                            // ya está cambiada: seguimos el camino normal
+    try{ if(history.replaceState) history.replaceState(null,'',location.pathname+location.search); }catch(e){}
     await g_irAPanel();
   };
 
@@ -6902,7 +6904,7 @@ langCargar(); setLang(state.lang);
     try{ if(SESION_CLAVE_MIA&&localStorage.getItem(SESION_CLAVE_MIA)===SESION_TOKEN) localStorage.removeItem(SESION_CLAVE_MIA); }catch(e){}
     SESION_CLAVE_MIA=null;
     if(SB&&sesUser&&SESION_TOKEN){ try{ SB.from('sesiones').delete().eq('usuario_id',sesUser.id).eq('token',SESION_TOKEN); }catch(e){} }
-    SESION_TOKEN=null; sesUser=null;
+    SESION_TOKEN=null; sesUser=null; RECUPERANDO=false;
     if(SB){ try{ SB.auth.signOut(); }catch(e){} }
     showGate(); g_go('login');
   };
@@ -7079,6 +7081,17 @@ langCargar(); setLang(state.lang);
   try{ a11yCargar(); }catch(e){}          // ajustes de accesibilidad guardados en este equipo
   try{ videoCargar(); }catch(e){}         // preferencia de cámara
   gLimpiarSesionesViejas();
+  /* 🔴 ¿Venimos del enlace de "he olvidado mi contraseña"?
+     El enlace del correo abre una sesión válida, así que el arranque normal la
+     encontraba y se metía en el simulador: la pantalla de contraseña nueva
+     aparecía un instante y desaparecía sola, sin dejar cambiar nada.
+     La marca se lee ANTES de crear el cliente, porque supabase-js se lleva el
+     hash de la URL en cuanto arranca. */
+  var RECUPERANDO=false;
+  try{
+    var _url=(location.hash||'')+' '+(location.search||'');
+    RECUPERANDO=/type=recovery/.test(_url);
+  }catch(e){}
   SB=window.supabase.createClient(SUPA_URL,SUPA_ANON,{
     auth:{
       storage: gAlmacenSesion(),
@@ -7089,9 +7102,18 @@ langCargar(); setLang(state.lang);
     }
   });
   window.SB=SB;
-  SB.auth.onAuthStateChange(function(event,session){ if(event==='PASSWORD_RECOVERY'){ sesUser=session&&session.user; showGate(); g_go('nuevaPass'); } });
+  SB.auth.onAuthStateChange(function(event,session){
+    if(event==='PASSWORD_RECOVERY'){ RECUPERANDO=true; sesUser=session&&session.user; showGate(); g_go('nuevaPass'); }
+  });
   (async function(){
     var s=await SB.auth.getSession();
+    /* Un respiro para que, si el enlace es de recuperación, llegue a dispararse
+       el evento antes de decidir a dónde vamos. */
+    if(s.data.session && !RECUPERANDO) await new Promise(function(r){ setTimeout(r,120); });
+    if(RECUPERANDO){
+      if(s.data.session) sesUser=s.data.session.user;
+      showGate(); return g_go('nuevaPass');      // aquí solo se cambia la contraseña
+    }
     if(s.data.session){ sesUser=s.data.session.user; await g_irAPanel(); } else { g_go('login'); }
   })();
 })();
