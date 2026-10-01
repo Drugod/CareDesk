@@ -4806,7 +4806,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-09-23 · r37';
+const CD_VERSION='2026-10-01 · r38';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -6195,6 +6195,13 @@ langCargar(); setLang(state.lang);
     if(g_val('gp')!==g_val('gp2'))return g_msg('gm','Las contraseñas no coinciden.','err');
     if(g_val('gp').length<6)return g_msg('gm','Mínimo 6 caracteres.','err');
     g_busy('gb',true);
+    /* El enlace se canjea AHORA, no al abrir la página: así un antivirus de
+       correo que husmee la dirección no gasta el enlace de nadie. */
+    if(ENLACE.token && ENLACE.tipo==='recovery'){
+      var v=await SB.auth.verifyOtp({type:'recovery',token_hash:ENLACE.token});
+      if(v.error){ g_busy('gb',false); return g_msg('gm',g_msgEnlace(v.error.message||'otp_expired'),'err'); }
+      sesUser=(v.data&&v.data.user)||sesUser; ENLACE.token='';
+    }
     var r=await SB.auth.updateUser({password:g_val('gp')});
     g_busy('gb',false);
     if(r.error) return g_msg('gm',r.error.message,'err');
@@ -6209,6 +6216,32 @@ langCargar(); setLang(state.lang);
      entrabas, te decía "la demo terminó". Ahora el registro del centro se hace
      DESDE AQUÍ, con la cuenta que ya tienes: no se crea otra cuenta, se pasa la
      que hay de demo a licencia de curso. */
+  /* Confirmar cuenta, invitación o enlace de acceso: también con un botón, por
+     el mismo motivo que la recuperación. */
+  VIEWS.confirmarEnlace=function(){
+    var t=ENLACE.tipo;
+    var titulo = t==='signup' ? 'Confirma tu cuenta'
+               : t==='invite' ? 'Te han dado de alta en CareDesk'
+               : t==='email_change' ? 'Confirma tu nueva dirección'
+               : 'Entrar en CareDesk';
+    gv().innerHTML='<h1>'+esc(titulo)+'</h1>'+
+      '<p class="g-sub">Pulsa el botón para continuar. Este enlace solo sirve una vez.</p>'+
+      '<div id="gm"></div>'+
+      '<button class="g-btn" id="gb" onclick="g_doConfirmarEnlace()">Continuar</button>'+
+      '<div class="g-links"><a onclick="g_go(\'login\')">Volver al inicio de sesión</a></div>';
+  };
+  window.g_doConfirmarEnlace=async function(){
+    if(!ENLACE.token) return g_go('login');
+    g_busy('gb',true);
+    var v=await SB.auth.verifyOtp({type:ENLACE.tipo,token_hash:ENLACE.token});
+    g_busy('gb',false);
+    if(v.error) return g_msg('gm',g_msgEnlace(v.error.message||'otp_expired'),'err');
+    ENLACE.token=''; g_limpiarUrl();
+    sesUser=(v.data&&v.data.user)||sesUser;
+    if(!sesUser){ return g_go('login',{ok:'Cuenta confirmada. Ya puedes iniciar sesión.'}); }
+    return g_irAPanel();
+  };
+
   function g_pantallaBloqueado(msg,cls){
     showGate();
     var est=GACC.est||{txt:'sin licencia',cls:'err'};
@@ -7087,11 +7120,36 @@ langCargar(); setLang(state.lang);
      aparecía un instante y desaparecía sola, sin dejar cambiar nada.
      La marca se lee ANTES de crear el cliente, porque supabase-js se lleva el
      hash de la URL en cuanto arranca. */
-  var RECUPERANDO=false;
+  /* 🔴 Los enlaces de un solo uso y los antivirus de correo.
+     Muchos correos corporativos y de centros educativos (Outlook/Exchange con
+     "Safe Links", antivirus de servidor…) ABREN los enlaces antes que la
+     persona, para comprobar que no son peligrosos. Con un enlace de un solo
+     uso eso lo gasta: cuando el profesor pulsa, el token ya está consumido,
+     Supabase devuelve `error=access_denied&error_code=otp_expired` y la app
+     se iba al login sin decir nada. Bucle perfecto: pide otro enlace, y otro.
+     Dos arreglos: (1) se lee el error y se explica; (2) los enlaces nuevos
+     llevan `token_hash` y NO se consumen al abrir la página, solo cuando la
+     persona pulsa el botón. Un escáner que mira la página no gasta nada. */
+  var RECUPERANDO=false, ENLACE={token:'',tipo:'',error:''};
   try{
-    var _url=(location.hash||'')+' '+(location.search||'');
-    RECUPERANDO=/type=recovery/.test(_url);
+    var _p=new URLSearchParams(location.search||'');
+    var _h=new URLSearchParams(String(location.hash||'').replace(/^#/,''));
+    var _v=function(k){ return _p.get(k)||_h.get(k)||''; };
+    ENLACE.token=_v('token_hash');
+    ENLACE.tipo=_v('type');
+    ENLACE.error=_v('error_description')||_v('error_code')||_v('error');
+    RECUPERANDO=(ENLACE.tipo==='recovery');
   }catch(e){}
+  function g_limpiarUrl(){
+    try{ if(history.replaceState) history.replaceState(null,'',location.pathname); }catch(e){}
+  }
+  /* El mensaje que de verdad entiende quien lo recibe */
+  function g_msgEnlace(err){
+    var e=String(err||'').toLowerCase();
+    if(/expired|access_denied|invalid|otp/.test(e))
+      return 'Ese enlace ya no sirve: ha caducado o ya se había usado. Algunos correos de empresa y de centros abren los enlaces automáticamente para revisarlos, y eso los gasta. Pide uno nuevo aquí abajo y ábrelo en cuanto te llegue.';
+    return 'No se ha podido abrir el enlace ('+err+'). Pide uno nuevo aquí abajo.';
+  }
   SB=window.supabase.createClient(SUPA_URL,SUPA_ANON,{
     auth:{
       storage: gAlmacenSesion(),
@@ -7106,6 +7164,13 @@ langCargar(); setLang(state.lang);
     if(event==='PASSWORD_RECOVERY'){ RECUPERANDO=true; sesUser=session&&session.user; showGate(); g_go('nuevaPass'); }
   });
   (async function(){
+    /* El enlace venía gastado o caducado: decirlo, en vez de dejar al usuario
+       en el login preguntándose qué ha pasado. */
+    if(ENLACE.error){ g_limpiarUrl(); showGate(); return g_go('login',{err:g_msgEnlace(ENLACE.error)}); }
+    /* Enlace nuevo con token_hash: la pantalla se pinta, pero el token NO se
+       gasta hasta que la persona pulsa. */
+    if(ENLACE.token && ENLACE.tipo==='recovery'){ showGate(); return g_go('nuevaPass'); }
+    if(ENLACE.token && ENLACE.tipo){ showGate(); return g_go('confirmarEnlace'); }
     var s=await SB.auth.getSession();
     /* Un respiro para que, si el enlace es de recuperación, llegue a dispararse
        el evento antes de decidir a dónde vamos. */
