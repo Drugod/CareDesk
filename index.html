@@ -2552,13 +2552,13 @@ const TABS = {
     {k:'inicio',t:'Inicio'},
     {k:'casos',t:'Escenarios y usuarios'},
     {k:'gestion',t:'Alumnos y profesores'},
+    {k:'agenda',t:'Agenda'},
     {k:'avaluacio',t:'Evaluación'},
     {k:'ayuda',t:'Ayuda'},
-    /* Agenda/Alertas desconectadas del menú (código conservado): para reactivar, añadir {k:'agenda',t:'Agenda'} */
   ],
   alumno:[
     {k:'central',t:'Central'},
-    /* Agenda desconectada del menú del alumno (código conservado): para reactivar, añadir {k:'agenda',t:'Agenda'} */
+    {k:'agenda',t:'Agenda'},
     {k:'examenes',t:'Exámenes'},
     {k:'mis',t:'Mis actuaciones'},
   ],
@@ -5027,7 +5027,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-10-05 · r39';
+const CD_VERSION='2026-10-05 · r40';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
