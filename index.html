@@ -770,10 +770,10 @@ const state = {
   cola:[],        // llamadas lanzadas pendientes {id, escenarioId, alumnoId}
   registros:[],   // actuaciones registradas por alumnos
   agenda:[
-    {id:'ag1',tipo:'Agenda de compañía o soledad no deseada',titulo:'Seguimiento por soledad',descripcion:'Llamada de compañía',alumnoId:'a3',companeroId:'',usuarioId:'u3',conLlamada:false,todoDia:false,fecha:hoyMas(1),horaIni:'10:00',horaFin:'10:20',estado:'Programado',recordatorio:true,recMin:15,serieId:'',alerta:null},
-    {id:'ag2',tipo:'Agenda de seguimiento',titulo:'Control tras aviso cardiaco',descripcion:'',alumnoId:'a2',companeroId:'',usuarioId:'u2',conLlamada:false,todoDia:false,fecha:hoyMas(3),horaIni:'12:00',horaFin:'12:30',estado:'Programado',recordatorio:false,recMin:15,serieId:'',alerta:null},
-    {id:'ag3',tipo:'Simulación práctica',titulo:'Simulación de caída',descripcion:'Práctica entre alumnos',alumnoId:'a1',companeroId:'a2',usuarioId:'u1',conLlamada:true,todoDia:false,fecha:hoyMas(0),horaIni:'09:30',horaFin:'09:50',estado:'Programado',recordatorio:true,recMin:10,serieId:'',alerta:null},
-    {id:'ag4',tipo:'Evaluación/Examen práctico',titulo:'Evaluación práctica MF1423',descripcion:'',alumnoId:'a1',companeroId:'',usuarioId:'',conLlamada:false,todoDia:false,fecha:hoyMas(2),horaIni:'11:00',horaFin:'11:40',estado:'Programado',recordatorio:false,recMin:15,serieId:'',alerta:null},
+    {id:'ag1',familia:'periodico',tipo:'companyia',titulo:'Seguiment per solitud',descripcion:'Trucada de companyia',alumnoId:'a3',companeroId:'',usuarioId:'u3',conLlamada:false,todoDia:false,fecha:hoyMas(1),horaIni:'10:00',horaFin:'10:20',estado:'programada',prioridad:2,intentos:0,motivo:'',resultado:null,recordatorio:true,recMin:15,serieId:'',alerta:null},
+    {id:'ag2',familia:'protocolos',tipo:'post_alta',titulo:'Control després d\'alta hospitalària',descripcion:'',alumnoId:'a2',companeroId:'',usuarioId:'u2',conLlamada:false,todoDia:false,fecha:hoyMas(3),horaIni:'12:00',horaFin:'12:30',estado:'programada',prioridad:2,intentos:0,motivo:'',resultado:null,recordatorio:false,recMin:15,serieId:'',alerta:null},
+    {id:'ag3',familia:'avisos',tipo:'medicacio',titulo:'Recordatori de la medicació del matí',descripcion:'',alumnoId:'a1',companeroId:'',usuarioId:'u1',conLlamada:true,todoDia:false,fecha:hoyMas(0),horaIni:'09:30',horaFin:'09:50',estado:'programada',prioridad:1,intentos:0,motivo:'',resultado:null,recordatorio:true,recMin:10,serieId:'',alerta:null},
+    {id:'ag4',familia:'academico',tipo:'avaluacio',titulo:'Avaluació pràctica MF1423',descripcion:'',alumnoId:'a1',companeroId:'',usuarioId:'',conLlamada:false,todoDia:false,fecha:hoyMas(2),horaIni:'11:00',horaFin:'11:40',estado:'programada',prioridad:2,intentos:0,motivo:'',resultado:null,recordatorio:false,recMin:15,serieId:'',alerta:null},
   ],
   llamada:null,   // llamada en curso en la central
   simActivo:null, // {caseId, role:'OP'|'PD', escenarioId} cuando el alumno está en una simulación lanzada
@@ -783,22 +783,117 @@ const state = {
   _sub:{casos:'esc',agenda:'ag',avaluacio:'eval'}, // sub-pestaña activa en las pestañas fusionadas
 };
 let seq = 100;
-// 17 tipos de evento de agenda + color por familia
-const TIPOS_EVENTO=[
-  'Agenda de felicitación','Agenda de pruebas de familiarización','Agenda de seguimiento','Toma de medicación',
-  'Incidencia técnica','Agenda de medicación','Agenda de datos pendientes','Recordatorio personal',
-  'Agenda de citas médicas','Agenda de alta/baja hospitalaria','Agenda de seguimiento incidencias técnicas',
-  'Agenda de compañía o soledad no deseada','Agenda de terceros','Simulación práctica','Evaluación/Examen práctico',
-  'Tutoría/Seguimiento','Otros'];
-function colorEvento(t){
-  const m={
-    'Simulación práctica':'#2f8fd6','Evaluación/Examen práctico':'#7a5fe0','Tutoría/Seguimiento':'#20b0c0',
-    'Agenda de compañía o soledad no deseada':'#e07fb0','Recordatorio personal':'#e0a83b',
-    'Toma de medicación':'#3aa76d','Agenda de medicación':'#3aa76d','Agenda de citas médicas':'#3aa76d','Agenda de alta/baja hospitalaria':'#3aa76d',
-    'Incidencia técnica':'#c98a1f','Agenda de seguimiento incidencias técnicas':'#c98a1f',
-    'Agenda de felicitación':'#d15fa0','Agenda de pruebas de familiarización':'#5a8fd6',
-    'Agenda de seguimiento':'#2f8fd6','Agenda de datos pendientes':'#8a8f9c','Agenda de terceros':'#8a8f9c','Otros':'#8a8f9c'};
-  return m[t]||'#8a8f9c';
+/* ===== Catálogo de agendas · nucli formatiu 5 ========================
+   Las cinco familias del temario más una para lo que es gestión del aula.
+   OJO con la clave (k): es ASCII, viaja a la base de datos y NO se traduce
+   nunca. Si guardáramos el texto visible, traducir una etiqueta o corregir
+   una tilde dejaría inservibles las agendas ya grabadas. */
+const FAMILIAS_AGENDA=[
+  {k:'avisos',     col:'#c98a1f', es:'Agendas de avisos',                    va:"Agendes d'avisos",                  en:'Reminder agendas',
+   fin:{es:'Notificaciones concretas a petición de la persona usuaria o por una situación especial de riesgo.',
+        va:"Notificacions concretes a petició de la persona usuària o per una situació especial de risc.",
+        en:'Specific notifications requested by the user or prompted by a risk situation.'}},
+  {k:'periodico',  col:'#2f8fd6', es:'Agendas de seguimiento periódico',     va:'Agendes de seguiment periòdic',     en:'Periodic follow-up',
+   fin:{es:'Mantener el contacto, familiarizar con el sistema y crear vínculo.',
+        va:"Mantindre el contacte, familiaritzar amb el sistema i crear vincle.",
+        en:'Keep in touch, build familiarity with the system and create a bond.'}},
+  {k:'protocolos', col:'#7a5fe0', es:'Agendas de seguimiento en aplicación de protocolos', va:"Agendes de seguiment en aplicació de protocols", en:'Protocol-driven follow-up',
+   fin:{es:'Se generan al aplicar una pauta de atención.',
+        va:"Es generen per aplicació de pautes d'atenció.",
+        en:'Generated by applying a care protocol.'}},
+  {k:'preventivo', col:'#3aa76d', es:'Agendas de carácter preventivo',       va:'Agendes de caràcter preventiu',     en:'Preventive agendas',
+   fin:{es:'Avisan ANTES de una situación de riesgo, para que la persona pueda prepararse.',
+        va:"Avisen ABANS d'una situació de risc, perquè la persona puga preparar-se.",
+        en:'They warn BEFORE a risk situation so the person can prepare.'}},
+  {k:'ausencia',   col:'#20b0c0', es:'Agendas por ausencia domiciliaria y retorno', va:"Agendes per absència domiciliària i retorn", en:'Absence and return',
+   fin:{es:'Comprobar que la persona se ha ausentado del domicilio y que vuelve cuando dijo.',
+        va:"Comprovar que la persona s'ha absentat del domicili i que torna quan va dir.",
+        en:'Check that the user is away from home and returns as announced.'}},
+  {k:'academico',  col:'#8a8f9c', es:'Agendas académicas',                   va:'Agendes acadèmiques',               en:'Classroom agendas',
+   fin:{es:'Gestión del aula. No son agendas del servicio de teleasistencia.',
+        va:"Gestió de l'aula. No són agendes del servei de teleassistència.",
+        en:'Classroom management. Not telecare agendas.'}},
+];
+const TIPOS_AGENDA=[
+  /* 1 · avisos */
+  {k:'medicacio',       f:'avisos',     es:'Agenda de medicación',            va:'Agenda de medicació',                  en:'Medication reminder'},
+  {k:'cita_medica',     f:'avisos',     es:'Agenda de citas médicas',         va:'Agenda de cites mèdiques',             en:'Medical appointment'},
+  {k:'despertador',     f:'avisos',     es:'Agenda de despertador',           va:'Agenda de despertador',                en:'Wake-up call'},
+  {k:'alerta_meteo',    f:'avisos',     es:'Agenda de alerta',                va:"Agenda d'alerta",                      en:'Weather alert'},
+  {k:'avis_general',    f:'avisos',     es:'Agenda de aviso general',         va:"Agenda d'avís general",                en:'General notice'},
+  /* 2 · seguimiento periódico */
+  {k:'seguiment',       f:'periodico',  es:'Agenda de seguimiento periódico', va:'Agenda de seguiment periòdic',         en:'Periodic follow-up'},
+  {k:'felicitacio',     f:'periodico',  es:'Agenda de felicitación',          va:'Agenda de felicitació',                en:'Birthday / greetings'},
+  {k:'familiaritzacio', f:'periodico',  es:'Agenda de familiarización',       va:'Agenda de familiarització',            en:'System familiarisation'},
+  {k:'companyia',       f:'periodico',  es:'Agenda de compañía o soledad no deseada', va:'Agenda de companyia o solitud no desitjada', en:'Companionship'},
+  {k:'dades_pendents',  f:'periodico',  es:'Agenda de datos pendientes',      va:'Agenda de dades pendents',             en:'Pending data'},
+  /* 3 · protocolos */
+  {k:'post_emergencia', f:'protocolos', es:'Seguimiento tras emergencia',     va:"Seguiment després d'emergència",       en:'Post-emergency follow-up'},
+  {k:'dol',             f:'protocolos', es:'Seguimiento del proceso de duelo',va:'Seguiment per al procés de dol',       en:'Bereavement follow-up'},
+  {k:'post_alta',       f:'protocolos', es:'Seguimiento tras alta hospitalaria', va:"Seguiment després d'alta hospitalària", en:'Post-discharge follow-up'},
+  {k:'comprovacio_avaria', f:'protocolos', es:'Agenda de comprobación de avería', va:"Agenda de comprovació d'avaria", en:'Fault check'},
+  /* 4 · preventivo */
+  {k:'onada_fred',      f:'preventivo', es:'Prevención por ola de frío',      va:'Prevenció per onada de fred',          en:'Cold wave prevention'},
+  {k:'onada_calor',     f:'preventivo', es:'Prevención por ola de calor',     va:'Prevenció per onada de calor',         en:'Heat wave prevention'},
+  {k:'vacunacio',       f:'preventivo', es:'Campaña de vacunación',           va:'Campanya de vacunació',                en:'Vaccination campaign'},
+  {k:'campanya',        f:'preventivo', es:'Campaña informativa',             va:'Campanya informativa',                 en:'Information campaign'},
+  /* 5 · ausencia y retorno */
+  {k:'absencia',        f:'ausencia',   es:'Agenda de ausencia domiciliaria', va:"Agenda d'absència domiciliària",       en:'Home absence'},
+  {k:'retorn_previst',  f:'ausencia',   es:'Agenda de retorno previsto',      va:'Agenda de retorn previst',             en:'Expected return'},
+  {k:'represa',         f:'ausencia',   es:'Agenda de reanudación del servicio', va:'Agenda de represa del servei',      en:'Service resumption'},
+  /* 6 · académicas */
+  {k:'simulacio',       f:'academico',  es:'Simulación práctica',             va:'Simulació pràctica',                   en:'Practice simulation'},
+  {k:'avaluacio',       f:'academico',  es:'Evaluación / Examen práctico',    va:'Avaluació / Examen pràctic',           en:'Assessment'},
+  {k:'tutoria',         f:'academico',  es:'Tutoría / Seguimiento',           va:'Tutoria / Seguiment',                  en:'Tutorial'},
+];
+const ESTADOS_AGENDA=[
+  {k:'programada',    c:'b', es:'Programada',    va:'Programada',     en:'Scheduled'},
+  {k:'realizada',     c:'g', es:'Realizada',     va:'Realitzada',     en:'Completed'},
+  {k:'sin_respuesta', c:'y', es:'Sin respuesta', va:'Sense resposta', en:'No answer'},
+  {k:'aplazada',      c:'y', es:'Aplazada',      va:'Ajornada',       en:'Postponed'},
+  {k:'cancelada',     c:'r', es:'Cancelada',     va:"Cancel·lada",    en:'Cancelled'},
+];
+/* Los 17 tipos de la primera versión, reasignados. Ninguna agenda se pierde. */
+const MIGRA_TIPO={
+  'Agenda de felicitación':'felicitacio','Agenda de pruebas de familiarización':'familiaritzacio',
+  'Agenda de seguimiento':'seguiment','Agenda de compañía o soledad no deseada':'companyia',
+  'Agenda de datos pendientes':'dades_pendents','Toma de medicación':'medicacio',
+  'Agenda de medicación':'medicacio','Agenda de citas médicas':'cita_medica',
+  'Recordatorio personal':'despertador','Agenda de terceros':'avis_general','Otros':'avis_general',
+  'Incidencia técnica':'comprovacio_avaria','Agenda de seguimiento incidencias técnicas':'comprovacio_avaria',
+  'Agenda de alta/baja hospitalaria':'post_alta','Simulación práctica':'simulacio',
+  'Evaluación/Examen práctico':'avaluacio','Tutoría/Seguimiento':'tutoria'};
+const MIGRA_ESTADO={'Programado':'programada','En curso':'programada','Completado':'realizada','Cancelado':'cancelada'};
+
+function agLab(o){ return o?(o[state.lang]||o.es||o.k||'') : ''; }
+function agFam(k){ for(var i=0;i<FAMILIAS_AGENDA.length;i++) if(FAMILIAS_AGENDA[i].k===k) return FAMILIAS_AGENDA[i]; return null; }
+function agTipo(k){ for(var i=0;i<TIPOS_AGENDA.length;i++) if(TIPOS_AGENDA[i].k===k) return TIPOS_AGENDA[i]; return null; }
+function agEst(k){ for(var i=0;i<ESTADOS_AGENDA.length;i++) if(ESTADOS_AGENDA[i].k===k) return ESTADOS_AGENDA[i]; return ESTADOS_AGENDA[0]; }
+function nomTipo(k){ return agLab(agTipo(k))||k||''; }
+function nomFamilia(k){ return agLab(agFam(k)); }
+function finFamilia(k){ var f=agFam(k); return f?agLab(f.fin):''; }
+function nomEstado(k){ return agLab(agEst(k)); }
+function colorEvento(e){
+  var fk = (e&&e.familia) || (agTipo(e&&e.tipo)||{}).f;
+  var f  = agFam(fk);
+  return f?f.col:'#8a8f9c';
+}
+/* Deja cualquier evento —venga del archivo, de la base de datos o de una
+   versión anterior— con familia, tipo y estado en claves nuevas. */
+function agNormalizar(e){
+  if(!e) return e;
+  if(!agTipo(e.tipo)){
+    var k=MIGRA_TIPO[e.tipo];
+    e.tipo = k || 'avis_general';
+  }
+  var t=agTipo(e.tipo); if(t) e.familia=t.f;
+  if(!agFam(e.familia)) e.familia='avisos';
+  if(!ESTADOS_AGENDA.some(function(x){return x.k===e.estado;}))
+    e.estado = MIGRA_ESTADO[e.estado] || 'programada';
+  if(typeof e.intentos!=='number') e.intentos=0;
+  if(e.motivo===undefined) e.motivo='';
+  if(e.resultado===undefined) e.resultado=null;
+  return e;
 }
 const ESTADOS_EV=['Programado','En curso','Completado','Cancelado'];
 /* ⚠️ Los identificadores tienen que ser únicos ENTRE equipos y ENTRE sesiones.
@@ -3159,53 +3254,83 @@ function addDaysF(s,n){const d=parseF(s);d.setDate(d.getDate()+n);return fmtF(d)
 function lunesDe(s){const d=parseF(s);const wd=(d.getDay()+6)%7;d.setDate(d.getDate()-wd);return fmtF(d);}
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const DOW=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+/* Lo que puede ver quien está mirando. El alumno solo lo suyo: la base de
+   datos ya lo filtra, pero en modo demo no hay base de datos, y conviene que
+   las dos rutas enseñen lo mismo. */
+function agVisibles(){
+  var L=state.agenda||[];
+  if(state.rol==='profesor') return L;
+  var mi=state.alumnoActivo||'';
+  return L.filter(function(e){ return e.alumnoId===mi || e.companeroId===mi; });
+}
+function esProfeAg(){ return state.rol==='profesor'; }
 function agFiltrados(){
   const a=state._ag||{}; const q=norm(a.q||'');
-  return state.agenda.filter(e=>{
+  return agVisibles().filter(e=>{
     if(a.alumno && e.alumnoId!==a.alumno && e.companeroId!==a.alumno) return false;
+    if(a.familia && e.familia!==a.familia) return false;
     if(a.tipo && e.tipo!==a.tipo) return false;
-    if(a.estado==='activos'){ if(e.estado==='Cancelado') return false; }
+    if(a.estado==='activos'){ if(e.estado==='cancelada') return false; }
     else if(a.estado && e.estado!==a.estado) return false;
     if(a.conLlamada==='si' && !e.conLlamada) return false;
     if(a.conLlamada==='no' && e.conLlamada) return false;
-    if(q){const s=norm([e.titulo,e.descripcion,e.tipo,ownerNom(e.alumnoId),ownerNom(e.companeroId)].join(' '));if(!s.includes(q))return false;}
+    if(q){const s=norm([e.titulo,e.descripcion,nomTipo(e.tipo),nomFamilia(e.familia),ownerNom(e.alumnoId),ownerNom(e.companeroId)].join(' '));if(!s.includes(q))return false;}
     return true;
   });
 }
 function vAgenda(){
-  if(!state._ag) state._ag={vista:'mes',ref:hoyISO(),alumno:'',tipo:'',estado:'activos',conLlamada:'todos',q:''};
-  const a=state._ag, ref=parseF(a.ref);
+  if(!state._ag) state._ag={vista:'mes',ref:hoyISO(),alumno:'',familia:'',tipo:'',estado:'activos',conLlamada:'todos',q:''};
+  const a=state._ag, ref=parseF(a.ref), profe=esProfeAg();
   const alOpts='<option value="">Todos los alumnos</option>'+state.alumnos.map(al=>`<option value="${al.id}" ${a.alumno===al.id?'selected':''}>${esc(al.nombre)}</option>`).join('');
-  const tipoOpts='<option value="">Todos los tipos</option>'+TIPOS_EVENTO.map(t=>`<option ${a.tipo===t?'selected':''}>${t}</option>`).join('');
-  const estOpts=[['activos','Activos (sin cancelados)'],['Programado','Programado'],['En curso','En curso'],['Completado','Completado'],['Cancelado','Cancelado']].map(([v,t])=>`<option value="${v}" ${a.estado===v?'selected':''}>${t}</option>`).join('');
+  const famOpts='<option value="">Todas las familias</option>'+FAMILIAS_AGENDA.map(f=>`<option value="${f.k}" ${a.familia===f.k?'selected':''}>${esc(agLab(f))}</option>`).join('');
+  /* Los tipos van agrupados por familia: la finalidad de cada familia es
+     materia de examen, así que el desplegable ya la enseña. */
+  const tipoOpts='<option value="">Todos los tipos</option>'+FAMILIAS_AGENDA
+    .filter(f=>!a.familia||a.familia===f.k)
+    .map(f=>`<optgroup label="${esc(agLab(f))}">`+TIPOS_AGENDA.filter(t=>t.f===f.k)
+      .map(t=>`<option value="${t.k}" ${a.tipo===t.k?'selected':''}>${esc(agLab(t))}</option>`).join('')+'</optgroup>').join('');
+  const estOpts=[['activos','Activos (sin canceladas)']].concat(ESTADOS_AGENDA.map(e=>[e.k,agLab(e)]))
+    .map(([v,t])=>`<option value="${v}" ${a.estado===v?'selected':''}>${esc(t)}</option>`).join('');
   let titulo;
   if(a.vista==='mes') titulo=MESES[ref.getMonth()]+' '+ref.getFullYear();
   else if(a.vista==='semana'){const l=parseF(lunesDe(a.ref));titulo='Semana del '+l.getDate()+' de '+MESES[l.getMonth()];}
   else titulo=ref.getDate()+' de '+MESES[ref.getMonth()]+' '+ref.getFullYear();
   const cal=a.vista==='mes'?agMes():a.vista==='semana'?agSemana():agDia();
-  return `<div class="between"><h2 class="section" style="margin:0">Agenda</h2>
-    <div class="flex"><button class="btn ghost sm" onclick="paresAleatorios()"><svg class="ic"><use href="#i-shuffle"/></svg> Pares aleatorios</button><button class="btn primary sm" onclick="nuevoEvento('${a.ref}')">+ Nuevo evento</button></div></div>
+  /* Quien planifica es el profesor; el alumno opera. No es solo la interfaz:
+     la base de datos rechaza el alta si la pide un alumno. */
+  const acciones=profe
+    ? `<div class="flex"><button class="btn ghost sm" onclick="paresAleatorios()"><svg class="ic"><use href="#i-shuffle"/></svg> Pares aleatorios</button><button class="btn primary sm" onclick="nuevoEvento('${a.ref}')">+ Nueva agenda</button></div>`
+    : '';
+  const hay=agFiltrados().length;
+  const vacio=!hay&&!agVisibles().length
+    ? `<div class="list-empty">${profe?'Todavía no has programado ninguna agenda. Pulsa «Nueva agenda» o haz doble clic en un día.':'Tu profesor aún no te ha asignado ninguna agenda.'}</div>`
+    : '';
+  const leyenda=FAMILIAS_AGENDA.map(f=>`<span class="chip" title="${esc(agLab(f.fin))}" style="background:${f.col}22;border:1px solid ${f.col}66"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${f.col};margin-right:5px"></span>${esc(agLab(f))}</span>`).join('');
+  return `<div class="between"><h2 class="section" style="margin:0">Agenda</h2>${acciones}</div>
   <div class="card mt">
     <div class="agtools">
-      <input style="flex:2;min-width:150px" placeholder="Buscar evento o alumno (Enter)" value="${esc(a.q)}" onchange="state._ag.q=this.value;render()">
-      <select onchange="state._ag.alumno=this.value;render()">${alOpts}</select>
+      <input style="flex:2;min-width:150px" placeholder="Buscar agenda o alumno (Enter)" value="${esc(a.q)}" onchange="state._ag.q=this.value;render()">
+      ${profe?`<select onchange="state._ag.alumno=this.value;render()">${alOpts}</select>`:''}
+      <select onchange="state._ag.familia=this.value;state._ag.tipo='';render()">${famOpts}</select>
       <select onchange="state._ag.tipo=this.value;render()">${tipoOpts}</select>
       <select onchange="state._ag.estado=this.value;render()">${estOpts}</select>
       <div class="agseg">${[['todos','Con llamada: Todos'],['si','Sí'],['no','No']].map(([v,t])=>`<button class="${a.conLlamada===v?'on':''}" onclick="state._ag.conLlamada='${v}';render()">${t}</button>`).join('')}</div>
     </div>
+    <div class="flex" style="flex-wrap:wrap;gap:6px;margin-bottom:10px">${leyenda}</div>
     <div class="between" style="margin-bottom:10px;flex-wrap:wrap;gap:8px">
       <div class="flex"><button class="btn ghost sm" onclick="agNav(-1)">‹</button><button class="btn ghost sm" onclick="agHoy()">Hoy</button><button class="btn ghost sm" onclick="agNav(1)">›</button><b style="margin-left:6px;text-transform:capitalize">${titulo}</b></div>
       <div class="agseg">${[['mes','Mes'],['semana','Semana'],['dia','Día']].map(([v,t])=>`<button class="${a.vista===v?'on':''}" onclick="state._ag.vista='${v}';render()">${t}</button>`).join('')}</div>
     </div>
-    <p class="muted" style="font-size:12.5px;margin:0 0 10px">Eventos (${agFiltrados().length}) · doble clic en un día para crear uno</p>
-    ${cal}
+    <p class="muted" style="font-size:12.5px;margin:0 0 10px">Agendas (${hay})${profe?' · doble clic en un día para crear una':''}</p>
+    ${vacio}${cal}
   </div>`;
 }
 function agNav(dir){const a=state._ag;if(a.vista==='mes'){const d=parseF(a.ref);a.ref=fmtF(new Date(d.getFullYear(),d.getMonth()+dir,1));}else a.ref=addDaysF(a.ref,dir*(a.vista==='semana'?7:1));render();}
 function agHoy(){state._ag.ref=hoyISO();render();}
 function agIrDia(f){state._ag.ref=f;state._ag.vista='dia';render();}
-function agChip(e){const col=colorEvento(e.tipo);const canc=e.estado==='Cancelado';return `<div class="agchip" style="background:${col}22;border-left:3px solid ${col};${canc?'opacity:.5;text-decoration:line-through':''}" onclick="detalleEvento('${e.id}')" title="${esc(e.titulo)}">${e.todoDia?'':esc((e.horaIni||'')+' ')}${esc(e.titulo)}</div>`;}
-function agEv(e){const col=colorEvento(e.tipo);const canc=e.estado==='Cancelado';return `<div class="agev" onclick="detalleEvento('${e.id}')" style="${canc?'opacity:.55':''}"><div class="bar" style="background:${col}"></div><div class="meta"><b style="${canc?'text-decoration:line-through':''}">${esc(e.titulo)}</b><small>${e.todoDia?'Todo el día':esc((e.horaIni||'')+(e.horaFin?'–'+e.horaFin:''))}${e.conLlamada?' · <svg class="ic"><use href="#i-phone"/></svg>':''} · ${e.estado}</small><small>${esc(e.tipo)}${e.alumnoId?' · '+esc(ownerNom(e.alumnoId)):''}</small></div></div>`;}
+function agChip(e){const col=colorEvento(e);const canc=e.estado==='cancelada';return `<div class="agchip" style="background:${col}22;border-left:3px solid ${col};${canc?'opacity:.5;text-decoration:line-through':''}" onclick="detalleEvento('${e.id}')" title="${esc(e.titulo)} · ${esc(nomTipo(e.tipo))}">${e.todoDia?'':esc((e.horaIni||'')+' ')}${esc(e.titulo)}</div>`;}
+function agEv(e){const col=colorEvento(e);const canc=e.estado==='cancelada';const est=agEst(e.estado);return `<div class="agev" onclick="detalleEvento('${e.id}')" style="${canc?'opacity:.55':''}"><div class="bar" style="background:${col}"></div><div class="meta"><b style="${canc?'text-decoration:line-through':''}">${esc(e.titulo)}</b><small>${e.todoDia?'Todo el día':esc((e.horaIni||'')+(e.horaFin?'–'+e.horaFin:''))}${e.conLlamada?' · <svg class="ic"><use href="#i-phone"/></svg>':''} · ${esc(agLab(est))}</small><small>${esc(nomTipo(e.tipo))}${e.alumnoId?' · '+esc(ownerNom(e.alumnoId)):''}</small></div></div>`;}
+function agDbl(f){ return esProfeAg()?` ondblclick="nuevoEvento('${f}')"`:''; }
 function agMes(){
   const ref=parseF(state._ag.ref), start=lunesDe(fmtF(new Date(ref.getFullYear(),ref.getMonth(),1)));
   const evs=agFiltrados();
@@ -3214,51 +3339,130 @@ function agMes(){
   for(let i=0;i<42;i++){const f=addDaysF(start,i);const d=parseF(f);const inMonth=d.getMonth()===ref.getMonth();
     const es=evs.filter(e=>e.fecha===f).sort((x,y)=>(x.horaIni||'').localeCompare(y.horaIni||''));
     const chips=es.slice(0,3).map(agChip).join('')+(es.length>3?`<div class="agmore" onclick="agIrDia('${f}')">+${es.length-3} más</div>`:'');
-    body+=`<div class="agcell ${inMonth?'':'off'} ${f===hoyISO()?'hoy':''}" ondblclick="nuevoEvento('${f}')"><div class="agnum">${d.getDate()}</div>${chips}</div>`;
+    body+=`<div class="agcell ${inMonth?'':'off'} ${f===hoyISO()?'hoy':''}"${agDbl(f)}><div class="agnum">${d.getDate()}</div>${chips}</div>`;
   }
   return `<div class="agdows">${head}</div><div class="aggrid">${body}</div>`;
 }
 function agSemana(){
   const l=lunesDe(state._ag.ref), evs=agFiltrados();let cols='';
   for(let i=0;i<7;i++){const f=addDaysF(l,i);const es=evs.filter(e=>e.fecha===f).sort((x,y)=>(x.horaIni||'').localeCompare(y.horaIni||''));
-    cols+=`<div class="agcol ${f===hoyISO()?'hoy':''}" ondblclick="nuevoEvento('${f}')"><h5>${DOW[i]} ${parseF(f).getDate()}</h5>${es.map(agEv).join('')||'<p class="muted" style="font-size:12px;text-align:center">—</p>'}</div>`;
+    cols+=`<div class="agcol ${f===hoyISO()?'hoy':''}"${agDbl(f)}><h5>${DOW[i]} ${parseF(f).getDate()}</h5>${es.map(agEv).join('')||'<p class="muted" style="font-size:12px;text-align:center">—</p>'}</div>`;
   }
   return `<div class="agsem">${cols}</div>`;
 }
-function agDia(){const f=state._ag.ref;const es=agFiltrados().filter(e=>e.fecha===f).sort((x,y)=>(x.horaIni||'').localeCompare(y.horaIni||''));return `<div ondblclick="nuevoEvento('${f}')">${es.map(agEv).join('')||'<div class="list-empty">Sin eventos este día. Doble clic para crear uno.</div>'}</div>`;}
+function agDia(){const f=state._ag.ref;const es=agFiltrados().filter(e=>e.fecha===f).sort((x,y)=>(x.horaIni||'').localeCompare(y.horaIni||''));return `<div${agDbl(f)}>${es.map(agEv).join('')||'<div class="list-empty">Sin agendas este día.'+(esProfeAg()?' Doble clic para crear una.':'')+'</div>'}</div>`;}
 function detalleEvento(id){
-  const e=fnac(id,state.agenda);if(!e)return;const al=alumno(e.alumnoId),comp=alumno(e.companeroId),u=usuario(e.usuarioId),col=colorEvento(e.tipo);
+  const e=fnac(id,state.agenda);if(!e)return;
+  const al=alumno(e.alumnoId),comp=alumno(e.companeroId),u=usuario(e.usuarioId),col=colorEvento(e),profe=esProfeAg();
+  const est=agEst(e.estado), prog=e.estado==='programada'||e.estado==='aplazada';
   const acc=[];
-  if(e.estado==='Programado'){acc.push(`<button class="btn ok sm" onclick="iniciarEvento('${id}')">Iniciar</button>`,`<button class="btn sm" onclick="editarEvento('${id}')">Editar</button>`,`<button class="btn danger sm" onclick="cancelarEvento('${id}')">Cancelar</button>`);}
-  if(e.conLlamada && e.alumnoId){acc.unshift(`<button class="btn primary sm" onclick="closeModal();rtcLlamar('${e.alumnoId}')"><svg class="ic"><use href="#i-phone"/></svg> Llamar al alumno</button>`);}
-  else if(e.estado==='En curso'){acc.push(`<button class="btn ok sm" onclick="completarEvento('${id}')">Completar</button>`,`<button class="btn danger sm" onclick="cancelarEvento('${id}')">Cancelar</button>`);}
-  const ec=e.estado==='Completado'?'g':e.estado==='Cancelado'?'r':e.estado==='En curso'?'y':'b';
+  if(profe){
+    if(e.estado!=='cancelada') acc.push(`<button class="btn sm" onclick="editarEvento('${id}')">Editar</button>`,
+                                        `<button class="btn danger sm" onclick="cancelarEvento('${id}')">Cancelar</button>`);
+    if(e.conLlamada && e.alumnoId) acc.unshift(`<button class="btn primary sm" onclick="closeModal();rtcLlamar('${e.alumnoId}')"><svg class="ic"><use href="#i-phone"/></svg> Llamar al alumno</button>`);
+  } else if(prog){
+    acc.push(`<button class="btn ok sm" onclick="ejecutarAgenda('${id}')"><svg class="ic"><use href="#i-phone"/></svg> Ejecutar la agenda</button>`);
+  }
   openModal(`<div class="between"><h3 style="margin:0"><span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${col};margin-right:6px"></span>${esc(e.titulo)}</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
-   <div class="flex" style="margin:4px 0 10px;flex-wrap:wrap;gap:6px"><span class="chip">${esc(e.tipo)}</span><span class="chip ${ec}">${e.estado}</span>${e.conLlamada?'<span class="chip b"><svg class="ic"><use href="#i-phone"/></svg> Con llamada</span>':''}${e.serieId?'<span class="chip">Serie</span>':''}</div>
+   <div class="flex" style="margin:4px 0 10px;flex-wrap:wrap;gap:6px"><span class="chip" style="background:${col}22;border:1px solid ${col}66">${esc(nomFamilia(e.familia))}</span><span class="chip">${esc(nomTipo(e.tipo))}</span><span class="chip ${est.c}">${esc(agLab(est))}</span>${e.conLlamada?'<span class="chip b"><svg class="ic"><use href="#i-phone"/></svg> Con llamada</span>':''}${e.serieId?'<span class="chip">Serie</span>':''}</div>
+   <p class="muted" style="font-size:12.5px;margin:0 0 10px">${esc(finFamilia(e.familia))}</p>
    <div class="ficha">
      <div class="fila"><span>Fecha</span><span>${e.fecha}${e.todoDia?' · Todo el día':' · '+esc(e.horaIni||'')+(e.horaFin?'–'+e.horaFin:'')}</span></div>
-     ${al?`<div class="fila"><span>${e.conLlamada?'Alumno iniciador':'Alumno'}</span><span>${esc(al.nombre)}</span></div>`:''}
+     ${al?`<div class="fila"><span>${e.conLlamada?'Alumno iniciador':'Operador asignado'}</span><span>${esc(al.nombre)}</span></div>`:''}
      ${comp?`<div class="fila"><span>Compañero</span><span>${esc(comp.nombre)}</span></div>`:''}
-     ${u?`<div class="fila"><span>Usuario ficticio</span><span>${esc(u.nombre)}</span></div>`:''}
+     ${u?`<div class="fila"><span>Persona atendida</span><span>${esc(u.nombre)}</span></div>`:''}
+     ${e.intentos?`<div class="fila"><span>Intentos</span><span>${e.intentos}</span></div>`:''}
+     ${e.motivo?`<div class="fila"><span>Motivo</span><span style="text-align:right">${esc(nomMotivo(e.motivo))}</span></div>`:''}
      ${e.recordatorio?`<div class="fila"><span>Recordatorio</span><span>${e.recMin} min antes</span></div>`:''}
      ${e.descripcion?`<div class="fila"><span>Descripción</span><span style="text-align:right">${esc(e.descripcion)}</span></div>`:''}
    </div>
    <div class="between mt"><span></span><div class="flex" style="flex-wrap:wrap;gap:6px">${acc.join('')}</div></div>`);
 }
-function iniciarEvento(id){const e=fnac(id,state.agenda);e.estado='En curso';if(e.conLlamada&&e.alumnoId){const s=state.escenarios.find(x=>x.usuarioId===e.usuarioId);if(s)lanzar(s.id,e.alumnoId);}toast('Evento iniciado');closeModal();render();}
-function completarEvento(id){fnac(id,state.agenda).estado='Completado';toast('Evento completado');closeModal();render();}
-function cancelarEvento(id){const e=fnac(id,state.agenda);const extra=e.serieId?`<label class="flex" style="gap:8px;font-size:14px;margin-top:8px"><input type="checkbox" id="cancSerie" style="width:auto"> Cancelar también el resto de citas de esta serie</label>`:'';
-  openModal(`<h3 style="margin-top:0">Cancelar evento</h3><p style="font-size:14px">¿Seguro que quieres cancelar <b>${esc(e.titulo)}</b>? Es definitivo.</p>${extra}<div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Volver</button><button class="btn danger" onclick="cancelarEventoOk('${id}')">Cancelar evento</button></div>`,true);}
-function cancelarEventoOk(id){const e=fnac(id,state.agenda);const cs=document.getElementById('cancSerie');e.estado='Cancelado';if(cs&&cs.checked&&e.serieId){state.agenda.forEach(x=>{if(x.serieId===e.serieId&&x.estado==='Programado')x.estado='Cancelado';});}toast('Evento cancelado');closeModal();render();}
-function evVacio(f){return {id:uid('ev'),tipo:'Agenda de seguimiento',titulo:'',descripcion:'',alumnoId:'',companeroId:'',usuarioId:'',conLlamada:false,todoDia:false,fecha:f||hoyISO(),horaIni:'10:00',horaFin:'10:30',estado:'Programado',recordatorio:true,recMin:15,serieId:'',alerta:null,_rep:'No se repite',_hasta:'',_dias:[]};}
-function nuevoEvento(f){state._ev=evVacio(f);state._evEdit=false;formEvento();}
-function editarEvento(id){state._ev=Object.assign({_rep:'No se repite',_hasta:'',_dias:[]},JSON.parse(JSON.stringify(fnac(id,state.agenda))));state._evEdit=true;formEvento();}
+
+/* Motivos de aplazamiento y de cancelación (5.4.3 del temario) */
+const MOTIVOS_AG={
+  ampliacion_suspension:{es:'Ampliación de la suspensión',va:'Ampliació de la suspensió',en:'Suspension extended'},
+  nuevas_circunstancias:{es:'Adaptación a nuevas circunstancias',va:'Adaptació a noves circumstàncies',en:'Adapted to new circumstances'},
+  saturacion:{es:'Saturación del centro',va:"Saturació del centre",en:'Centre overloaded'},
+  sustituida:{es:'Sustituida por otra agenda',va:'Substituïda per una altra agenda',en:'Replaced by another agenda'},
+  ausencia_no_comunicada:{es:'Ausencia no comunicada',va:'Absència no comunicada',en:'Unreported absence'},
+  visita_tecnica:{es:'Visita domiciliaria del personal técnico',va:'Visita domiciliària del personal tècnic',en:'Technician home visit'},
+  averia_resuelta:{es:'Avería resuelta',va:"Avaria resolta",en:'Fault resolved'},
+  defuncion:{es:'Defunción',va:'Defunció',en:'Death of the user'},
+  otros:{es:'Otros',va:'Altres',en:'Other'}
+};
+function nomMotivo(k){ return k?(agLab(MOTIVOS_AG[k])||k):''; }
+
+/* Ejecución de la agenda. De momento registra el resultado; el guion de los
+   seis pasos del protocolo entra en la siguiente tanda. */
+function ejecutarAgenda(id){
+  const e=fnac(id,state.agenda); if(!e) return;
+  const u=usuario(e.usuarioId);
+  openModal(`<div class="between"><h3 style="margin:0">Ejecutar la agenda</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
+   <p style="font-size:14px;margin:6px 0 2px"><b>${esc(e.titulo)}</b></p>
+   <p class="muted" style="font-size:12.5px;margin:0 0 12px">${esc(nomTipo(e.tipo))}${u?' · '+esc(u.nombre):''}</p>
+   <p style="font-size:13.5px;margin:0 0 4px"><b>Saludo que te toca ahora:</b> ${esc(saludoAhora())}</p>
+   <p class="muted" style="font-size:12px;margin:0 0 14px">Son las ${esc(horaAhora())}. El saludo va por la franja horaria, no por cómo te suene.</p>
+   <label class="f">¿Cómo ha ido?</label>
+   <div class="flex" style="flex-direction:column;gap:8px;align-items:stretch">
+     <button class="btn ok" onclick="resolverAgenda('${id}','realizada','')">He contactado: agenda realizada</button>
+     <button class="btn" onclick="resolverAgenda('${id}','sin_respuesta','')">No contesta: sumar un intento</button>
+     <button class="btn" onclick="resolverAgenda('${id}','aplazada','nuevas_circunstancias')">Aplazar la agenda</button>
+   </div>
+   <div class="between mt"><button class="btn ghost sm" onclick="detalleEvento('${id}')">Volver</button><span></span></div>`,true);
+}
+function resolverAgenda(id,estado,motivo){
+  const e=fnac(id,state.agenda); if(!e) return;
+  if(estado==='sin_respuesta'){
+    e.intentos=(e.intentos||0)+1;
+    /* El protocolo manda retrasar dos horas cuando el segundo intento falla. */
+    if(e.intentos>=2 && e.horaIni){
+      e.estado='aplazada'; e.motivo='otros';
+      e.horaIni=sumarHoras(e.horaIni,2); if(e.horaFin) e.horaFin=sumarHoras(e.horaFin,2);
+      toast('Dos intentos sin respuesta: la agenda se retrasa dos horas');
+    } else { e.estado='programada'; toast('Intento registrado'); }
+  } else {
+    e.estado=estado; e.motivo=motivo||'';
+    if(estado==='realizada') e.intentos=(e.intentos||0)+1;
+    toast(estado==='realizada'?'Agenda realizada':'Agenda aplazada');
+  }
+  try{ CD_DB.guardarAgenda(e); }catch(err){}
+  closeModal(); render();
+}
+function sumarHoras(h,n){ const p=String(h||'00:00').split(':'); let m=(parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0)+n*60; m=((m%1440)+1440)%1440; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function horaAhora(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+/* Franjas del protocolo: 7:00–14:00 · 14:01–20:59 · 21:00–6:59 */
+function franjaAhora(h){ const m=(h===undefined?new Date().getHours()*60+new Date().getMinutes():h); if(m>=7*60&&m<=14*60) return 'mati'; if(m>=21*60||m<7*60) return 'nit'; return 'vesprada'; }
+function saludoAhora(){
+  const f=franjaAhora();
+  const S={mati:{es:'Buenos días',va:'Bon dia',en:'Good morning'},
+           vesprada:{es:'Buenas tardes',va:'Bona vesprada',en:'Good afternoon'},
+           nit:{es:'Buenas noches',va:'Bona nit',en:'Good evening'}};
+  return agLab(S[f]);
+}
+function cancelarEvento(id){const e=fnac(id,state.agenda);
+  const extra=e.serieId?`<label class="flex" style="gap:8px;font-size:14px;margin-top:8px"><input type="checkbox" id="cancSerie" style="width:auto"> Cancelar también el resto de citas de esta serie</label>`:'';
+  const mots=['sustituida','ausencia_no_comunicada','visita_tecnica','averia_resuelta','defuncion','otros']
+    .map(k=>`<option value="${k}">${esc(nomMotivo(k))}</option>`).join('');
+  openModal(`<h3 style="margin-top:0">Cancelar agenda</h3><p style="font-size:14px">Vas a cancelar <b>${esc(e.titulo)}</b>.</p>
+    <label class="f">Motivo de la cancelación</label><select id="cancMot">${mots}</select>${extra}
+    <div class="between mt"><button class="btn ghost sm" onclick="closeModal()">Volver</button><button class="btn danger" onclick="cancelarEventoOk('${id}')">Cancelar agenda</button></div>`,true);}
+function cancelarEventoOk(id){
+  const e=fnac(id,state.agenda);const cs=document.getElementById('cancSerie');const mo=document.getElementById('cancMot');
+  e.estado='cancelada'; e.motivo=(mo&&mo.value)||'otros';
+  try{ CD_DB.guardarAgenda(e); }catch(err){}
+  if(cs&&cs.checked&&e.serieId){state.agenda.forEach(x=>{if(x.serieId===e.serieId&&x.estado==='programada'){x.estado='cancelada';x.motivo=e.motivo;try{CD_DB.guardarAgenda(x);}catch(err){}}});}
+  toast('Agenda cancelada');closeModal();render();}
+function evVacio(f){return {id:uid('ev'),familia:'periodico',tipo:'seguiment',titulo:'',descripcion:'',alumnoId:'',companeroId:'',usuarioId:'',conLlamada:false,todoDia:false,fecha:f||hoyISO(),horaIni:'08:30',horaFin:'09:00',estado:'programada',prioridad:2,intentos:0,motivo:'',resultado:null,recordatorio:true,recMin:15,serieId:'',alerta:null,_rep:'No se repite',_hasta:'',_dias:[]};}
+function nuevoEvento(f){ if(!esProfeAg()) return toast('Las agendas las planifica el profesor'); state._ev=evVacio(f);state._evEdit=false;formEvento();}
+function editarEvento(id){ if(!esProfeAg()) return toast('Las agendas las planifica el profesor'); state._ev=Object.assign({_rep:'No se repite',_hasta:'',_dias:[]},JSON.parse(JSON.stringify(fnac(id,state.agenda))));state._evEdit=true;formEvento();}
 function reFormEvento(){const sc=document.getElementById('evScroll');const t=sc?sc.scrollTop:0;formEvento();const s2=document.getElementById('evScroll');if(s2)s2.scrollTop=t;}
 function toggleDiaEv(i){const D=state._ev._dias;const k=D.indexOf(i);k<0?D.push(i):D.splice(k,1);reFormEvento();}
+/* Al cambiar el tipo, la familia va detrás: no pueden desparejarse. */
+function evSetTipo(k){ state._ev.tipo=k; const t=agTipo(k); if(t) state._ev.familia=t.f; reFormEvento(); }
 function formEvento(){
   const d=state._ev;
   const I=(f,ph,ty)=>`<input type="${ty||'text'}" value="${esc(d[f]??'')}" onchange="state._ev['${f}']=this.value" placeholder="${ph||''}">`;
-  const S=(f,opts)=>`<select onchange="state._ev['${f}']=this.value">`+opts.map(o=>Array.isArray(o)?`<option value="${o[0]}" ${d[f]===o[0]?'selected':''}>${o[1]}</option>`:`<option ${d[f]===o?'selected':''}>${o}</option>`).join('')+`</select>`;
   const SW=(f,lab,re)=>`<label class="flex" style="gap:8px;font-size:14px;cursor:pointer"><input type="checkbox" ${d[f]?'checked':''} onchange="state._ev['${f}']=this.checked;${re?'reFormEvento()':''}" style="width:auto"> ${lab}</label>`;
   const L=t=>`<label class="f">${t}</label>`;
   const blank='<option value="">—</option>';
@@ -3266,19 +3470,25 @@ function formEvento(){
   const compOpts=blank+state.alumnos.map(a=>`<option value="${a.id}" ${d.companeroId===a.id?'selected':''}>${esc(a.nombre)}</option>`).join('');
   const fics=state.usuarios.filter(u=>u.activo && (!d.alumnoId || u.dueno===d.alumnoId));
   const ficOpts=blank+fics.map(u=>`<option value="${u.id}" ${d.usuarioId===u.id?'selected':''}>${esc(u.nombre)}</option>`).join('');
+  const tipoOpts=FAMILIAS_AGENDA.map(f=>`<optgroup label="${esc(agLab(f))}">`+TIPOS_AGENDA.filter(t=>t.f===f.k)
+      .map(t=>`<option value="${t.k}" ${d.tipo===t.k?'selected':''}>${esc(agLab(t))}</option>`).join('')+'</optgroup>').join('');
+  const prioOpts=[[1,'Alta'],[2,'Normal'],[3,'Baja']].map(([v,t])=>`<option value="${v}" ${Number(d.prioridad)===v?'selected':''}>${t}</option>`).join('');
   const diasSem=['L','M','X','J','V','S','D'];
   openModal(`
-   <div class="between"><h3 style="margin:0">${state._evEdit?'Editar':'Nuevo'} evento</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
+   <div class="between"><h3 style="margin:0">${state._evEdit?'Editar':'Nueva'} agenda</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
    <div id="evScroll" style="max-height:66vh;overflow:auto;padding-right:8px">
-     <div>${L('Tipo de evento *')}${S('tipo',TIPOS_EVENTO)}</div>
-     <div class="mt">${L('Título *')}${I('titulo','p. ej. Seguimiento medicación')}</div>
+     <div>${L('Tipo de agenda *')}<select onchange="evSetTipo(this.value)">${tipoOpts}</select></div>
+     <p class="muted" style="font-size:12.5px;margin:6px 0 0">${esc(finFamilia(d.familia))}</p>
+     <div class="mt">${L('Título *')}${I('titulo','p. ej. Recordatorio de la medicación de la mañana')}</div>
      <div class="mt">${L('Descripción')}<textarea maxlength="500" onchange="state._ev.descripcion=this.value" placeholder="Hasta 500 caracteres">${esc(d.descripcion||'')}</textarea></div>
-     <div class="row mt"><div>${L(d.conLlamada?'Alumno iniciador *':'Alumno')}<select onchange="state._ev.alumnoId=this.value;reFormEvento()">${alOpts}</select></div>
+     <div class="row mt"><div>${L(d.conLlamada?'Alumno iniciador *':'Operador asignado')}<select onchange="state._ev.alumnoId=this.value;reFormEvento()">${alOpts}</select></div>
        ${d.conLlamada?`<div>${L('Compañero asignado')}<select onchange="state._ev.companeroId=this.value">${compOpts}</select></div>`:''}
-       <div>${L('Usuario ficticio')}<select onchange="state._ev.usuarioId=this.value">${ficOpts}</select></div></div>
-     <div class="flex" style="gap:20px;margin-top:10px">${SW('conLlamada','Evento con llamada (simulación entre alumnos)',true)}${SW('todoDia','Todo el día',true)}</div>
+       <div>${L('Persona atendida')}<select onchange="state._ev.usuarioId=this.value">${ficOpts}</select></div></div>
+     <div class="flex" style="gap:20px;margin-top:10px">${SW('conLlamada','Agenda con llamada (simulación entre alumnos)',true)}${SW('todoDia','Todo el día',true)}</div>
      <div class="row mt"><div>${L('Fecha *')}${I('fecha','','date')}</div>
-       ${d.todoDia?'':`<div>${L('Hora inicio *')}${I('horaIni','','time')}</div><div>${L('Hora fin')}${I('horaFin','','time')}</div>`}</div>
+       ${d.todoDia?'':`<div>${L('Hora inicio *')}${I('horaIni','','time')}</div><div>${L('Hora fin')}${I('horaFin','','time')}</div>`}
+       <div>${L('Prioridad')}<select onchange="state._ev.prioridad=parseInt(this.value,10)||2">${prioOpts}</select></div></div>
+     ${d.todoDia?'':`<p class="muted" style="font-size:12px;margin:6px 0 0">${esc(avisoHoraValle(d.horaIni))}</p>`}
      ${state._evEdit?'':`
      <div class="row mt"><div>${L('Repetición')}<select onchange="state._ev._rep=this.value;reFormEvento()">${['No se repite','Todos los días','Días de la semana'].map(o=>`<option ${d._rep===o?'selected':''}>${o}</option>`).join('')}</select></div>
        ${d._rep!=='No se repite'?`<div>${L('Repetir hasta')}${I('_hasta','','date')}</div>`:''}</div>
@@ -3289,22 +3499,33 @@ function formEvento(){
      <div><button class="btn ghost sm" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="guardarEvento()">Guardar</button></div></div>
   `,true);
 }
+/* Horas valle: las agendas se concentran cuando entran menos llamadas. Es una
+   sugerencia, no una norma: la saturación del centro la valora el supervisor. */
+function avisoHoraValle(h){
+  const p=String(h||'').split(':'); const m=(parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0);
+  if(m>=8*60 && m<=10*60) return 'Hora valle: buen momento, entran pocas comunicaciones.';
+  if(m>=18*60 && m<=20*60) return 'Hora valle de la tarde: también es buen momento.';
+  return 'Franja de más actividad. Si puedes, llévala a primera hora de la mañana o a última de la tarde.';
+}
 function guardarEvento(){
   const d=state._ev;
+  if(!esProfeAg()) return toast('Las agendas las planifica el profesor');
   if(!(d.titulo||'').trim())return toast('El título es obligatorio');
   if(!d.fecha)return toast('La fecha es obligatoria');
-  if(d.conLlamada && !d.alumnoId)return toast('En eventos con llamada, el alumno iniciador es obligatorio');
-  const base=()=>({id:uid('ev'),tipo:d.tipo,titulo:d.titulo.trim(),descripcion:d.descripcion||'',alumnoId:d.alumnoId,companeroId:d.companeroId,usuarioId:d.usuarioId,conLlamada:!!d.conLlamada,todoDia:!!d.todoDia,horaIni:d.horaIni,horaFin:d.horaFin,estado:'Programado',recordatorio:!!d.recordatorio,recMin:parseInt(d.recMin,10)||15,serieId:'',alerta:null});
+  if(d.conLlamada && !d.alumnoId)return toast('En agendas con llamada, el alumno iniciador es obligatorio');
+  const t=agTipo(d.tipo); const fam=t?t.f:'avisos';
+  const base=()=>({id:uid('ev'),familia:fam,tipo:d.tipo,titulo:d.titulo.trim(),descripcion:d.descripcion||'',alumnoId:d.alumnoId,companeroId:d.companeroId,usuarioId:d.usuarioId,conLlamada:!!d.conLlamada,todoDia:!!d.todoDia,horaIni:d.horaIni,horaFin:d.horaFin,estado:'programada',prioridad:parseInt(d.prioridad,10)||2,intentos:0,motivo:'',resultado:null,recordatorio:!!d.recordatorio,recMin:parseInt(d.recMin,10)||15,serieId:'',alerta:null});
   if(state._evEdit){
     const k=fnac(d.id,state.agenda);
-    if(k)Object.assign(k,{tipo:d.tipo,titulo:d.titulo.trim(),descripcion:d.descripcion,alumnoId:d.alumnoId,companeroId:d.companeroId,usuarioId:d.usuarioId,conLlamada:!!d.conLlamada,todoDia:!!d.todoDia,fecha:d.fecha,horaIni:d.horaIni,horaFin:d.horaFin,recordatorio:!!d.recordatorio,recMin:parseInt(d.recMin,10)||15});
-    toast('Evento actualizado');
+    if(k){Object.assign(k,{familia:fam,tipo:d.tipo,titulo:d.titulo.trim(),descripcion:d.descripcion,alumnoId:d.alumnoId,companeroId:d.companeroId,usuarioId:d.usuarioId,conLlamada:!!d.conLlamada,todoDia:!!d.todoDia,fecha:d.fecha,horaIni:d.horaIni,horaFin:d.horaFin,prioridad:parseInt(d.prioridad,10)||2,recordatorio:!!d.recordatorio,recMin:parseInt(d.recMin,10)||15});
+      try{ CD_DB.guardarAgenda(k); }catch(e){}}
+    toast('Agenda actualizada');
   } else if(d._rep && d._rep!=='No se repite' && d._hasta){
     if(d._rep==='Días de la semana' && (!d._dias||!d._dias.length))return toast('Elige al menos un día de la semana');
     const serie='s'+uid('');let f=d.fecha,n=0;
-    while(f<=d._hasta && n<120){const wd=(parseF(f).getDay()+6)%7;const inc=d._rep==='Todos los días'||(d._rep==='Días de la semana'&&d._dias.includes(wd));if(inc){const ev=base();ev.fecha=f;ev.serieId=serie;state.agenda.push(ev);n++;}f=addDaysF(f,1);}
-    toast(n+' citas creadas en la serie');
-  } else { const ev=base();ev.fecha=d.fecha;state.agenda.push(ev);toast('Evento creado'); }
+    while(f<=d._hasta && n<120){const wd=(parseF(f).getDay()+6)%7;const inc=d._rep==='Todos los días'||(d._rep==='Días de la semana'&&d._dias.includes(wd));if(inc){const ev=base();ev.fecha=f;ev.serieId=serie;state.agenda.push(ev);try{CD_DB.guardarAgenda(ev);}catch(e){}n++;}f=addDaysF(f,1);}
+    toast(n+' agendas creadas en la serie');
+  } else { const ev=base();ev.fecha=d.fecha;state.agenda.push(ev);try{CD_DB.guardarAgenda(ev);}catch(e){}toast('Agenda creada'); }
   closeModal();render();
 }
 function paresAleatorios(){
@@ -3320,7 +3541,7 @@ function paresAleatorios(){
     <div class="between mt"><button class="btn ghost sm" onclick="paresAleatorios()"><svg class="ic"><use href="#i-shuffle"/></svg> Volver a barajar</button><button class="btn ok" onclick="crearPares()">Crear simulaciones</button></div>`,true);
 }
 function crearPares(){const f=document.getElementById('parF').value,h=document.getElementById('parH').value;let n=0;
-  (state._pares||[]).forEach(([a,b])=>{if(!b)return;state.agenda.push({id:uid('ev'),tipo:'Simulación práctica',titulo:'Simulación: '+a.nombre+' ↔ '+b.nombre,descripcion:'Generado por pares aleatorios',alumnoId:a.id,companeroId:b.id,usuarioId:'',conLlamada:true,todoDia:false,fecha:f,horaIni:h,horaFin:'',estado:'Programado',recordatorio:false,recMin:15,serieId:'',alerta:null});n++;});
+  (state._pares||[]).forEach(([a,b])=>{if(!b)return;const ev={id:uid('ev'),familia:'academico',tipo:'simulacio',titulo:'Simulació: '+a.nombre+' ↔ '+b.nombre,descripcion:'Generado por pares aleatorios',alumnoId:a.id,companeroId:b.id,usuarioId:'',conLlamada:true,todoDia:false,fecha:f||hoyISO(),horaIni:h||'10:00',horaFin:'',estado:'programada',prioridad:2,intentos:0,motivo:'',resultado:null,recordatorio:false,recMin:15,serieId:'',alerta:null};state.agenda.push(ev);try{CD_DB.guardarAgenda(ev);}catch(e){}n++;});
   toast(n+' simulaciones creadas');closeModal();render();
 }
 
@@ -4806,7 +5027,7 @@ function simPanel(){
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-10-01 · r38';
+const CD_VERSION='2026-10-05 · r39';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -6545,7 +6766,7 @@ langCargar(); setLang(state.lang);
     state.registros=[]; state.presencia={}; state.cola=[]; state.salaOn=[]; state.profTs=0;
     state.miEstado={}; state.simEspera=null; state.simInvite=null; state.simActivo=null; state.compTs={};
     try{ clearInterval(simEsperaInt); }catch(e){}
-    g_restaurarCatalogo();
+    g_restaurarCatalogo(); g_restaurarAgenda();
     state.examenes=null;
     try{ closeModal(); }catch(e){}
     var a=document.getElementById('app'); if(a)a.classList.add('hidden');
@@ -6559,6 +6780,71 @@ langCargar(); setLang(state.lang);
     state.alumnos=invs.map(function(iv){return {id:'al_'+g_slug(iv.email),nombre:iv.nombre,email:iv.email,usada:!!iv.usada};});
   }
   window.g_recargarRoster=g_recargarRoster;
+
+  /* ============ AGENDAS → Supabase ============================================
+     El profesor planifica y manda la fila entera; el alumno solo registra la
+     ejecución y manda cuatro campos. La base de datos lo vuelve a comprobar:
+     aunque el alumno mandara la fila completa, el trigger guardián pisaría lo
+     que no le toca. Esto de aquí es para que no viaje de más, no la defensa. */
+  var SEED_AGENDA=null;
+  try{ SEED_AGENDA=JSON.parse(JSON.stringify(state.agenda||[])); }catch(e){}
+  function g_restaurarAgenda(){
+    try{ state.agenda = SEED_AGENDA?JSON.parse(JSON.stringify(SEED_AGENDA)):[]; }catch(e){ state.agenda=[]; }
+  }
+  function g_emailDe(aid){
+    if(!aid) return '';
+    var a=null; try{ a=(state.alumnos||[]).filter(function(x){return x.id===aid;})[0]; }catch(e){}
+    if(a&&a.email) return String(a.email).toLowerCase();
+    /* Un id de la forma al_<slug-del-correo> no permite reconstruir el correo,
+       así que sin roster no hay nada que mandar. Mejor vacío que inventado. */
+    return '';
+  }
+  function g_idAlumnoPorEmail(em){
+    em=String(em||'').toLowerCase(); if(!em) return '';
+    var a=null; try{ a=(state.alumnos||[]).filter(function(x){return String(x.email||'').toLowerCase()===em;})[0]; }catch(e){}
+    return a?a.id:('al_'+g_slug(em));
+  }
+  function g_hora(h){ h=String(h||'').trim(); return h?h:null; }
+  function g_filaAgenda(e,pid){
+    return {
+      profesor_id:pid, id:e.id,
+      alumno_email:g_emailDe(e.alumnoId), companero_email:g_emailDe(e.companeroId),
+      usuario_id:e.usuarioId||'',
+      familia:e.familia||'avisos', tipo:e.tipo||'avis_general',
+      titulo:e.titulo||'', descripcion:e.descripcion||'',
+      con_llamada:!!e.conLlamada, todo_dia:!!e.todoDia,
+      fecha:e.fecha, hora_ini:e.todoDia?null:g_hora(e.horaIni), hora_fin:e.todoDia?null:g_hora(e.horaFin),
+      prioridad:parseInt(e.prioridad,10)||2,
+      recordatorio:!!e.recordatorio, rec_min:parseInt(e.recMin,10)||15,
+      serie_id:e.serieId||'',
+      estado:e.estado||'programada', intentos:parseInt(e.intentos,10)||0,
+      motivo:e.motivo||'', resultado:e.resultado||null, dificultad:e.dificultad||'',
+      actualizado:new Date().toISOString()
+    };
+  }
+  function g_agendaDesdeFila(r){
+    var e={
+      id:r.id, familia:r.familia, tipo:r.tipo,
+      titulo:r.titulo||'', descripcion:r.descripcion||'',
+      alumnoId:g_idAlumnoPorEmail(r.alumno_email), companeroId:g_idAlumnoPorEmail(r.companero_email),
+      usuarioId:r.usuario_id||'',
+      conLlamada:!!r.con_llamada, todoDia:!!r.todo_dia,
+      fecha:r.fecha, horaIni:String(r.hora_ini||'').slice(0,5), horaFin:String(r.hora_fin||'').slice(0,5),
+      prioridad:r.prioridad||2, recordatorio:!!r.recordatorio, recMin:r.rec_min||15,
+      serieId:r.serie_id||'', estado:r.estado, intentos:r.intentos||0,
+      motivo:r.motivo||'', resultado:r.resultado||null, dificultad:r.dificultad||'',
+      evaluacion:r.evaluacion||null, nota:(r.nota===undefined?null:r.nota), alerta:null
+    };
+    try{ return agNormalizar(e); }catch(err){ return e; }
+  }
+  async function g_cargarAgenda(){
+    var pid=g_profCatalogo(); if(!SB||!pid) return;
+    var r=await SB.from('agendas').select('*').eq('profesor_id',pid);
+    if(r.error){ console.warn('CareDesk · no se pudo leer la agenda:',r.error.message); return; }
+    /* Una cuenta real nunca arrastra las agendas de ejemplo del archivo: lo que
+       haya en la base de datos es la verdad, aunque sea nada. */
+    state.agenda=(r.data||[]).map(g_agendaDesdeFila);
+  }
 
   /* ============ CATÁLOGO (escenarios y usuarios ficticios) → Supabase ============ */
   /* Copia del catálogo de ejemplo tal y como viene en el archivo, para poder
@@ -6624,7 +6910,7 @@ langCargar(); setLang(state.lang);
   /* Carga de datos de la cuenta. Si una parte falla (tabla que aún no existe,
      internet flojo…) se avisa por consola pero NUNCA se impide entrar. */
   async function g_cargarTodo(){
-    var pasos=[['catálogo',g_cargarCatalogo],['exámenes',g_cargarExamenes],['actuaciones',g_cargarActuaciones]];
+    var pasos=[['catálogo',g_cargarCatalogo],['exámenes',g_cargarExamenes],['actuaciones',g_cargarActuaciones],['agenda',g_cargarAgenda]];
     for(var i=0;i<pasos.length;i++){
       try{ await pasos[i][1](); }
       catch(e){ console.warn('CareDesk · no se pudo cargar '+pasos[i][0]+':',e&&e.message||e); }
@@ -6701,6 +6987,30 @@ langCargar(); setLang(state.lang);
       if(!SB||!g_esProfesor()||!u||!u.id) return;
       SB.from('usuarios_ficticios').upsert({profesor_id:GACC.uid,id:u.id,datos:u,actualizado:new Date().toISOString()},{onConflict:'profesor_id,id'})
         .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo guardar la ficha:',r.error.message); });
+    },
+    /* Una agenda. El profesor manda la fila entera; el alumno, solo lo que
+       le toca registrar. Las dos rutas pasan además por el guardián del
+       servidor, que es quien de verdad decide. */
+    guardarAgenda:function(e){
+      if(!SB||!e||!e.id) return;
+      var pid=g_profCatalogo(); if(!pid) return;
+      if(g_esProfesor()){
+        SB.from('agendas').upsert(g_filaAgenda(e,pid),{onConflict:'profesor_id,id'})
+          .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo guardar la agenda:',r.error.message); });
+      } else {
+        SB.from('agendas').update({
+          estado:e.estado||'programada', intentos:parseInt(e.intentos,10)||0,
+          motivo:e.motivo||'', resultado:e.resultado||null,
+          fecha:e.fecha, hora_ini:e.todoDia?null:g_hora(e.horaIni), hora_fin:e.todoDia?null:g_hora(e.horaFin),
+          actualizado:new Date().toISOString()
+        }).eq('profesor_id',pid).eq('id',e.id)
+          .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo registrar la agenda:',r.error.message); });
+      }
+    },
+    borrarAgenda:function(id){
+      if(!SB||!g_esProfesor()||!id) return;
+      SB.from('agendas').delete().eq('profesor_id',GACC.uid).eq('id',id)
+        .then(function(r){ if(r.error) console.warn('CareDesk · no se pudo borrar la agenda:',r.error.message); });
     },
     borrarEscenario:function(id){
       if(!SB||!g_esProfesor()||!id) return;
@@ -6928,7 +7238,7 @@ langCargar(); setLang(state.lang);
     try{ rtc.peer=null; }catch(e){}
     state.rol=null; state.alumnoActivo=null; state.llamada=null;
     state.registros=[]; state.presencia={};
-    g_restaurarCatalogo();
+    g_restaurarCatalogo(); g_restaurarAgenda();
     state.examenes=null;                       // se vuelve a sembrar con ensureExamenes()
     var a=document.getElementById('app'); if(a)a.classList.add('hidden');
     try{ closeModal(); }catch(e){}
