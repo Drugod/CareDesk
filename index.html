@@ -287,13 +287,7 @@
   /* Marca visual del estado, además del color (daltonismo) */
   .chip .mk{font-weight:700;margin-right:4px;font-family:var(--sans)}
 
-  /* ---------- Videoasistencia ---------- */
-  .vidgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 4px}
-  .vidgrid:has(.vidbox:only-child){grid-template-columns:1fr}
-  .vidbox{position:relative;background:#0d1b1f;border-radius:10px;overflow:hidden;aspect-ratio:4/3}
-  .vidbox video{width:100%;height:100%;object-fit:cover;display:block;background:#0d1b1f}
-  .vidbox span{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.66);color:#fff;
-    font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px}
+      font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px}
   .note-warn{background:#fdf4e3;border:1px solid #ecd8a8;border-radius:12px;padding:12px}
   .legal h4{margin:16px 0 4px;font-size:14px;color:var(--accent2)}
   .legal p,.legal li{font-size:13.5px;line-height:1.55;margin:6px 0}
@@ -865,6 +859,61 @@ const MIGRA_TIPO={
   'Evaluación/Examen práctico':'avaluacio','Tutoría/Seguimiento':'tutoria'};
 const MIGRA_ESTADO={'Programado':'programada','En curso':'programada','Completado':'realizada','Cancelado':'cancelada'};
 
+/* Qué se hace en la parte específica de cada agenda (paso 4 del protocolo).
+   Texto propio, escrito para CareDesk. El inglés cae al castellano hasta que
+   se traduzca el contenido de los casos. */
+const GUION_AGENDA={
+  medicacio:{es:'Recuerda el medicamento y la dosis. No des la agenda por terminada hasta que te confirme que lo ha tomado.',va:"Recorda el medicament i la dosi. No dones l'agenda per acabada fins que et confirme que se l'ha pres."},
+  cita_medica:{es:'Recuerda día, hora y lugar de la cita. Comprueba que tiene cómo desplazarse.',va:"Recorda dia, hora i lloc de la cita. Comprova que té com desplaçar-se."},
+  despertador:{es:'Comprueba que se ha despertado y que puede levantarse sin problema.',va:"Comprova que s'ha despertat i que pot alçar-se sense problema."},
+  alerta_meteo:{es:'La situación ya se está produciendo: informa del riesgo y de qué debe hacer ahora mismo.',va:"La situació ja s'està produint: informa del risc i de què ha de fer ara mateix."},
+  avis_general:{es:'Transmite el aviso y asegúrate de que lo ha entendido.',va:"Transmet l'avís i assegura't que l'ha entés."},
+  seguiment:{es:'Interésate por su estado, verifica los datos de la ficha y pídele que pulse desde la unidad de control.',va:"Interessa't pel seu estat, verifica les dades de la fitxa i demana-li que polse des de la unitat de control."},
+  felicitacio:{es:'Felicítala por la fecha señalada y aprovecha para saber cómo se encuentra.',va:"Felicita-la per la data assenyalada i aprofita per saber com es troba."},
+  familiaritzacio:{es:'Repasa con ella cómo funciona el equipo y resuelve las dudas de uso que tenga.',va:"Repassa amb ella com funciona l'equip i resol els dubtes d'ús que tinga."},
+  companyia:{es:'Es una llamada de compañía: deja hablar, escucha y no tengas prisa.',va:"És una trucada de companyia: deixa parlar, escolta i no tingues pressa."},
+  dades_pendents:{es:'Completa los datos que faltan en la ficha y confirma los que puedan haber cambiado.',va:"Completa les dades que falten en la fitxa i confirma les que puguen haver canviat."},
+  post_emergencia:{es:'Interésate por su evolución tras la emergencia y por si ha necesitado más ayuda.',va:"Interessa't per la seua evolució després de l'emergència i per si ha necessitat més ajuda."},
+  dol:{es:'Acompaña sin forzar. La duración la marcan sus necesidades, no un plazo fijo.',va:"Acompanya sense forçar. La durada la marquen les seues necessitats, no un termini fix."},
+  post_alta:{es:'Pregunta por la convalecencia, por la medicación nueva y por el apoyo que tiene en casa.',va:"Pregunta per la convalescència, per la medicació nova i pel suport que té a casa."},
+  comprovacio_avaria:{es:'Comprueba que el equipo vuelve a funcionar y pídele una pulsación de prueba.',va:"Comprova que l'equip torna a funcionar i demana-li una polsada de prova."},
+  onada_fred:{es:'Aviso preventivo: la ola de frío aún no ha llegado. Explícale cómo prepararse.',va:"Avís preventiu: l'onada de fred encara no ha arribat. Explica-li com preparar-se."},
+  onada_calor:{es:'Aviso preventivo: la ola de calor aún no ha llegado. Explícale cómo prepararse.',va:"Avís preventiu: l'onada de calor encara no ha arribat. Explica-li com preparar-se."},
+  vacunacio:{es:'Informa de la campaña y de dónde y cuándo puede vacunarse.',va:"Informa de la campanya i d'on i quan pot vacunar-se."},
+  campanya:{es:'Transmite la información de la campaña de forma clara y breve.',va:"Transmet la informació de la campanya de manera clara i breu."},
+  absencia:{es:'Anota fecha y hora de salida, fecha y hora de regreso, y un teléfono y una dirección donde localizarla.',va:"Anota data i hora d'eixida, data i hora de tornada, i un telèfon i una adreça on localitzar-la."},
+  retorn_previst:{es:'Comprueba si ha vuelto a casa. Si sigue fuera, pregunta la nueva fecha y prorroga la agenda.',va:"Comprova si ha tornat a casa. Si continua fora, pregunta la nova data i prorroga l'agenda."},
+  represa:{es:'Confirma que está de vuelta y devuelve el servicio a situación de activo.',va:"Confirma que està de tornada i torna el servei a situació d'actiu."},
+  simulacio:{es:'Simulación de clase: sigue el caso que te haya dado el profesor.',va:"Simulació de classe: segueix el cas que t'haja donat el professor."},
+  avaluacio:{es:'Examen práctico: aplica el protocolo completo, que es lo que se evalúa.',va:"Examen pràctic: aplica el protocol complet, que és el que s'avalua."},
+  tutoria:{es:'Seguimiento con el profesor.',va:"Seguiment amb el professor."}
+};
+/* Los seis pasos del protocolo de una agenda. */
+const PASOS_AGENDA=[
+  {k:'salutacio',   es:'Saludo',                 va:'Salutació'},
+  {k:'identificacio',es:'Identificación',        va:'Identificació'},
+  {k:'motiu',       es:'Motivo de la llamada',   va:'Motiu de la trucada'},
+  {k:'especific',   es:'Parte específica',       va:"Part específica"},
+  {k:'pregunta',    es:'Pregunta de cierre',     va:'Pregunta de tancament'},
+  {k:'comiat',      es:'Despedida',              va:'Comiat'}
+];
+const AYUDA_PASO={
+  identificacio:{es:'Di tu nombre y el del servicio, para que sepa con quién habla y no desconfíe.',va:"Digues el teu nom i el del servei, perquè sàpia amb qui parla i no desconfie."},
+  motiu:{es:'Explícale por qué la llamas, antes de entrar en materia.',va:"Explica-li per què la truques, abans d'entrar en matèria."},
+  pregunta:{es:'Pregúntale si desea alguna cosa más, aunque no tenga que ver con el motivo.',va:"Pregunta-li si desitja alguna cosa més, encara que no tinga a vore amb el motiu."},
+  comiat:{es:'Despídete acorde a la franja horaria, igual que el saludo.',va:"Acomiada't d'acord amb la franja horària, igual que la salutació."}
+};
+/* Los tres modos salen de datos que ya existen, sin columna nueva:
+   sin llamada = en solitario · con compañero asignado = pareja · si no, profesor. */
+function modoAgenda(e){ if(!e||!e.conLlamada) return 'solo'; return e.companeroId?'companero':'profesor'; }
+const MODOS_AGENDA={
+  solo:{es:'En solitario (práctica, sin grabación)',va:'En solitari (pràctica, sense gravació)'},
+  companero:{es:'Un compañero hace de persona atendida',va:'Un company fa de persona atesa'},
+  profesor:{es:'El profesor hace de persona atendida',va:'El professor fa de persona atesa'}
+};
+function nomModo(k){ return agLab(MODOS_AGENDA[k]); }
+function guionDe(k){ return agLab(GUION_AGENDA[k])||''; }
+
 function agLab(o){ return o?(o[state.lang]||o.es||o.k||'') : ''; }
 function agFam(k){ for(var i=0;i<FAMILIAS_AGENDA.length;i++) if(FAMILIAS_AGENDA[i].k===k) return FAMILIAS_AGENDA[i]; return null; }
 function agTipo(k){ for(var i=0;i<TIPOS_AGENDA.length;i++) if(TIPOS_AGENDA[i].k===k) return TIPOS_AGENDA[i]; return null; }
@@ -934,6 +983,7 @@ try{ const _l=localStorage.getItem('caredesk-lang'); if(_l)state.lang=_l; }catch
 /* ---------- Inglés: interfaz. El contenido de los casos no se traduce aquí:
    es material del profesorado y se edita desde “Escenarios y usuarios”. ---------- */
 const I18N_EN = {
+  'Todo el alumnado':'All students','Todas las finalidades':'All purposes','Todos los tipos':'All types',
   'Eliminar esta actuación':'Delete this record',
   '{alumno} · {caso}. Se borrará de tu lista y de la del alumno, junto con su nota{grab}. No se puede deshacer.':'{alumno} · {caso}. It will be removed from your list and the student\'s, along with its mark{grab}. This cannot be undone.',
   ' y su grabación':' and its recording',
@@ -1025,9 +1075,9 @@ const I18N_EN = {
   'El servidor responde pero no deja abrir el canal: casi siempre es la red (cortafuegos del centro o del trabajo) bloqueando las conexiones en tiempo real.':'The server responds but will not open the channel: this is almost always the network (a school or workplace firewall) blocking real-time connections.',
   'No se llega al servidor: o está caído o la red lo bloquea. Prueba desde otra red (por ejemplo, compartiendo datos del móvil).':'The server cannot be reached: it is either down or blocked by the network. Try another network (for example, your phone hotspot).',
 
-  'Has abierto el archivo desde el disco. Las llamadas, el micrófono y la cámara solo funcionan en https://caredesk.me':'You opened the file from disk. Calls, microphone and camera only work at https://caredesk.me',
+  'Has abierto el archivo desde el disco. Las llamadas, el micrófono solo funcionan en https://caredesk.me':'You opened the file from disk. Calls, microphone only work at https://caredesk.me',
   'Abre la aplicación en https://caredesk.me':'Open the app at https://caredesk.me',
-  'Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono y la cámara.':'With the file opened from disk (file:) the browser blocks calls, microphone and camera.',
+  'Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono.':'With the file opened from disk (file:) the browser blocks calls, microphone.',
 
   'Profesor en la sala':'Teacher in the room',
   'Profesor fuera de la sala':'Teacher not in the room',
@@ -1652,9 +1702,9 @@ const I18N = {
   'El servidor responde pero no deja abrir el canal: casi siempre es la red (cortafuegos del centro o del trabajo) bloqueando las conexiones en tiempo real.':'El servidor respon però no deixa obrir el canal: quasi sempre és la xarxa (tallafocs del centre o de la faena) bloquejant les connexions en temps real.',
   'No se llega al servidor: o está caído o la red lo bloquea. Prueba desde otra red (por ejemplo, compartiendo datos del móvil).':'No s\'arriba al servidor: o està caigut o la xarxa el bloqueja. Prova des d\'una altra xarxa (per exemple, compartint dades del mòbil).',
 
-  'Has abierto el archivo desde el disco. Las llamadas, el micrófono y la cámara solo funcionan en https://caredesk.me':'Has obert l\'arxiu des del disc. Les trucades, el micròfon i la càmera només funcionen en https://caredesk.me',
+  'Has abierto el archivo desde el disco. Las llamadas, el micrófono solo funcionan en https://caredesk.me':'Has obert l\'arxiu des del disc. Les trucades, el micròfon només funcionen en https://caredesk.me',
   'Abre la aplicación en https://caredesk.me':'Obri l\'aplicació en https://caredesk.me',
-  'Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono y la cámara.':'Amb l\'arxiu obert des del disc (file:) el navegador bloqueja les trucades, el micròfon i la càmera.',
+  'Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono.':'Amb l\'arxiu obert des del disc (file:) el navegador bloqueja les trucades, el micròfon.',
 
   'Profesor en la sala':'Professor en la sala',
   'Profesor fuera de la sala':'Professor fora de la sala',
@@ -1978,7 +2028,7 @@ const I18N = {
   'Recursos que movilizas':'Recursos que mobilitzes','Registro / observaciones':'Registre / observacions','Finalizar y registrar':'Finalitzar i registrar','Pista':'Pista',
   'Llamada en curso':'Trucada en curs','Llamada finalizada':'Trucada finalitzada','Practicar caso':'Practicar cas',
   // --- Agenda ---
-  'Buscar evento o alumno':'Cerca esdeveniment o alumne','Todos los alumnos':'Tots els alumnes','Todos los tipos':'Tots els tipus',
+  'Buscar evento o alumno':'Cerca esdeveniment o alumne','Todo el alumnado':'Tot l\'alumnat','Todas las finalidades':'Totes les finalitats','Todos los tipos':'Tots els tipus',
   'Activos (sin cancelados)':'Actius (sense cancel·lats)','Con llamada:':'Amb trucada:','Pares aleatorios':'Parells aleatoris',
   'doble clic en un día para crear uno':'doble clic en un dia per a crear-ne un','Mes':'Mes','Semana':'Setmana','Día':'Dia','Hoy':'Hui',
   'Tipo de evento':'Tipus d\'esdeveniment','Título':'Títol','Descripción':'Descripció','Alumno':'Alumne','Compañero asignado':'Company assignat',
@@ -3281,8 +3331,8 @@ function agFiltrados(){
 function vAgenda(){
   if(!state._ag) state._ag={vista:'mes',ref:hoyISO(),alumno:'',familia:'',tipo:'',estado:'activos',conLlamada:'todos',q:''};
   const a=state._ag, ref=parseF(a.ref), profe=esProfeAg();
-  const alOpts='<option value="">Todos los alumnos</option>'+state.alumnos.map(al=>`<option value="${al.id}" ${a.alumno===al.id?'selected':''}>${esc(al.nombre)}</option>`).join('');
-  const famOpts='<option value="">Todas las familias</option>'+FAMILIAS_AGENDA.map(f=>`<option value="${f.k}" ${a.familia===f.k?'selected':''}>${esc(agLab(f))}</option>`).join('');
+  const alOpts='<option value="">Todo el alumnado</option>'+state.alumnos.map(al=>`<option value="${al.id}" ${a.alumno===al.id?'selected':''}>${esc(al.nombre)}</option>`).join('');
+  const famOpts='<option value="">Todas las finalidades</option>'+FAMILIAS_AGENDA.map(f=>`<option value="${f.k}" ${a.familia===f.k?'selected':''}>${esc(agLab(f))}</option>`).join('');
   /* Los tipos van agrupados por familia: la finalidad de cada familia es
      materia de examen, así que el desplegable ya la enseña. */
   const tipoOpts='<option value="">Todos los tipos</option>'+FAMILIAS_AGENDA
@@ -3393,16 +3443,47 @@ const MOTIVOS_AG={
 };
 function nomMotivo(k){ return k?(agLab(MOTIVOS_AG[k])||k):''; }
 
-/* Ejecución de la agenda. De momento registra el resultado; el guion de los
-   seis pasos del protocolo entra en la siguiente tanda. */
+/* ===== Ejecución de la agenda · protocolo de seis pasos ==================
+   El alumno va marcando lo que ha hecho. No es una corrección automática: la
+   app le dice qué toca y deja constancia de lo que marca, y quien evalúa es el
+   profesor. Marcar una casilla no demuestra haberlo dicho, y así se enseña. */
 function ejecutarAgenda(id){
   const e=fnac(id,state.agenda); if(!e) return;
-  const u=usuario(e.usuarioId);
+  if(!e._pasos) e._pasos={};
+  if(!e._ini) e._ini=Date.now();
+  pintarEjecucion(id);
+}
+function pasoAgenda(id,k,v){
+  const e=fnac(id,state.agenda); if(!e) return;
+  e._pasos=e._pasos||{}; e._pasos[k]=!!v;
+  pintarEjecucion(id);
+}
+function pintarEjecucion(id){
+  const e=fnac(id,state.agenda); if(!e) return;
+  const u=usuario(e.usuarioId), modo=modoAgenda(e), comp=alumno(e.companeroId);
+  const P=e._pasos||{};
+  const hechos=PASOS_AGENDA.filter(x=>P[x.k]).length;
+  const filas=PASOS_AGENDA.map((x,n)=>{
+    let ayuda='';
+    if(x.k==='salutacio') ayuda='Ahora toca <b>'+esc(saludoAhora())+'</b> · son las '+esc(horaAhora())+'.';
+    else if(x.k==='especific') ayuda=esc(guionDe(e.tipo));
+    else ayuda=esc(agLab(AYUDA_PASO[x.k])||'');
+    return `<label class="agev" style="cursor:pointer;align-items:flex-start">
+      <input type="checkbox" ${P[x.k]?'checked':''} onchange="pasoAgenda('${id}','${x.k}',this.checked)" style="width:auto;margin:3px 10px 0 2px">
+      <div class="meta"><b>${n+1}. ${esc(agLab(x))}</b><small style="white-space:normal">${ayuda}</small></div></label>`;
+  }).join('');
+  const llamar = (modo==='companero'&&comp)
+    ? `<button class="btn primary sm" onclick="closeModal();rtcLlamar('${e.companeroId}')"><svg class="ic"><use href="#i-phone"/></svg> Llamar a ${esc(comp.nombre)}</button>`
+    : (modo==='profesor'
+      ? `<p class="muted" style="font-size:12.5px;margin:0">Esta agenda la atiende el profesor: espera su llamada y ve marcando los pasos.</p>`
+      : `<p class="muted" style="font-size:12.5px;margin:0">Práctica en solitario: no hay llamada ni grabación. Di los pasos en voz alta.</p>`);
   openModal(`<div class="between"><h3 style="margin:0">Ejecutar la agenda</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
    <p style="font-size:14px;margin:6px 0 2px"><b>${esc(e.titulo)}</b></p>
-   <p class="muted" style="font-size:12.5px;margin:0 0 12px">${esc(nomTipo(e.tipo))}${u?' · '+esc(u.nombre):''}</p>
-   <p style="font-size:13.5px;margin:0 0 4px"><b>Saludo que te toca ahora:</b> ${esc(saludoAhora())}</p>
-   <p class="muted" style="font-size:12px;margin:0 0 14px">Son las ${esc(horaAhora())}. El saludo va por la franja horaria, no por cómo te suene.</p>
+   <div class="flex" style="flex-wrap:wrap;gap:6px;margin:0 0 8px"><span class="chip">${esc(nomTipo(e.tipo))}</span><span class="chip">${esc(nomModo(modo))}</span>${u?`<span class="chip b">${esc(u.nombre)}</span>`:''}</div>
+   ${u?`<p class="muted" style="font-size:12.5px;margin:0 0 10px">Antes de llamar, repasa su ficha: llegar informado es parte del protocolo. <a href="#" onclick="event.preventDefault();verFicha('${u.id}')">Ver ficha</a></p>`:''}
+   <div style="margin-bottom:10px">${llamar}</div>
+   <div id="evScroll" style="max-height:46vh;overflow:auto;padding-right:6px">${filas}</div>
+   <p class="muted" style="font-size:12.5px;margin:10px 0 6px">Pasos marcados: <b>${hechos} de ${PASOS_AGENDA.length}</b>. Marcar no es haberlo dicho: la nota la pone tu profesor.</p>
    <label class="f">¿Cómo ha ido?</label>
    <div class="flex" style="flex-direction:column;gap:8px;align-items:stretch">
      <button class="btn ok" onclick="resolverAgenda('${id}','realizada','')">He contactado: agenda realizada</button>
@@ -3413,6 +3494,19 @@ function ejecutarAgenda(id){
 }
 function resolverAgenda(id,estado,motivo){
   const e=fnac(id,state.agenda); if(!e) return;
+  /* Lo que queda registrado de la ejecución: los pasos marcados, la franja en
+     la que se hizo y el saludo que correspondía. Con eso el profesor puede
+     contrastar lo que el alumno dice que hizo con lo que oiga. */
+  const P=e._pasos||{};
+  const guardarResultado=function(){
+    e.resultado={
+      pasos:PASOS_AGENDA.reduce(function(a,x){a[x.k]=!!P[x.k];return a;},{}),
+      marcados:PASOS_AGENDA.filter(function(x){return P[x.k];}).length,
+      total:PASOS_AGENDA.length,
+      franja:franjaAhora(), saludoEsperado:saludoAhora(), hora:horaAhora(),
+      modo:modoAgenda(e), ts:new Date().toISOString()
+    };
+  };
   if(estado==='sin_respuesta'){
     e.intentos=(e.intentos||0)+1;
     /* El protocolo manda retrasar dos horas cuando el segundo intento falla. */
@@ -3421,9 +3515,11 @@ function resolverAgenda(id,estado,motivo){
       e.horaIni=sumarHoras(e.horaIni,2); if(e.horaFin) e.horaFin=sumarHoras(e.horaFin,2);
       toast('Dos intentos sin respuesta: la agenda se retrasa dos horas');
     } else { e.estado='programada'; toast('Intento registrado'); }
+    guardarResultado();
   } else {
     e.estado=estado; e.motivo=motivo||'';
     if(estado==='realizada') e.intentos=(e.intentos||0)+1;
+    guardarResultado();
     toast(estado==='realizada'?'Agenda realizada':'Agenda aplazada');
   }
   try{ CD_DB.guardarAgenda(e); }catch(err){}
@@ -3460,6 +3556,14 @@ function reFormEvento(){const sc=document.getElementById('evScroll');const t=sc?
 function toggleDiaEv(i){const D=state._ev._dias;const k=D.indexOf(i);k<0?D.push(i):D.splice(k,1);reFormEvento();}
 /* Al cambiar el tipo, la familia va detrás: no pueden desparejarse. */
 function evSetTipo(k){ state._ev.tipo=k; const t=agTipo(k); if(t) state._ev.familia=t.f; reFormEvento(); }
+/* El modo no es una columna nueva: se guarda como «con llamada» + compañero.
+   Si algún día sobra uno de los tres, se quita de aquí y de MODOS_AGENDA. */
+function evSetModo(k){
+  const d=state._ev; d._modo=k;
+  d.conLlamada=(k!=='solo');
+  if(k!=='companero') d.companeroId='';
+  reFormEvento();
+}
 function formEvento(){
   const d=state._ev;
   const I=(f,ph,ty)=>`<input type="${ty||'text'}" value="${esc(d[f]??'')}" onchange="state._ev['${f}']=this.value" placeholder="${ph||''}">`;
@@ -3473,6 +3577,8 @@ function formEvento(){
   const tipoOpts=FAMILIAS_AGENDA.map(f=>`<optgroup label="${esc(agLab(f))}">`+TIPOS_AGENDA.filter(t=>t.f===f.k)
       .map(t=>`<option value="${t.k}" ${d.tipo===t.k?'selected':''}>${esc(agLab(t))}</option>`).join('')+'</optgroup>').join('');
   const prioOpts=[[1,'Alta'],[2,'Normal'],[3,'Baja']].map(([v,t])=>`<option value="${v}" ${Number(d.prioridad)===v?'selected':''}>${t}</option>`).join('');
+  const md=d._modo||modoAgenda(d);
+  const modoOpts=['solo','companero','profesor'].map(k=>`<option value="${k}" ${md===k?'selected':''}>${esc(nomModo(k))}</option>`).join('');
   const diasSem=['L','M','X','J','V','S','D'];
   openModal(`
    <div class="between"><h3 style="margin:0">${state._evEdit?'Editar':'Nueva'} agenda</h3><button class="btn ghost sm" onclick="closeModal()"><svg class="ic"><use href="#i-x"/></svg></button></div>
@@ -3481,10 +3587,12 @@ function formEvento(){
      <p class="muted" style="font-size:12.5px;margin:6px 0 0">${esc(finFamilia(d.familia))}</p>
      <div class="mt">${L('Título *')}${I('titulo','p. ej. Recordatorio de la medicación de la mañana')}</div>
      <div class="mt">${L('Descripción')}<textarea maxlength="500" onchange="state._ev.descripcion=this.value" placeholder="Hasta 500 caracteres">${esc(d.descripcion||'')}</textarea></div>
-     <div class="row mt"><div>${L(d.conLlamada?'Alumno iniciador *':'Operador asignado')}<select onchange="state._ev.alumnoId=this.value;reFormEvento()">${alOpts}</select></div>
-       ${d.conLlamada?`<div>${L('Compañero asignado')}<select onchange="state._ev.companeroId=this.value">${compOpts}</select></div>`:''}
-       <div>${L('Persona atendida')}<select onchange="state._ev.usuarioId=this.value">${ficOpts}</select></div></div>
-     <div class="flex" style="gap:20px;margin-top:10px">${SW('conLlamada','Agenda con llamada (simulación entre alumnos)',true)}${SW('todoDia','Todo el día',true)}</div>
+     <div class="row mt"><div>${L('Operador asignado')}<select onchange="state._ev.alumnoId=this.value;reFormEvento()">${alOpts}</select></div>
+       <div>${L('Persona atendida')}<select onchange="state._ev.usuarioId=this.value">${ficOpts}</select></div>
+       <div>${L('¿Quién hace de persona atendida?')}<select onchange="evSetModo(this.value)">${modoOpts}</select></div></div>
+     ${md==='companero'?`<div class="mt">${L('Compañero que hace de persona atendida *')}<select onchange="state._ev.companeroId=this.value">${compOpts}</select></div>`:''}
+     <p class="muted" style="font-size:12.5px;margin:6px 0 0">${md==='solo'?'En solitario no hay llamada ni grabación: sirve para ensayar el protocolo.':'Hay llamada, así que el alumno practica con alguien al otro lado.'}</p>
+     <div class="flex" style="gap:20px;margin-top:10px">${SW('todoDia','Todo el día',true)}</div>
      <div class="row mt"><div>${L('Fecha *')}${I('fecha','','date')}</div>
        ${d.todoDia?'':`<div>${L('Hora inicio *')}${I('horaIni','','time')}</div><div>${L('Hora fin')}${I('horaFin','','time')}</div>`}
        <div>${L('Prioridad')}<select onchange="state._ev.prioridad=parseInt(this.value,10)||2">${prioOpts}</select></div></div>
@@ -3512,7 +3620,8 @@ function guardarEvento(){
   if(!esProfeAg()) return toast('Las agendas las planifica el profesor');
   if(!(d.titulo||'').trim())return toast('El título es obligatorio');
   if(!d.fecha)return toast('La fecha es obligatoria');
-  if(d.conLlamada && !d.alumnoId)return toast('En agendas con llamada, el alumno iniciador es obligatorio');
+  if(d.conLlamada && !d.alumnoId)return toast('En agendas con llamada, el operador asignado es obligatorio');
+  if((d._modo||modoAgenda(d))==='companero' && !d.companeroId)return toast('Elige el compañero que hace de persona atendida');
   const t=agTipo(d.tipo); const fam=t?t.f:'avisos';
   const base=()=>({id:uid('ev'),familia:fam,tipo:d.tipo,titulo:d.titulo.trim(),descripcion:d.descripcion||'',alumnoId:d.alumnoId,companeroId:d.companeroId,usuarioId:d.usuarioId,conLlamada:!!d.conLlamada,todoDia:!!d.todoDia,horaIni:d.horaIni,horaFin:d.horaFin,estado:'programada',prioridad:parseInt(d.prioridad,10)||2,intentos:0,motivo:'',resultado:null,recordatorio:!!d.recordatorio,recMin:parseInt(d.recMin,10)||15,serieId:'',alerta:null});
   if(state._evEdit){
@@ -4434,12 +4543,7 @@ function abrirAjustesA11y(){
     <div class="mt"><b style="font-size:14px">Animaciones</b>
       <div class="flex mt" style="gap:6px" role="group" aria-label="Animaciones">
         ${op('mov','1','Normales')}${op('mov','0','Reducidas')}</div></div>
-    <div class="mt"><b style="font-size:14px">Cámara en las simulaciones</b>
-      <div class="flex mt" style="gap:6px" role="group" aria-label="Cámara">
-        <button class="btn ${!VIDEO_ON?'primary':'ghost'} sm" aria-pressed="${!VIDEO_ON}" onclick="if(VIDEO_ON)videoAlternar();abrirAjustesA11y()">Solo voz</button>
-        <button class="btn ${VIDEO_ON?'primary':'ghost'} sm" aria-pressed="${VIDEO_ON}" onclick="if(!VIDEO_ON)videoAlternar();abrirAjustesA11y()">Con vídeo</button></div>
-      <p class="muted" style="font-size:12.5px;margin:6px 0 0">Con vídeo se ve la cara del compañero durante la simulación, como en una videoasistencia real.
-      <b>Las grabaciones siguen siendo solo de audio</b>: la imagen no se guarda en ningún sitio.</p></div>
+    
     <div class="card mt note-teal"><b style="font-size:13.5px">Con lector de pantalla</b>
       <p class="muted" style="font-size:13px;margin:4px 0 0">Toda la aplicación se maneja con el teclado. Usa el tabulador para moverte,
       Intro o Espacio para activar, y Escape para cerrar las ventanas. Las llamadas entrantes se anuncian solas.</p></div>
@@ -4738,42 +4842,26 @@ const SIMROLES={PD:'Persona dependiente',OP:'Teleoperador',OB:'Profesor / Oyente
 /* ---------- Videoasistencia ----------
    La cámara es opcional y se recuerda en este equipo. La GRABACIÓN SIGUE SIENDO
    SOLO DE AUDIO: MediaRecorder graba la mezcla de WebAudio, que no lleva vídeo. */
-let VIDEO_ON=false;
-function videoCargar(){ try{ VIDEO_ON = localStorage.getItem('caredesk-video')==='1'; }catch(e){ VIDEO_ON=false; } }
-function videoGuardar(){ try{ localStorage.setItem('caredesk-video', VIDEO_ON?'1':'0'); }catch(e){} }
-function videoSoportado(){ return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia); }
-/* Restricciones modestas: en un aula con 15 parejas, la resolución alta no cabe */
-function videoConstraints(){ return VIDEO_ON ? {width:{ideal:640},height:{ideal:360},frameRate:{ideal:20,max:24},facingMode:'user'} : false; }
+/* Sin vídeo: solo voz.
+   Se quitó a propósito en octubre de 2026, a petición del profesorado: emitir o
+   grabar la cara de alumnado menor de edad abre un expediente de derechos de
+   imagen —consentimiento de cada familia, conservación, cesiones— que no aporta
+   nada a la práctica de teleasistencia, que es una actividad de voz.
+
+   No es un interruptor apagado: la cámara no se pide NUNCA. Al navegador solo se
+   le solicita el micrófono, así que el permiso de cámara ni siquiera aparece.
+   Para recuperarlo algún día habría que reescribir esto y revisar antes la parte
+   legal, que es justamente lo que se quiere evitar. */
+const VIDEO_ON=false;
+function videoSoportado(){ return false; }
+function videoConstraints(){ return false; }
 async function pedirMedios(){
-  try{ return await navigator.mediaDevices.getUserMedia({audio:true,video:videoConstraints()}); }
-  catch(e){
-    if(VIDEO_ON){                                   // sin cámara o permiso denegado: seguimos con voz
-      try{ const s=await navigator.mediaDevices.getUserMedia({audio:true});
-           toast('No se ha podido usar la cámara. La simulación sigue solo con voz.',4200); return s; }catch(e2){}
-    }
-    return null;
-  }
+  try{ return await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ return null; }
 }
-function videoAlternar(){
-  VIDEO_ON=!camaraEncendida(); videoGuardar();
-  /* Si ya hay una simulación en marcha, aplicarlo al momento cuando se pueda */
-  let enCaliente=false;
-  try{
-    const pistas=(sim.local&&sim.local.getVideoTracks)?sim.local.getVideoTracks():[];
-    if(pistas.length){ pistas.forEach(t=>t.enabled=VIDEO_ON); enCaliente=true; }
-  }catch(e){}
-  toast(VIDEO_ON
-    ? (enCaliente?'Cámara encendida':'Vídeo activado. Se aplicará en la próxima llamada.')
-    : (enCaliente?'Cámara apagada':'Vídeo desactivado. Solo voz.'), 3600);
-  if(typeof simPanel==='function')simPanel();
-}
-/* ¿estoy emitiendo imagen ahora mismo? (distinto de la preferencia guardada) */
-function camaraEncendida(){
-  try{ const p=(sim.local&&sim.local.getVideoTracks)?sim.local.getVideoTracks():[];
-       if(p.length) return p.some(t=>t.enabled); }catch(e){}
-  return VIDEO_ON;
-}
-function tieneVideo(st){ try{ return !!(st&&st.getVideoTracks&&st.getVideoTracks().length&&st.getVideoTracks()[0].enabled); }catch(e){ return false; } }
+/* Por si en algún equipo quedó la preferencia de cámara de una versión anterior */
+try{ localStorage.removeItem('caredesk-video'); }catch(e){}
+function tieneVideo(){ return false; }   /* sin vídeo: ver el bloque de arriba */
 const sim={peer:null,local:null,conns:{},role:null,muted:false,int:null,caseId:'LIBRE',t0:0,_pedido:null,_reint:0,modo:null};
 function simId(r){return state.sala+'-SIM-'+(sim.caseId||'LIBRE')+'-'+r;}
 function simTargets(){return Object.keys(SIMROLES).filter(r=>r!==sim.role).map(simId);}
@@ -4872,16 +4960,7 @@ function simPlay(pid,st){
      escuchar (rol OB), la práctica no ha empezado todavía. */
   if(state.simEspera && sim.caseId===state.simEspera.caseId && /-PD$/.test(pid)) simArrancarOP(false);
 }
-/* Coloca cada stream en su <video> después de pintar el panel */
-function simPintarVideos(){
-  const local=document.getElementById('vidLocal');
-  if(local && sim.local){ if(local.srcObject!==sim.local){local.srcObject=sim.local; local.muted=true; local.play().catch(()=>{});} }
-  Object.keys(sim.conns).forEach(pid=>{
-    const c=sim.conns[pid]; if(!c||!c.stream)return;
-    const v=document.getElementById('vid-'+rtcSlug(pid));
-    if(v && v.srcObject!==c.stream){ v.srcObject=c.stream; v.play().catch(()=>{}); }
-  });
-}
+function simPintarVideos(){}   /* sin vídeo: no hay nada que colocar */
 function simMute(){ sim.muted=!sim.muted; if(sim.local)sim.local.getAudioTracks().forEach(t=>t.enabled=!sim.muted); simPanel(); }
 /* El profesor entra en silencio, pero tiene que poder intervenir. El micro se
    pide en ese momento y la pista se mete en las conexiones ya abiertas, sin
@@ -4998,16 +5077,7 @@ function simPanel(){
     const txt=c&&c.stream?'conectado':(c&&espera<15000?'conectando…':'sin conectar');
     return `<div class="simrow"><span class="dot ${st}"></span><div style="flex:1"><b>${SIMROLES[r]}</b><br><small>${txt}</small></div></div>`;
   }).join('');
-  /* Mosaico de vídeo: solo si hay alguna imagen que enseñar */
-  const remotosConVideo=Object.keys(sim.conns).filter(pid=>tieneVideo(sim.conns[pid].stream));
-  const hayVideo = tieneVideo(sim.local) || remotosConVideo.length;
-  const vids = !hayVideo ? '' : `<div class="vidgrid">
-    ${tieneVideo(sim.local)?`<div class="vidbox"><video id="vidLocal" autoplay playsinline muted aria-label="Tu cámara"></video><span>Tú</span></div>`:''}
-    ${remotosConVideo.map(pid=>{
-      const rol=Object.keys(SIMROLES).find(r=>simId(r)===pid)||'';
-      return `<div class="vidbox"><video id="vid-${rtcSlug(pid)}" autoplay playsinline aria-label="Cámara de ${esc(SIMROLES[rol]||'compañero')}"></video><span>${esc(SIMROLES[rol]||'Compañero')}</span></div>`;
-    }).join('')}
-  </div>`;
+  const vids='';   /* sin vídeo: no hay mosaico que pintar */
   const cab = sim.caseId&&sim.caseId!=='LIBRE' ? '<svg class="ic"><use href="#i-headset"/></svg> Simulación del caso' : '<svg class="ic"><use href="#i-headset"/></svg> Simulación libre';
   /* Si tras 15 s no se ha conectado nadie, decirlo en vez de dejar un "conectando…" eterno */
   const nadie = !Object.values(sim.conns).some(c=>c.stream) && (Date.now()-(sim.t0||Date.now()))>15000;
@@ -5020,14 +5090,14 @@ function simPanel(){
   el.innerHTML=`<div class="simw"><div class="rtchead">${cab} · Sala ${esc(state.sala||'')}</div>${vids}${rows}${aviso}
     <div class="rtcbtns" style="margin-top:10px">${sim.role==='OB'
         ? `<button class="btn ${sim.muted===false?'ok':'sm'} sm" onclick="simHablar()" aria-pressed="${sim.muted===false}">${sim.muted===false?'<svg class="ic"><use href="#i-mic"/></svg> Te oyen · cerrar micro':'<svg class="ic"><use href="#i-mic-off"/></svg> Intervenir'}</button>`
-        : `<button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button>`}${sim.role==='OB'?'':`<button class="btn sm" onclick="videoAlternar()" aria-pressed="${camaraEncendida()}" title="${camaraEncendida()?'Desactivar la cámara':'Activar la cámara'}"><svg class="ic"><use href="#i-eye"/></svg> ${camaraEncendida()?'Vídeo activado':'Solo voz'}</button>`}<button class="btn danger sm" onclick="simSalir()">Salir</button></div>
+        : `<button class="btn sm" onclick="simMute()">${sim.muted?'<svg class="ic"><use href="#i-mic-off"/></svg> Activar':'<svg class="ic"><use href="#i-mic"/></svg> Silenciar'}</button>`}<button class="btn danger sm" onclick="simSalir()">Salir</button></div>
     <p class="muted" style="font-size:11px;margin:8px 0 0">Consejo: usad auriculares para evitar eco.</p></div>`;
   aplicarIdioma(el); a11yPass(el); simPintarVideos();
 }
 document.addEventListener('click',()=>{ Object.values(sim.conns||{}).forEach(c=>{if(c.audio)c.audio.play().catch(()=>{});}); },{passive:true});
 
 /* ================= LLAMADAS REALES (WebRTC + Metered) ================= */
-const CD_VERSION='2026-10-05 · r40';
+const CD_VERSION='2026-10-06 · r42';
 const rtc={peer:null,local:null,call:null,name:'',state:'idle',t0:0,int:null,muted:false,pend:null,audio:null,silent:null,_to:null,
   conn:'init',err:'',errTipo:'',intentos:0,idOcupado:0,_re:null,_desde:0,dc:{},_salaT:null,_preparado:null};
 const TURN_SERVERS_SIM=[
@@ -5330,7 +5400,7 @@ async function iniciarRTC(){
   rtcArrancando=ahora;
   if(typeof Peer==='undefined'){ rtcEstado('error','No se ha podido cargar el motor de llamadas.','sin-peerjs'); return; }
   if(!rtcOrigenSeguro()){
-    rtcEstado('error','Has abierto el archivo desde el disco. Las llamadas, el micrófono y la cámara solo funcionan en https://caredesk.me','origen-inseguro');
+    rtcEstado('error','Has abierto el archivo desde el disco. Las llamadas, el micrófono solo funcionan en https://caredesk.me','origen-inseguro');
     return;                                   // sin reintentos: recargando desde file: nunca va a funcionar
   }
   clearTimeout(rtc._re);
@@ -5459,7 +5529,7 @@ function rtcDiagnostico(){
   openModal('<div class="between"><h3 style="margin:0"><svg class="ic"><use href="#i-phone"/></svg> Servicio de llamadas</h3>'
     + '<button class="btn ghost sm" onclick="closeModal()" aria-label="Cerrar">✕</button></div>'
     + '<div id="rtcDiagBody" class="mt">'+rtcDiagHtml()+'</div>'
-    + (rtcOrigenSeguro()?'':'<div class="note-warn mt"><b>Abre la aplicación en https://caredesk.me</b><p style="margin:6px 0 0;font-size:13px">Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono y la cámara.</p></div>')
+    + (rtcOrigenSeguro()?'':'<div class="note-warn mt"><b>Abre la aplicación en https://caredesk.me</b><p style="margin:6px 0 0;font-size:13px">Con el archivo abierto desde el disco (file:) el navegador bloquea las llamadas, el micrófono.</p></div>')
     + '<p class="muted mt" style="font-size:13px">Solo puede haber una sesión abierta a la vez por cada profesor y por cada alumno: si abres la aplicación en dos equipos o en dos pestañas, la segunda no podrá llamar ni recibir llamadas.</p>'
     + '<div id="rtcPrueba" class="mt"></div>'
     + '<div class="row mt"><button class="btn primary" onclick="rtcReconectarYa()">Reintentar conexión</button>'
@@ -6791,24 +6861,30 @@ langCargar(); setLang(state.lang);
   function g_restaurarAgenda(){
     try{ state.agenda = SEED_AGENDA?JSON.parse(JSON.stringify(SEED_AGENDA)):[]; }catch(e){ state.agenda=[]; }
   }
-  function g_emailDe(aid){
+  function g_emailDe(aid,respaldo){
     if(!aid) return '';
     var a=null; try{ a=(state.alumnos||[]).filter(function(x){return x.id===aid;})[0]; }catch(e){}
     if(a&&a.email) return String(a.email).toLowerCase();
-    /* Un id de la forma al_<slug-del-correo> no permite reconstruir el correo,
-       así que sin roster no hay nada que mandar. Mejor vacío que inventado. */
-    return '';
+    /* Si el listado todavía no está cargado, el correo que venía con la agenda
+       es mejor que nada: sin esto, editar una agenda antes de que llegue el
+       listado borraría al alumno asignado sin decir ni pío. */
+    return String(respaldo||'').toLowerCase();
   }
+  /* El identificador de un alumno es SIEMPRE al_<slug de su correo>: así lo
+     construyen el listado del profesor y el de compañeros del alumno.
+     No se busca en el listado a propósito. Hacerlo ataba el resultado a si el
+     listado había llegado ya, y en ese momento todavía podían estar los
+     alumnos de ejemplo del archivo: la agenda se quedaba apuntando a un id de
+     demostración y el compañero desaparecía sin ningún error. */
   function g_idAlumnoPorEmail(em){
-    em=String(em||'').toLowerCase(); if(!em) return '';
-    var a=null; try{ a=(state.alumnos||[]).filter(function(x){return String(x.email||'').toLowerCase()===em;})[0]; }catch(e){}
-    return a?a.id:('al_'+g_slug(em));
+    em=String(em||'').toLowerCase();
+    return em?('al_'+g_slug(em)):'';
   }
   function g_hora(h){ h=String(h||'').trim(); return h?h:null; }
   function g_filaAgenda(e,pid){
     return {
       profesor_id:pid, id:e.id,
-      alumno_email:g_emailDe(e.alumnoId), companero_email:g_emailDe(e.companeroId),
+      alumno_email:g_emailDe(e.alumnoId,e.alumnoEmail), companero_email:g_emailDe(e.companeroId,e.companeroEmail),
       usuario_id:e.usuarioId||'',
       familia:e.familia||'avisos', tipo:e.tipo||'avis_general',
       titulo:e.titulo||'', descripcion:e.descripcion||'',
@@ -6827,6 +6903,7 @@ langCargar(); setLang(state.lang);
       id:r.id, familia:r.familia, tipo:r.tipo,
       titulo:r.titulo||'', descripcion:r.descripcion||'',
       alumnoId:g_idAlumnoPorEmail(r.alumno_email), companeroId:g_idAlumnoPorEmail(r.companero_email),
+      alumnoEmail:String(r.alumno_email||'').toLowerCase(), companeroEmail:String(r.companero_email||'').toLowerCase(),
       usuarioId:r.usuario_id||'',
       conLlamada:!!r.con_llamada, todoDia:!!r.todo_dia,
       fecha:r.fecha, horaIni:String(r.hora_ini||'').slice(0,5), horaFin:String(r.hora_fin||'').slice(0,5),
@@ -7422,7 +7499,6 @@ langCargar(); setLang(state.lang);
     return;
   }
   try{ a11yCargar(); }catch(e){}          // ajustes de accesibilidad guardados en este equipo
-  try{ videoCargar(); }catch(e){}         // preferencia de cámara
   gLimpiarSesionesViejas();
   /* 🔴 ¿Venimos del enlace de "he olvidado mi contraseña"?
      El enlace del correo abre una sesión válida, así que el arranque normal la
